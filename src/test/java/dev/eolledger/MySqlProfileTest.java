@@ -19,7 +19,10 @@ class MySqlProfileTest {
 
     @Test
     void mysqlProfileWithoutUrlFailsInsteadOfFallingBackToH2() {
-        assumeTrue(System.getenv("MYSQL_URL") == null, "MYSQL_URL is set in this environment");
+        // this starts the real app with the mysql profile, so never run it where a database URL is configured
+        for (String name : new String[]{"MYSQL_URL", "SPRING_DATASOURCE_URL", "spring.datasource.url"}) {
+            assumeTrue(System.getenv(name) == null && System.getProperty(name) == null, name + " is set in this environment");
+        }
         assertThatThrownBy(() -> new SpringApplicationBuilder(EolLedgerApplication.class).profiles("mysql")
                 .properties("server.port=0", "spring.main.banner-mode=off").run().close())
                 .hasStackTraceContaining("MYSQL_URL");

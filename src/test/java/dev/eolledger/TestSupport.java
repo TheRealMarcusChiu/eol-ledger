@@ -3,7 +3,10 @@ package dev.eolledger;
 import com.sun.net.httpserver.HttpServer;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
+import javax.sql.DataSource;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -74,7 +77,23 @@ final class TestSupport {
         return "http://127.0.0.1:" + SERVER.getAddress().getPort();
     }
 
-    static void reset(JdbcClient db) {
+    /** Set by MySqlStorageTest only after its own CREATE DATABASE succeeded (CREATE fails if the name already exists). */
+    static volatile String ownedMySqlSchema;
+
+    /** Fail closed: the per-test DELETEs may only hit local in-memory H2 or the MySQL schema this run created. */
+    static void requireDisposable(String product, String url, String catalog) {
+        boolean h2Mem = "H2".equals(product) && url != null && url.startsWith("jdbc:h2:mem:");
+        boolean ownedMySql = "MySQL".equals(product) && ownedMySqlSchema != null && ownedMySqlSchema.equals(catalog);
+        if (!h2Mem && !ownedMySql) {
+            throw new IllegalStateException("Refusing to clear test data: " + product + " database " + catalog
+                    + " is neither in-memory H2 nor the MySQL schema created by this test run");
+        }
+    }
+
+    static void reset(JdbcClient db, DataSource ds) throws SQLException {
+        try (Connection c = ds.getConnection()) {
+            requireDisposable(c.getMetaData().getDatabaseProductName(), c.getMetaData().getURL(), c.getCatalog());
+        }
         REPLIES.clear();
         AUTH_HEADERS.clear();
         for (String t : List.of("dependency", "snapshot", "repo_branch", "import_run", "release_cycle", "product_identifier", "product", "sync_status")) {

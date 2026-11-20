@@ -3,8 +3,8 @@ package dev.eolledger;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor;
+import org.springframework.test.context.TestPropertySource;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,8 +27,7 @@ class SchedulingTest {
     }
 
     @Nested
-    @SpringBootTest
-    class Disabled {
+    class Disabled extends IntegrationTest {
         @Autowired ScheduledAnnotationBeanPostProcessor scheduler;
 
         @Test
@@ -38,8 +37,8 @@ class SchedulingTest {
     }
 
     @Nested
-    @SpringBootTest(properties = "eol.jobs.repo-refresh.cron=0 0 4 * * *")
-    class OnlyRefreshEnabled {
+    @TestPropertySource(properties = "eol.jobs.repo-refresh.cron=0 0 4 * * *")
+    class OnlyRefreshEnabled extends IntegrationTest {
         @Autowired ScheduledAnnotationBeanPostProcessor scheduler;
 
         @Test

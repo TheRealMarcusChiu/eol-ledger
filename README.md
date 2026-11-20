@@ -96,6 +96,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX, REFERENCES ON eol_ledger.* 
   (the app turns on strict SQL mode for its own sessions). The long identities (`repo_url`+`branch`,
   `product`+`purl`) are kept unique through a stored SHA-256 key column; lookups still compare the
   full values.
+* Run **one app instance per database**. Imports and syncs are serialized inside one process only.
 * **Switching is not migration.** Choosing MySQL starts with an empty database: run **Update EoL
   data** and import your registry CSV again (history starts from that import). Nothing is copied
   between databases. The H2 file is left untouched; start without the `mysql` profile to use it again.
@@ -135,7 +136,11 @@ served by a loopback test server.
 
 ### Real MySQL tests (opt-in)
 
-`mvn verify` runs only against in-memory H2; `MySqlStorageTest` is reported as skipped. To run the
+`mvn verify` runs only against in-memory H2; `MySqlStorageTest` is reported as skipped. The test base
+pins the profile and the in-memory H2 datasource above environment variables and `-D` properties, so
+a shell exported for production MySQL (`SPRING_PROFILES_ACTIVE`, `MYSQL_URL`, `SPRING_DATASOURCE_URL`)
+cannot redirect it, and the per-test cleanup refuses to delete from anything other than in-memory H2
+or the MySQL schema the run itself created. To run the
 same storage contract against a real, **dedicated test** MySQL 8 server:
 
 ```sql

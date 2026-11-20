@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * databases named eol_test_*. Each run creates one fresh eol_test_&lt;random&gt; database, uses only that, and drops only it.
  */
 @EnabledIfEnvironmentVariable(named = "EOL_TEST_MYSQL_URL", matches = ".+")
-@ActiveProfiles("mysql")
+@ActiveProfiles(value = "mysql", inheritProfiles = false)
 @DirtiesContext
 class MySqlStorageTest extends StorageContractTest {
 
@@ -49,8 +49,9 @@ class MySqlStorageTest extends StorageContractTest {
 
     @DynamicPropertySource
     static void mysql(DynamicPropertyRegistry r) throws SQLException {
-        admin("CREATE DATABASE `" + SCHEMA + "`");
+        admin("CREATE DATABASE `" + SCHEMA + "`"); // no IF NOT EXISTS: an existing schema is never adopted
         created = true;
+        TestSupport.ownedMySqlSchema = SCHEMA;
         r.add("spring.datasource.url", () -> url(SCHEMA));
         r.add("spring.datasource.username", () -> System.getenv("EOL_TEST_MYSQL_USER"));
         r.add("spring.datasource.password", () -> System.getenv("EOL_TEST_MYSQL_PASSWORD"));
@@ -58,8 +59,20 @@ class MySqlStorageTest extends StorageContractTest {
 
     @AfterAll
     static void dropOwnSchema() throws SQLException {
+        TestSupport.ownedMySqlSchema = null;
         if (created) admin("DROP DATABASE `" + SCHEMA + "`");
     }
+
+    @Test
+    void runsWithTheMysqlProfileAndItsOwnDatasource() throws SQLException {
+        assertThat(env.getActiveProfiles()).containsExactly("mysql");
+        try (Connection c = dataSource.getConnection()) {
+            assertThat(c.getMetaData().getDatabaseProductName()).isEqualTo("MySQL");
+            assertThat(c.getCatalog()).isEqualTo(SCHEMA);
+        }
+    }
+
+    @Autowired org.springframework.core.env.Environment env;
 
     @Autowired DataSource dataSource;
 
