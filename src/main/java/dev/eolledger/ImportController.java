@@ -21,7 +21,6 @@ import org.springframework.web.servlet.view.RedirectView;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -37,14 +36,16 @@ public class ImportController {
     private final JdbcClient db;
     private final String catalogCron;
     private final String refreshCron;
+    private final DbTime time;
 
-    public ImportController(ImportService imports, CatalogService catalog, EolProperties props, JdbcClient db,
+    public ImportController(ImportService imports, CatalogService catalog, EolProperties props, JdbcClient db, DbTime time,
                             @Value("${eol.jobs.catalog-sync.cron:-}") String catalogCron,
                             @Value("${eol.jobs.repo-refresh.cron:-}") String refreshCron) {
         this.imports = imports;
         this.catalog = catalog;
         this.props = props;
         this.db = db;
+        this.time = time;
         this.catalogCron = catalogCron;
         this.refreshCron = refreshCron;
     }
@@ -63,7 +64,7 @@ public class ImportController {
         model.addAttribute("refreshCsv", props.refreshCsvPath());
         model.addAttribute("registered", db.sql("SELECT count(*) FROM repo_branch").query(Integer.class).single());
         model.addAttribute("runs", db.sql("SELECT ran_at, source, ok, rows_total, new_snapshots, message FROM import_run ORDER BY id DESC LIMIT 25")
-                .query((rs, i) -> new Run(rs.getObject(1, OffsetDateTime.class).toInstant(), rs.getString(2), rs.getBoolean(3),
+                .query((rs, i) -> new Run(time.read(rs, "ran_at"), rs.getString(2), rs.getBoolean(3),
                         rs.getInt(4), rs.getInt(5), rs.getString(6))).list());
         return "imports";
     }

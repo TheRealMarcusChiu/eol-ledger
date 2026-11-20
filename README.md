@@ -4,7 +4,8 @@ A local web app that shows which end-of-life (EoL) release cycles your repositor
 It reads a CSV registry of repository branches, fetches each branch's SBOM, matches packages to
 [endoflife.date](https://endoflife.date) release cycles and keeps a snapshot history per branch.
 
-Java 21 · Spring Boot 3.5 · Thymeleaf (server-rendered, one tiny script) · H2 file database. No external UI assets.
+Java 21 · Spring Boot 3.5 · Thymeleaf (server-rendered, one tiny script) · H2 file database by default,
+or an external MySQL 8 server (see [Database: H2 or MySQL](#database-h2-or-mysql)). No external UI assets.
 
 ## Build and run
 
@@ -17,7 +18,8 @@ Data is stored in `./data/eol-ledger.mv.db` (relative to the working directory).
 Health: `GET /actuator/health`.
 
 First steps:
-1. **Imports & sync → Sync catalogue now** (one HTTPS request to endoflife.date, about 3 MB).
+1. **Update EoL data** on the Release cycles page (same action as **Imports & sync → Sync catalogue now**;
+   one HTTPS request to endoflife.date, about 3 MB). The result and last success are shown on Imports & sync.
 2. **Import demo registry** (or upload your own CSV).
 3. Open **Release cycles**.
 
@@ -52,6 +54,52 @@ removed** (`eol.catalog.base-url` → `EOL_CATALOG_BASEURL`, `eol.sbom.hosts[0].
 | `eol.jobs.repo-refresh.cron` / `.zone` | `EOL_JOBS_REPOREFRESH_CRON` / `EOL_JOBS_REPOREFRESH_ZONE` | `-` (off) / `UTC` | Scheduled SBOM refresh |
 | `eol.refresh-csv-path` | `EOL_REFRESHCSVPATH` | blank | CSV re-imported by the refresh job; blank = refresh the stored registry |
 
+### Database: H2 or MySQL
+
+The database is chosen at startup; everything (catalogue products, their purl identifiers and release
+cycles, sync status, registered repository branches, snapshots, dependencies and import history) lives in that one
+database.
+
+* **H2 (default).** No settings needed. Uses `./data/eol-ledger.mv.db` and `schema.sql`, unchanged
+  from earlier versions, so an existing H2 file keeps working as it is.
+* **MySQL 8.0.17 or newer** (tested target: 8.x; 8.4 LTS recommended). Start with the `mysql` profile:
+
+```bash
+export SPRING_PROFILES_ACTIVE=mysql
+export MYSQL_URL='jdbc:mysql://db.example.com:3306/eol_ledger?sslMode=VERIFY_IDENTITY'
+export MYSQL_USER=eol_ledger
+export MYSQL_PASSWORD='paste-password-here'
+java -jar target/eol-ledger-0.1.0.jar
+```
+
+One-time setup on the MySQL server (as an administrator):
+
+```sql
+CREATE DATABASE eol_ledger CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_bin;
+CREATE USER 'eol_ledger'@'%' IDENTIFIED BY 'paste-password-here';
+-- CREATE/INDEX/REFERENCES are needed only for the app's CREATE TABLE IF NOT EXISTS at startup
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX, REFERENCES ON eol_ledger.* TO 'eol_ledger'@'%';
+```
+
+* `MYSQL_URL`, `MYSQL_USER` and `MYSQL_PASSWORD` are required. If one is missing or the server
+  cannot be reached, startup fails; it never falls back to H2. (`SPRING_DATASOURCE_URL` etc. also
+  work and take precedence.) Passwords are never shown in pages; database errors during an import
+  show a generic message and details go to the server log only.
+* **TLS:** use `sslMode=VERIFY_IDENTITY` (or `VERIFY_CA`) with a trusted server certificate for any
+  remote server. `sslMode=DISABLED` is only reasonable on loopback.
+* **Time zones:** no `serverTimezone`/`connectionTimeZone` setting is needed. Timestamps are stored as
+  UTC in `DATETIME(6)` by the app itself, with microsecond precision, so the server, session and
+  JVM time zones do not affect stored values or "as of" days.
+* At startup `schema-mysql.sql` creates missing tables only (`CREATE TABLE IF NOT EXISTS`); nothing
+  is dropped or altered. Tables are InnoDB with `utf8mb4_0900_bin`, so repository URLs, branches and
+  purls are exact and case-sensitive. Values longer than the columns are rejected, never truncated
+  (the app turns on strict SQL mode for its own sessions). The long identities (`repo_url`+`branch`,
+  `product`+`purl`) are kept unique through a stored SHA-256 key column; lookups still compare the
+  full values.
+* **Switching is not migration.** Choosing MySQL starts with an empty database: run **Update EoL
+  data** and import your registry CSV again (history starts from that import). Nothing is copied
+  between databases. The H2 file is left untouched; start without the `mysql` profile to use it again.
+
 ### Artifactory token setup
 
 ```bash
@@ -84,6 +132,25 @@ eol.refresh-csv-path=/srv/eol-ledger/registry.csv
 Failures keep the previous good data, appear on the Imports & sync page and are retried on the
 next run. Tests never enable the jobs and never contact the internet: the catalogue and SBOMs are
 served by a loopback test server.
+
+### Real MySQL tests (opt-in)
+
+`mvn verify` runs only against in-memory H2; `MySqlStorageTest` is reported as skipped. To run the
+same storage contract against a real, **dedicated test** MySQL 8 server:
+
+```sql
+CREATE USER 'eol_test'@'%' IDENTIFIED BY 'test-password';
+GRANT ALL ON `eol\_test\_%`.* TO 'eol_test'@'%';
+```
+
+```bash
+EOL_TEST_MYSQL_URL='jdbc:mysql://127.0.0.1:3307/?sslMode=DISABLED' \
+EOL_TEST_MYSQL_USER=eol_test EOL_TEST_MYSQL_PASSWORD='test-password' \
+mvn test -Dtest='MySqlStorageTest'
+```
+
+The URL names the server only (no database). Each run creates one new `eol_test_<random>` database,
+uses only that, and drops only that database at the end. It never touches other databases.
 
 ## Registry CSV
 
@@ -203,7 +270,9 @@ commercial support dates are not shown.
 
 EoL data comes from the endoflife.date API v1 (`/products/full`, or `/products/<name>`), which is
 generated from [github.com/endoflife-date/endoflife.date](https://github.com/endoflife-date/endoflife.date)
-(MIT licence). Each product's cycles and identifiers are replaced in one transaction only after
+(MIT licence). That project's README points to this API ([docs](https://endoflife.date/docs/api/v1/))
+as the way to consume its data, so the app does not clone or parse the repository itself. The
+**Update EoL data** button on the Release cycles page runs the same sync as the Imports & sync page. Each product's cycles and identifiers are replaced in one transaction only after
 that product parsed completely. A failed request or a malformed product keeps the previous data.
 Products missing from a later response are kept, not deleted. The sync status (last attempt, last
 success, errors) is shown on the Imports & sync page.

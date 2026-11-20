@@ -9,6 +9,19 @@
         <p class="lede">Upstream release cycles matched to the latest SBOM of each repository branch, ordered by end-of-life date.</p>
     </div>
 
+    <section class="panel" aria-labelledby="update-h">
+        <h2 id="update-h">EoL data</h2>
+        <form th:action="@{/catalog/sync}" method="post" aria-describedby="update-help">
+            <button type="submit">Update EoL data</button>
+        </form>
+        <p id="update-help" class="hint">Downloads the current release cycles from the official
+            <a href="https://endoflife.date/docs/api/v1/">endoflife.date API</a>, which is generated from the
+            <a href="https://github.com/endoflife-date/endoflife.date">endoflife-date/endoflife.date</a> GitHub project.
+            The result is shown on <a th:href="@{/imports}">Imports &amp; sync</a>; a failed update keeps the previous dates.
+            <span th:if="${status != null and status.succeededAt() != null}">Last successful update:
+                <span th:text="${@view.time(status.succeededAt())}">time</span>.</span></p>
+    </section>
+
     <div th:if="${catalogEmpty}" class="notice">
         The endoflife.date catalogue has not been synced yet, so nothing can be matched.
         <a th:href="@{/imports}">Sync the catalogue</a> from the imports page.

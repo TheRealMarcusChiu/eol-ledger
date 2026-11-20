@@ -8,7 +8,6 @@ import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -110,11 +109,13 @@ public class Ledger {
     private final JdbcClient db;
     private final EolProperties props;
     private final Clock clock;
+    private final DbTime time;
 
-    public Ledger(JdbcClient db, EolProperties props, Clock clock) {
+    public Ledger(JdbcClient db, EolProperties props, Clock clock, DbTime time) {
         this.db = db;
         this.props = props;
         this.clock = clock;
+        this.time = time;
     }
 
     public ZoneId zone() {
@@ -153,8 +154,10 @@ public class Ledger {
     }
 
     private static Cycle cycle(ResultSet rs) throws SQLException {
+        boolean eol = rs.getBoolean("is_eol");
+        Boolean isEol = rs.wasNull() ? null : eol;
         return new Cycle(rs.getString("product"), rs.getString("plabel"), rs.getString("html_link"), rs.getString("name"), rs.getString("label"),
-                rs.getObject("release_date", LocalDate.class), (Boolean) rs.getObject("is_eol"), rs.getObject("eol_from", LocalDate.class),
+                rs.getObject("release_date", LocalDate.class), isEol, rs.getObject("eol_from", LocalDate.class),
                 rs.getString("latest"), rs.getObject("latest_date", LocalDate.class));
     }
 
@@ -166,7 +169,7 @@ public class Ledger {
 
     public Product product(String name) {
         return db.sql("SELECT name, label, html_link, synced_at FROM product WHERE name = ?").param(name)
-                .query((rs, i) -> new Product(rs.getString(1), rs.getString(2), rs.getString(3), rs.getObject(4, OffsetDateTime.class).toInstant()))
+                .query((rs, i) -> new Product(rs.getString(1), rs.getString(2), rs.getString(3), time.read(rs, "synced_at")))
                 .optional().orElse(null);
     }
 
@@ -196,10 +199,11 @@ public class Ledger {
         return db.sql(BRANCH_SQL + " WHERE b.id = ?").param(id).query((rs, i) -> branch(rs)).optional().orElse(null);
     }
 
-    private static Branch branch(ResultSet rs) throws SQLException {
-        OffsetDateTime t = rs.getObject("observed_at", OffsetDateTime.class);
+    private Branch branch(ResultSet rs) throws SQLException {
+        long snap = rs.getLong("snap_id");
+        Long snapId = rs.wasNull() ? null : snap;
         return new Branch(rs.getLong("id"), rs.getString("repo_name"), rs.getString("repo_url"), rs.getString("provider"), rs.getString("branch"),
-                rs.getString("sbom_url"), (Long) rs.getObject("snap_id"), t == null ? null : t.toInstant(), rs.getInt("deps"));
+                rs.getString("sbom_url"), snapId, time.read(rs, "observed_at"), rs.getInt("deps"));
     }
 
     public List<Dep> deps(long snapshotId) {
@@ -319,8 +323,10 @@ public class Ledger {
     // ---- history --------------------------------------------------------------------------
 
     public List<Snap> timeline(long branchId) {
-        List<Map<String, Object>> snaps = db.sql("SELECT id, observed_at, sbom_url FROM snapshot WHERE branch_id = ? ORDER BY observed_at, id")
-                .param(branchId).query().listOfRows();
+        record Row(long id, Instant observedAt, String sbomUrl) {
+        }
+        List<Row> snaps = db.sql("SELECT id, observed_at, sbom_url FROM snapshot WHERE branch_id = ? ORDER BY observed_at, id")
+                .param(branchId).query((rs, i) -> new Row(rs.getLong("id"), time.read(rs, "observed_at"), rs.getString("sbom_url"))).list();
         // identity -> sorted set of versions per snapshot, so diffs never depend on row order
         Map<Long, Map<String, TreeSet<String>>> inventories = new HashMap<>();
         Map<Long, Integer> rowCounts = new HashMap<>();
@@ -335,12 +341,11 @@ public class Ledger {
                 });
         List<Snap> out = new ArrayList<>();
         Map<String, String> prev = Map.of();
-        for (Map<String, Object> s : snaps) {
-            long id = ((Number) s.get("ID")).longValue();
+        for (Row s : snaps) {
+            long id = s.id();
             Map<String, String> inv = new TreeMap<>();
             inventories.getOrDefault(id, Map.of()).forEach((k, versions) -> inv.put(k, String.join(", ", versions)));
-            out.add(new Snap(id, ((OffsetDateTime) s.get("OBSERVED_AT")).toInstant(), (String) s.get("SBOM_URL"),
-                    rowCounts.getOrDefault(id, 0), diff(prev, inv)));
+            out.add(new Snap(id, s.observedAt(), s.sbomUrl(), rowCounts.getOrDefault(id, 0), diff(prev, inv)));
             prev = inv;
         }
         return out;

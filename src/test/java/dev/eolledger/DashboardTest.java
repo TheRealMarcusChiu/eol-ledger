@@ -102,6 +102,19 @@ class DashboardTest extends WebTestBase {
     }
 
     @Test
+    void updateEolDataButtonPostsToTheExistingCsrfProtectedSyncAction() throws Exception {
+        String html = page("/");
+        int form = html.indexOf("action=\"/catalog/sync\"");
+        assertThat(form).isPositive();
+        String formHtml = html.substring(form, html.indexOf("</form>", form));
+        assertThat(formHtml).contains("method=\"post\"", "name=\"_csrf\"", "Update EoL data");
+        assertThat(html).contains("href=\"https://github.com/endoflife-date/endoflife.date\"", "href=\"https://endoflife.date/docs/api/v1/\"");
+        // the visible button really works without JS: same endpoint, 303 back to the status page; no CSRF token = refused
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/catalog/sync"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void todayFollowsClockInConfiguredZone() throws Exception {
         // 23:30 UTC on 19 Nov is already 20 Nov in Amsterdam
         CLOCK.now = java.time.Instant.parse("2026-11-19T23:30:00Z");

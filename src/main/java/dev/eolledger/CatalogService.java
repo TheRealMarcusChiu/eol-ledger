@@ -10,16 +10,15 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
 import java.net.URI;
-import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -52,12 +51,14 @@ public class CatalogService {
     private final TransactionTemplate tx;
     private final EolProperties props;
     private final Clock clock;
+    private final DbTime time;
 
-    public CatalogService(JdbcClient db, TransactionTemplate tx, EolProperties props, Clock clock) {
+    public CatalogService(JdbcClient db, TransactionTemplate tx, EolProperties props, Clock clock, DbTime time) {
         this.db = db;
         this.tx = tx;
         this.props = props;
         this.clock = clock;
+        this.time = time;
     }
 
     public SyncResult sync() {
@@ -108,8 +109,7 @@ public class CatalogService {
 
     public Status status() {
         return db.sql("SELECT attempted_at, succeeded_at, ok, message FROM sync_status WHERE job = 'catalog'")
-                .query((rs, i) -> new Status(instant(rs.getObject(1, OffsetDateTime.class)), instant(rs.getObject(2, OffsetDateTime.class)),
-                        rs.getBoolean(3), rs.getString(4)))
+                .query((rs, i) -> new Status(time.read(rs, "attempted_at"), time.read(rs, "succeeded_at"), rs.getBoolean(3), rs.getString(4)))
                 .optional().orElse(null);
     }
 
@@ -153,28 +153,35 @@ public class CatalogService {
     }
 
     private void save(ProductData p) {
-        Timestamp now = Timestamp.from(clock.instant());
+        Object now = time.param(clock.instant());
+        Map<String, Cycle> cycles = new LinkedHashMap<>(); // a repeated cycle name: last one wins
+        p.cycles().forEach(c -> cycles.put(c.name(), c));
         tx.executeWithoutResult(s -> {
             db.sql("DELETE FROM release_cycle WHERE product = ?").param(p.name()).update();
             db.sql("DELETE FROM product_identifier WHERE product = ?").param(p.name()).update();
-            db.sql("MERGE INTO product (name, label, html_link, synced_at) KEY (name) VALUES (?, ?, ?, ?)")
-                    .params(p.name(), p.label(), p.html(), now).update();
+            if (db.sql("SELECT count(*) FROM product WHERE name = ?").param(p.name()).query(Integer.class).single() == 0) {
+                db.sql("INSERT INTO product (name, label, html_link, synced_at) VALUES (?, ?, ?, ?)").params(p.name(), p.label(), p.html(), now).update();
+            } else {
+                db.sql("UPDATE product SET label = ?, html_link = ?, synced_at = ? WHERE name = ?").params(p.label(), p.html(), now, p.name()).update();
+            }
             for (String purl : p.purls()) {
                 db.sql("INSERT INTO product_identifier (product, purl) VALUES (?, ?)").params(p.name(), purl).update();
             }
-            for (Cycle c : p.cycles()) {
-                db.sql("MERGE INTO release_cycle (product, name, label, release_date, is_eol, eol_from, latest, latest_date) KEY (product, name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+            for (Cycle c : cycles.values()) {
+                db.sql("INSERT INTO release_cycle (product, name, label, release_date, is_eol, eol_from, latest, latest_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
                         .params(p.name(), c.name(), c.label(), c.releaseDate(), c.isEol(), c.eolFrom(), c.latest(), c.latestDate()).update();
             }
         });
     }
 
     private void recordStatus(Instant attempted, boolean ok, boolean anySuccess, String message) {
-        db.sql("MERGE INTO sync_status (job) KEY (job) VALUES ('catalog')").update();
+        if (db.sql("SELECT count(*) FROM sync_status WHERE job = 'catalog'").query(Integer.class).single() == 0) {
+            db.sql("INSERT INTO sync_status (job) VALUES ('catalog')").update();
+        }
         db.sql("UPDATE sync_status SET attempted_at = ?, ok = ?, message = ? WHERE job = 'catalog'")
-                .params(Timestamp.from(attempted), ok, message).update();
+                .params(time.param(attempted), ok, message).update();
         if (anySuccess) {
-            db.sql("UPDATE sync_status SET succeeded_at = ? WHERE job = 'catalog'").param(Timestamp.from(attempted)).update();
+            db.sql("UPDATE sync_status SET succeeded_at = ? WHERE job = 'catalog'").param(time.param(attempted)).update();
         }
     }
 
@@ -189,13 +196,5 @@ public class CatalogService {
         } catch (RuntimeException e) {
             throw new IllegalArgumentException("invalid date");
         }
-    }
-
-    static Instant instant(OffsetDateTime t) {
-        return t == null ? null : t.toInstant();
-    }
-
-    static OffsetDateTime utc(Instant i) {
-        return i.atOffset(ZoneOffset.UTC);
     }
 }

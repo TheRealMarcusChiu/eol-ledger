@@ -3,6 +3,7 @@ package dev.eolledger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Service;
@@ -17,7 +18,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -59,12 +59,14 @@ public class ImportService {
     private final TransactionTemplate tx;
     private final EolProperties props;
     private final Clock clock;
+    private final DbTime time;
 
-    public ImportService(JdbcClient db, TransactionTemplate tx, EolProperties props, Clock clock) {
+    public ImportService(JdbcClient db, TransactionTemplate tx, EolProperties props, Clock clock, DbTime time) {
         this.db = db;
         this.tx = tx;
         this.props = props;
         this.clock = clock;
+        this.time = time;
     }
 
     public Result importCsv(String csv, String source) {
@@ -120,11 +122,20 @@ public class ImportService {
             throw new ImportFailedException(errors);
         }
         Instant now = clock.instant();
-        int created = tx.execute(s -> {
-            int n = 0;
-            for (Fetched f : fetched) n += store(f, now);
-            return n;
-        });
+        int created;
+        try {
+            created = tx.execute(s -> {
+                int n = 0;
+                for (Fetched f : fetched) n += store(f, now);
+                return n;
+            });
+        } catch (DataAccessException e) {
+            // details stay in the server log; the UI and import history get a message without SQL or connection details
+            log.warn("Import from {} rolled back", source, e);
+            String msg = "Database write failed, so nothing was changed (for example a value longer than the database allows); see the server log";
+            recordRun(source, false, rows.size(), 0, msg);
+            throw new ImportFailedException(List.of(msg));
+        }
         String msg = rows.size() + " row(s) imported, " + created + " new snapshot(s), " + (rows.size() - created) + " unchanged";
         recordRun(source, true, rows.size(), created, msg);
         return new Result(rows.size(), created, msg);
@@ -132,15 +143,24 @@ public class ImportService {
 
     private int store(Fetched f, Instant now) {
         RegistryCsv.Row r = f.row();
-        db.sql("MERGE INTO repo_branch (repo_url, branch, repo_name, provider, sbom_url) KEY (repo_url, branch) VALUES (?, ?, ?, ?, ?)")
-                .params(r.repoUrl(), r.branch(), r.repoName(), r.provider(), r.sbomUrl()).update();
-        long branchId = db.sql("SELECT id FROM repo_branch WHERE repo_url = ? AND branch = ?").params(r.repoUrl(), r.branch()).query(Long.class).single();
+        // shortcut: repo_url/branch lookup has no usable index on MySQL (too long); fine for thousands of branches, add a digest column lookup beyond that.
+        Long existing = db.sql("SELECT id FROM repo_branch WHERE repo_url = ? AND branch = ?").params(r.repoUrl(), r.branch()).query(Long.class).optional().orElse(null);
+        long branchId;
+        if (existing != null) {
+            branchId = existing;
+            db.sql("UPDATE repo_branch SET repo_name = ?, provider = ?, sbom_url = ? WHERE id = ?").params(r.repoName(), r.provider(), r.sbomUrl(), branchId).update();
+        } else {
+            var branchKey = new GeneratedKeyHolder();
+            db.sql("INSERT INTO repo_branch (repo_url, branch, repo_name, provider, sbom_url) VALUES (?, ?, ?, ?, ?)")
+                    .params(r.repoUrl(), r.branch(), r.repoName(), r.provider(), r.sbomUrl()).update(branchKey, "id");
+            branchId = branchKey.getKey().longValue();
+        }
         String latest = db.sql("SELECT fingerprint FROM snapshot WHERE branch_id = ? ORDER BY observed_at DESC, id DESC LIMIT 1")
                 .param(branchId).query(String.class).optional().orElse(null);
         if (f.fingerprint().equals(latest)) return 0;
         var key = new GeneratedKeyHolder();
         db.sql("INSERT INTO snapshot (branch_id, observed_at, sbom_url, fingerprint) VALUES (?, ?, ?, ?)")
-                .params(branchId, Timestamp.from(now), r.sbomUrl(), f.fingerprint()).update(key, "id");
+                .params(branchId, time.param(now), r.sbomUrl(), f.fingerprint()).update(key, "id");
         long snapshotId = key.getKey().longValue();
         for (SbomParser.Dep d : f.deps()) {
             db.sql("INSERT INTO dependency (snapshot_id, name, version, purl) VALUES (?, ?, ?, ?)")
@@ -181,7 +201,7 @@ public class ImportService {
 
     private void recordRun(String source, boolean ok, int rows, int created, String message) {
         db.sql("INSERT INTO import_run (ran_at, source, ok, rows_total, new_snapshots, message) VALUES (?, ?, ?, ?, ?, ?)")
-                .params(Timestamp.from(clock.instant()), source, ok, rows, created, message.length() > 3900 ? message.substring(0, 3900) + "…" : message)
+                .params(time.param(clock.instant()), source, ok, rows, created, message.length() > 3900 ? message.substring(0, 3900) + "…" : message)
                 .update();
     }
 
