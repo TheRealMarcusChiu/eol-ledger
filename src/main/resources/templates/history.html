@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments :: head('History: ' + ${b.repoName()} + ' @ ' + ${b.branch()})}"></head>
+<body>
+<header th:replace="~{fragments :: nav('repos')}"></header>
+<main id="main">
+    <div class="page-head">
+        <p class="crumbs"><a th:href="@{/repos}">Repositories</a> /
+            <a th:href="@{/repos/{id}(id=${b.id()})}" th:text="${b.repoName()} + ' @ ' + ${b.branch()}">repo</a> / history</p>
+        <h1>Dependency history: <span th:text="${b.repoName()}">repo</span> @ <span th:text="${b.branch()}">main</span></h1>
+        <p class="lede">Packages exactly as observed in each SBOM snapshot. Days end at midnight in
+            <span th:text="${zone}">zone</span>.</p>
+    </div>
+
+    <form class="filters" method="get" th:action="@{/repos/{id}/history(id=${b.id()})}">
+        <div class="field">
+            <label for="asOf">As of the end of</label>
+            <input id="asOf" name="asOf" type="date" th:value="${asOf}">
+        </div>
+        <div class="actions">
+            <button type="submit">Show snapshot</button>
+            <a class="button-quiet" th:href="@{/repos/{id}/history(id=${b.id()})}">Today</a>
+        </div>
+    </form>
+
+    <div th:if="${error}" class="notice notice-error" role="alert" th:text="${error}">error</div>
+
+    <th:block th:unless="${error}">
+        <div th:if="${selected == null}" class="notice notice-warn" role="status">
+            No snapshot had been observed for this branch by the end of <strong th:text="${asOf}">day</strong>.
+            <span th:if="${first != null}">The first snapshot was observed <span th:text="${@view.time(first.observedAt())}">time</span>.</span>
+            Nothing is shown for this day because EoL Ledger does not invent dependencies it had not yet seen.
+        </div>
+
+        <th:block th:if="${selected != null}">
+            <h2>Snapshot observed <span th:text="${@view.time(selected.observedAt())}">time</span></h2>
+            <p class="notice">Packages are historical; EoL dates and status below use today's endoflife.date data,
+                not the data that was current on that day.</p>
+            <p class="small muted">SBOM: <code th:text="${selected.sbomUrl()}">url</code>. <span th:text="${selected.depCount()}">5</span> packages.</p>
+            <div th:replace="~{fragments :: depsTable(${deps}, ${b.id()})}"></div>
+        </th:block>
+    </th:block>
+
+    <h2>Snapshot timeline</h2>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Snapshot timeline">
+        <table>
+            <thead>
+            <tr>
+                <th scope="col">Observed</th>
+                <th scope="col" class="num">Packages</th>
+                <th scope="col">Changes from previous snapshot</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="s : ${timeline}" th:with="href=@{/repos/{id}/history(id=${b.id()},snapshot=${s.id()})}" th:attr="data-href=${href}"
+                th:classappend="${selected != null and selected.id() == s.id()} ? 'is-selected'">
+                <td class="date"><a th:href="${href}" th:text="${@view.time(s.observedAt())}">time</a>
+                    <span th:if="${selected != null and selected.id() == s.id()}" class="muted small">(shown)</span></td>
+                <td class="num" th:text="${s.depCount()}">5</td>
+                <td class="small">
+                    <span th:if="${s.diff().empty()}" class="muted">No package changes (SBOM location changed)</span>
+                    <ul class="plain">
+                        <li th:each="x : ${s.diff().added()}" class="diff-add" th:text="'Added ' + ${x}">added</li>
+                        <li th:each="x : ${s.diff().removed()}" class="diff-rem" th:text="'Removed ' + ${x}">removed</li>
+                        <li th:each="x : ${s.diff().changed()}" class="diff-chg" th:text="'Changed ' + ${x}">changed</li>
+                    </ul>
+                </td>
+            </tr>
+            <tr th:if="${timeline.isEmpty()}"><td colspan="3" class="empty">No snapshots yet.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>

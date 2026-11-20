@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments :: head('Repositories')}"></head>
+<body>
+<header th:replace="~{fragments :: nav('repos')}"></header>
+<main id="main">
+    <div class="page-head">
+        <h1>Repositories</h1>
+        <p class="lede"><span th:text="${repoCount}">3</span> repositories, <span th:text="${branches.size()}">4</span> tracked branches.
+            Each branch keeps its own snapshot history.</p>
+    </div>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Repository branches">
+        <table>
+            <thead>
+            <tr>
+                <th scope="col">Repository</th>
+                <th scope="col">Branch</th>
+                <th scope="col">Provider</th>
+                <th scope="col" class="num">Packages</th>
+                <th scope="col">Latest snapshot</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="b : ${branches}" th:with="href=@{/repos/{id}(id=${b.id()})}" th:attr="data-href=${href}">
+                <td><span th:text="${b.repoName()}">name</span><br><span class="small muted" th:text="${b.repoUrl()}">url</span></td>
+                <td><a th:href="${href}" th:text="${b.branch()}">main</a></td>
+                <td th:text="${b.provider()}">gitlab</td>
+                <td class="num" th:text="${b.depCount()}">5</td>
+                <td class="date small" th:text="${b.observedAt() != null} ? ${@view.time(b.observedAt())} : 'No snapshot yet'">time</td>
+            </tr>
+            <tr th:if="${branches.isEmpty()}">
+                <td colspan="5" class="empty">No repositories yet. <a th:href="@{/imports}">Import a registry CSV</a>.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>

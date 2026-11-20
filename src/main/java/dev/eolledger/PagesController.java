@@ -5,10 +5,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.List;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 @Controller
 public class PagesController {
@@ -57,6 +62,100 @@ public class PagesController {
         model.addAttribute("rows", ledger.dashboard(from, to, "desc".equals(sort), unused));
         model.addAttribute("unmatched", ledger.unmatchedCycleCount());
         return "dashboard";
+    }
+
+    /** All release cycles of a product, or one cycle's detail when {@code cycle} is given. */
+    @GetMapping("/products/{product}")
+    String product(@PathVariable String product, @RequestParam(required = false) String cycle, Model model) {
+        Ledger.Product p = ledger.product(product);
+        if (p == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown product");
+        List<Ledger.Cycle> cycles = ledger.productCycles(product);
+        model.addAttribute("product", p);
+        model.addAttribute("today", ledger.today());
+        if (cycle == null) {
+            model.addAttribute("cycles", cycles);
+            model.addAttribute("eols", cycles.stream().collect(Collectors.toMap(Ledger.Cycle::name, ledger::eol)));
+            model.addAttribute("repoCounts", ledger.repoCountsByCycle(product));
+            return "product";
+        }
+        Ledger.Cycle c = cycles.stream().filter(x -> x.name().equals(cycle)).findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown release cycle"));
+        List<Ledger.Affected> affected = ledger.affected(product, cycle);
+        model.addAttribute("cycle", c);
+        model.addAttribute("eol", ledger.eol(c));
+        model.addAttribute("affected", affected);
+        model.addAttribute("repoCount", affected.stream().map(a -> a.branch().repoUrl()).distinct().count());
+        model.addAttribute("installed", new TreeSet<>(affected.stream().map(a -> String.valueOf(a.dep().version())).toList()));
+        return "cycle";
+    }
+
+    @GetMapping("/repos")
+    String repos(Model model) {
+        List<Ledger.Branch> branches = ledger.branches();
+        model.addAttribute("branches", branches);
+        model.addAttribute("repoCount", branches.stream().map(Ledger.Branch::repoUrl).distinct().count());
+        model.addAttribute("zone", ledger.zone());
+        return "repos";
+    }
+
+    @GetMapping("/repos/{id}")
+    String branch(@PathVariable long id, Model model) {
+        Ledger.Branch b = requireBranch(id);
+        model.addAttribute("b", b);
+        model.addAttribute("zone", ledger.zone());
+        model.addAttribute("deps", b.snapshotId() == null ? List.of() : ledger.deps(b.snapshotId()));
+        return "branch";
+    }
+
+    @GetMapping("/repos/{id}/deps/{depId}")
+    String dependency(@PathVariable long id, @PathVariable long depId, Model model) {
+        Ledger.Branch b = requireBranch(id);
+        Ledger.Dep d = ledger.dep(id, depId);
+        if (d == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown dependency");
+        model.addAttribute("b", b);
+        model.addAttribute("d", d);
+        model.addAttribute("normalizedPurl", Matcher.normalizePurl(d.purl()));
+        return "dependency";
+    }
+
+    /** Dependency history: a chosen snapshot, or the latest one observed by the end of the as-of day. */
+    @GetMapping("/repos/{id}/history")
+    String history(@PathVariable long id, @RequestParam(required = false) String asOf, @RequestParam(required = false) Long snapshot,
+                   Model model, HttpServletResponse response) {
+        Ledger.Branch b = requireBranch(id);
+        List<Ledger.Snap> timeline = ledger.timeline(id);
+        model.addAttribute("b", b);
+        model.addAttribute("timeline", timeline);
+        model.addAttribute("zone", ledger.zone());
+        String dayText = asOf == null || asOf.isBlank() ? ledger.today().toString() : asOf.trim();
+        model.addAttribute("asOf", dayText);
+        Ledger.Snap selected;
+        if (snapshot != null) {
+            selected = timeline.stream().filter(s -> s.id() == snapshot).findFirst()
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown snapshot for this branch"));
+            model.addAttribute("asOf", selected.observedAt().atZone(ledger.zone()).toLocalDate().toString());
+        } else {
+            LocalDate day;
+            try {
+                day = parse(dayText, "As-of");
+            } catch (IllegalArgumentException e) {
+                response.setStatus(HttpStatus.BAD_REQUEST.value());
+                model.addAttribute("error", e.getMessage());
+                model.addAttribute("deps", List.of());
+                return "history";
+            }
+            selected = ledger.asOf(id, day);
+        }
+        model.addAttribute("selected", selected);
+        model.addAttribute("deps", selected == null ? List.of() : ledger.deps(selected.id()));
+        model.addAttribute("first", timeline.isEmpty() ? null : timeline.get(0));
+        return "history";
+    }
+
+    Ledger.Branch requireBranch(long id) {
+        Ledger.Branch b = ledger.branch(id);
+        if (b == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown repository branch");
+        return b;
     }
 
     private static LocalDate parse(String text, String label) {

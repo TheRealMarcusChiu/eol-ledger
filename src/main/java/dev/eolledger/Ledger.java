@@ -33,6 +33,13 @@ public class Ledger {
 
     public record Branch(long id, String repoName, String repoUrl, String provider, String branch, String sbomUrl,
                          Long snapshotId, Instant observedAt, int depCount) {
+        public String repoLink() {
+            return safeLink(repoUrl);
+        }
+
+        public String sbomLink() {
+            return safeLink(sbomUrl);
+        }
     }
 
     public record Cycle(String product, String productLabel, String productLink, String name, String label, LocalDate releaseDate,
@@ -139,6 +146,25 @@ public class Ledger {
         return new Cycle(rs.getString("product"), rs.getString("plabel"), rs.getString("html_link"), rs.getString("name"), rs.getString("label"),
                 rs.getObject("release_date", LocalDate.class), (Boolean) rs.getObject("is_eol"), rs.getObject("eol_from", LocalDate.class),
                 rs.getString("latest"), rs.getObject("latest_date", LocalDate.class));
+    }
+
+    public record Product(String name, String label, String htmlLink, Instant syncedAt) {
+        public String link() {
+            return safeLink(htmlLink);
+        }
+    }
+
+    public Product product(String name) {
+        return db.sql("SELECT name, label, html_link, synced_at FROM product WHERE name = ?").param(name)
+                .query((rs, i) -> new Product(rs.getString(1), rs.getString(2), rs.getString(3), rs.getObject(4, OffsetDateTime.class).toInstant()))
+                .optional().orElse(null);
+    }
+
+    /** Only http(s) URLs become links; anything else is shown as text. */
+    public static String safeLink(String url) {
+        if (url == null) return null;
+        String u = url.trim().toLowerCase(java.util.Locale.ROOT);
+        return (u.startsWith("https://") || u.startsWith("http://")) && !url.contains("@") ? url : null;
     }
 
     public boolean catalogEmpty() {

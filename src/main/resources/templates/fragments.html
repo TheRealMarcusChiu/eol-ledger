@@ -20,6 +20,42 @@
 
 <span th:fragment="eol(e)" class="eol" th:classappend="${'eol-' + e.css()}" th:text="${e.text()}">status</span>
 
+<div th:fragment="depsTable(deps, branchId)" class="table-wrap" tabindex="0" role="region" aria-label="Dependencies">
+    <table>
+        <thead>
+        <tr>
+            <th scope="col">Package</th>
+            <th scope="col">Installed version</th>
+            <th scope="col">Ecosystem / purl</th>
+            <th scope="col">Upstream cycle</th>
+            <th scope="col">EoL date</th>
+            <th scope="col">Status</th>
+            <th scope="col">Matching evidence</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="d : ${deps}"
+            th:with="detail=@{/repos/{b}/deps/{d}(b=${branchId},d=${d.id()})},
+                     href=${d.cycle() != null} ? @{/products/{p}(p=${d.cycle().product()},cycle=${d.cycle().name()})} : ${detail}"
+            th:attr="data-href=${href}">
+            <td><a th:href="${href}" th:text="${d.name()}">pkg</a></td>
+            <td th:text="${d.version() ?: 'not stated'}">1.0</td>
+            <td><span th:text="${d.ecosystem() ?: 'n/a'}">npm</span><br><code class="small muted" th:if="${d.purl()}" th:text="${d.purl()}">purl</code></td>
+            <td>
+                <span th:if="${d.cycle() != null}" th:text="${d.cycle().productLabel() + ' ' + d.cycle().name()}">React 18</span>
+                <span th:if="${d.cycle() == null and d.match().product() != null}" class="muted" th:text="${d.match().product() + ', cycle unknown'}">react</span>
+                <span th:if="${d.match().product() == null}" class="muted">No upstream mapping</span>
+            </td>
+            <td class="date" th:text="${d.cycle() == null} ? '' : (${d.cycle().eolFrom()} ?: 'Not published')">date</td>
+            <td th:insert="~{fragments :: eol(${d.eol()})}"></td>
+            <td class="small"><span th:text="${d.match().evidence()}">evidence</span>
+                <a th:href="${detail}" th:if="${d.cycle() != null}">Details</a></td>
+        </tr>
+        <tr th:if="${deps.isEmpty()}"><td colspan="7" class="empty">No packages in this snapshot.</td></tr>
+        </tbody>
+    </table>
+</div>
+
 <footer th:fragment="footer" class="footer">
     EoL dates from <a href="https://endoflife.date">endoflife.date</a>
     (<a href="https://github.com/endoflife-date/endoflife.date">source, MIT licence</a>).

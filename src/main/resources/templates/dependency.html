@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments :: head(${d.name()})}"></head>
+<body>
+<header th:replace="~{fragments :: nav('repos')}"></header>
+<main id="main">
+    <div class="page-head">
+        <p class="crumbs"><a th:href="@{/repos}">Repositories</a> /
+            <a th:href="@{/repos/{id}(id=${b.id()})}" th:text="${b.repoName()} + ' @ ' + ${b.branch()}">repo</a> /
+            <span th:text="${d.name()}">pkg</span></p>
+        <h1 th:text="${d.name()}">pkg</h1>
+    </div>
+    <section class="panel">
+        <dl class="facts">
+            <dt>Installed version</dt>
+            <dd><code th:text="${d.version() ?: 'not stated in SBOM'}">1.0</code></dd>
+            <dt>purl</dt>
+            <dd><code th:text="${d.purl() ?: 'none in SBOM'}">purl</code></dd>
+            <dt>Normalized identity</dt>
+            <dd><code th:text="${normalizedPurl ?: 'n/a (matched by package name only)'}">pkg:x/y</code></dd>
+            <dt>Ecosystem</dt>
+            <dd th:text="${d.ecosystem() ?: 'Unknown'}">npm</dd>
+            <dt>Upstream product</dt>
+            <dd>
+                <a th:if="${d.match().product() != null}" th:href="@{/products/{p}(p=${d.match().product()})}" th:text="${d.match().product()}">react</a>
+                <span th:if="${d.match().product() == null}">Not mapped to an endoflife.date product</span>
+            </dd>
+            <dt>Release cycle</dt>
+            <dd>
+                <a th:if="${d.cycle() != null}" th:href="@{/products/{p}(p=${d.cycle().product()},cycle=${d.cycle().name()})}" th:text="${d.cycle().name()}">18</a>
+                <span th:if="${d.cycle() == null}">Unknown</span>
+            </dd>
+            <dt>EoL status</dt>
+            <dd th:insert="~{fragments :: eol(${d.eol()})}"></dd>
+            <dt>Matching evidence</dt>
+            <dd th:text="${d.match().evidence()}">evidence</dd>
+        </dl>
+    </section>
+    <div class="notice" th:if="${d.cycle() == null}">
+        <p>EoL Ledger only matches a package when its purl is listed as an identifier by exactly one endoflife.date product,
+            or when you configure an explicit mapping. It never guesses from generic names or ecosystems.</p>
+        <p>If this package does belong to an upstream product, add a mapping such as
+            <code th:text="'eol.mappings=' + (${normalizedPurl} ?: ${d.name().toLowerCase()}) + '=<product>'">eol.mappings=...</code>
+            (environment variable <code>EOL_MAPPINGS</code>) and restart. Versions whose numbers do not start with a known cycle stay unknown.</p>
+    </div>
+</main>
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>

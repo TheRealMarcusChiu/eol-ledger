@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments :: head(${product.label()} + ' ' + ${cycle.name()})}"></head>
+<body>
+<header th:replace="~{fragments :: nav('dashboard')}"></header>
+<main id="main">
+    <div class="page-head">
+        <p class="crumbs"><a th:href="@{/}">Release cycles</a> /
+            <a th:href="@{/products/{p}(p=${product.name()})}" th:text="${product.label()}">Python</a> /
+            <span th:text="${cycle.name()}">3.10</span></p>
+        <h1 th:text="${product.label()} + ' ' + ${cycle.label() ?: cycle.name()}">Python 3.10</h1>
+    </div>
+
+    <section class="panel" aria-labelledby="facts-h">
+        <h2 id="facts-h" class="sr-only">Release cycle facts</h2>
+        <dl class="facts">
+            <dt>EoL date</dt>
+            <dd><span th:text="${cycle.eolFrom() ?: 'Not published upstream'}">2026-10-31</span>
+                <span th:insert="~{fragments :: eol(${eol})}"></span></dd>
+            <dt>Released</dt>
+            <dd th:text="${cycle.releaseDate() ?: 'Unknown'}">2021-10-04</dd>
+            <dt>Latest upstream patch</dt>
+            <dd th:text="${cycle.latest() != null} ? ${cycle.latest()} + (${cycle.latestDate()} != null ? ' (' + ${cycle.latestDate()} + ')' : '') : 'Unknown'">3.10.19</dd>
+            <dt>Installed versions</dt>
+            <dd><span th:if="${installed.isEmpty()}" class="muted">Not installed in any latest snapshot</span>
+                <span th:each="v, s : ${installed}"><code th:text="${v}">3.10.5</code><span th:unless="${s.last}">, </span></span></dd>
+            <dt>Repositories</dt>
+            <dd><span th:text="${repoCount}">1</span> repositories, <span th:text="${affected.size()}">2</span> branch dependencies</dd>
+            <dt>Upstream source</dt>
+            <dd><a th:if="${product.link()}" th:href="${product.link()}" th:text="${product.link()}">link</a>
+                <span th:unless="${product.link()}">endoflife.date</span>
+                <span class="muted">(endoflife.date API, synced <span th:text="${@view.time(product.syncedAt())}">time</span>)</span></dd>
+        </dl>
+        <p class="hint">The cycle is the upstream release line; the installed version is the exact patch each branch's SBOM reports.</p>
+        <a class="button" th:href="@{/products/{p}(p=${product.name()})}">Show all versions</a>
+    </section>
+
+    <h2>Affected repository branches</h2>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Affected repository branches">
+        <table>
+            <thead>
+            <tr>
+                <th scope="col">Repository</th>
+                <th scope="col">Branch</th>
+                <th scope="col">Package</th>
+                <th scope="col">Installed version</th>
+                <th scope="col">Snapshot observed</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="a : ${affected}" th:with="href=@{/repos/{id}(id=${a.branch().id()})}" th:attr="data-href=${href}">
+                <td><span th:text="${a.branch().repoName()}">repo</span><br><span class="small muted" th:text="${a.branch().repoUrl()}">url</span></td>
+                <td><a th:href="${href}" th:text="${a.branch().branch()}">main</a></td>
+                <td th:text="${a.dep().name()}">python</td>
+                <td><code th:text="${a.dep().version()}">3.10.5</code></td>
+                <td class="date small" th:text="${@view.time(a.branch().observedAt())}">time</td>
+            </tr>
+            <tr th:if="${affected.isEmpty()}"><td colspan="5" class="empty">No repository branch uses this cycle in its latest snapshot.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>

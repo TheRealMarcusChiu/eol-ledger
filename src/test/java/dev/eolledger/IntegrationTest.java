@@ -6,6 +6,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -17,6 +18,7 @@ import java.time.Clock;
 /** Base for Spring integration tests: one shared context, loopback catalogue, settable clock, clean DB. */
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(IntegrationTest.ClockConfig.class)
 abstract class IntegrationTest {
 
     static final TestSupport.MutableClock CLOCK = new TestSupport.MutableClock();
