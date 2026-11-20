@@ -126,6 +126,44 @@ class MatcherTest {
     }
 
     @Test
+    void purlVersionIsDecodedFromTheFinalSegmentKeepingPlusAndScope() {
+        assertThat(Matcher.purlVersion("pkg:npm/%40angular/core@17.0.0%2Bbuild.1?x=1#sub")).isEqualTo("17.0.0+build.1");
+        assertThat(Matcher.purlVersion("pkg:maven/a/b@1.0+2")).isEqualTo("1.0+2");
+        assertThat(Matcher.purlVersion("pkg:npm/@angular/core@16.2.12")).isEqualTo("16.2.12");
+        assertThat(Matcher.purlVersion("pkg:npm/@angular/core")).isNull();
+        assertThat(Matcher.purlVersion("pkg:npm/react@")).isNull();
+        assertThat(Matcher.purlVersion("pkg:npm/react@%ZZ")).isNull();
+        assertThat(Matcher.purlVersion(null)).isNull();
+    }
+
+    @Test
+    void conflictingComponentAndPurlVersionsKeepProductButGuessNoCycle() {
+        Matcher.Match m = matcher.match("spring-boot", "3.5.2", "pkg:maven/org.springframework.boot/spring-boot@3.4.1");
+        assertThat(m.product()).isEqualTo("spring-boot");
+        assertThat(m.cycle()).isNull();
+        assertThat(m.evidence()).contains("conflicts", "3.5.2", "3.4.1");
+    }
+
+    @Test
+    void agreeingVersionsMatchNormally() {
+        assertThat(matcher.match("spring-boot", "3.5.2", "pkg:maven/org.springframework.boot/spring-boot@3.5.2").cycle()).isEqualTo("3.5");
+    }
+
+    @Test
+    void missingComponentVersionFallsBackToPurlVersion() {
+        Matcher.Match m = matcher.match("spring-boot", null, "pkg:maven/org.springframework.boot/spring-boot@3.4.1");
+        assertThat(m.cycle()).isEqualTo("3.4");
+        assertThat(m.evidence()).contains("from the purl");
+    }
+
+    @Test
+    void versionlessPurlAndNoVersionInfersNothing() {
+        Matcher.Match m = matcher.match("spring-boot", null, "pkg:maven/org.springframework.boot/spring-boot");
+        assertThat(m.product()).isEqualTo("spring-boot");
+        assertThat(m.cycle()).isNull();
+    }
+
+    @Test
     void knownProductButUnmatchedCycleStaysUnknown() {
         Matcher.Match m = matcher.match("react", "nightly", "pkg:npm/react@nightly");
         assertThat(m.product()).isEqualTo("react");

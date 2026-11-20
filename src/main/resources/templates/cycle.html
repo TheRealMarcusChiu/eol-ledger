@@ -52,7 +52,7 @@
                 <td><span th:text="${a.branch().repoName()}">repo</span><br><span class="small muted" th:text="${a.branch().repoUrl()}">url</span></td>
                 <td><a th:href="${href}" th:text="${a.branch().branch()}">main</a></td>
                 <td th:text="${a.dep().name()}">python</td>
-                <td><code th:text="${a.dep().version()}">3.10.5</code></td>
+                <td><code th:text="${a.dep().displayVersion()}">3.10.5</code></td>
                 <td class="date small" th:text="${@view.time(a.branch().observedAt())}">time</td>
             </tr>
             <tr th:if="${affected.isEmpty()}"><td colspan="5" class="empty">No repository branch uses this cycle in its latest snapshot.</td></tr>

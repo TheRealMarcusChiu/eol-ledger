@@ -188,7 +188,13 @@ version (`3.10.5` → `3.10`, never `3.1`; `18.2.0` → `18`). Only plain releas
 digits and dots, an optional leading `v`, and the vendor suffixes `.Final`, `.RELEASE` and `.GA`
 (e.g. `6.4.4.Final`). Pre-releases and anything else (`3.10.0-rc1`, `6.0.0-SNAPSHOT`, `1.0.0+build`,
 `3.10evil`, `nightly`) are not guessed, because upstream support policy for them is unknown.
-Non-numeric cycles (code names) are never guessed either. In both cases the package shows its
+Non-numeric cycles (code names) are never guessed either.
+
+The version used is the SBOM record's own version. If it is missing, the purl's version (after
+`@` in the last segment, percent-decoded, `+` kept) is used and shown as "x (from purl)". If both
+are present and differ, the product is still shown but **no cycle or EoL date is assigned**; the
+version shows as "x (purl: y)" and the evidence names the conflict. This is applied when pages are
+rendered, so data imported by earlier builds is treated the same way. In both cases the package shows its
 product with "cycle unknown" and the evidence says why. Upstream boolean or null EoL values are kept as they are: "ended, date not
 published" is different from "no EoL date announced". Only upstream `eolFrom` is used. Extended or
 commercial support dates are not shown.

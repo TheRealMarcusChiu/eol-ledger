@@ -76,9 +76,16 @@ public class Ledger {
     }
 
     public record Dep(long id, String name, String version, String purl, String ecosystem, Matcher.Match match, Cycle cycle, Eol eol) {
-        String identity() {
-            String n = Matcher.normalizePurl(purl);
-            return n != null ? n : name.toLowerCase();
+        /** The stated version, else the purl's version; null when neither says. */
+        public String installedVersion() {
+            return version != null ? version : Matcher.purlVersion(purl);
+        }
+
+        /** Installed version with its provenance, e.g. "1.2 (from purl)" or "1.2 (purl: 1.3)" on a conflict. */
+        public String displayVersion() {
+            String fromPurl = Matcher.purlVersion(purl);
+            if (version == null) return fromPurl == null ? "not stated" : fromPurl + " (from purl)";
+            return fromPurl == null || fromPurl.equals(version) ? version : version + " (purl: " + fromPurl + ")";
         }
     }
 
@@ -314,21 +321,26 @@ public class Ledger {
     public List<Snap> timeline(long branchId) {
         List<Map<String, Object>> snaps = db.sql("SELECT id, observed_at, sbom_url FROM snapshot WHERE branch_id = ? ORDER BY observed_at, id")
                 .param(branchId).query().listOfRows();
-        Map<Long, Map<String, String>> inventories = new HashMap<>();
-        db.sql("SELECT d.snapshot_id, d.name, d.version, d.purl FROM dependency d JOIN snapshot s ON s.id = d.snapshot_id WHERE s.branch_id = ?")
+        // identity -> sorted set of versions per snapshot, so diffs never depend on row order
+        Map<Long, Map<String, TreeSet<String>>> inventories = new HashMap<>();
+        Map<Long, Integer> rowCounts = new HashMap<>();
+        db.sql("SELECT d.snapshot_id, d.name, d.version, d.purl FROM dependency d JOIN snapshot s ON s.id = d.snapshot_id WHERE s.branch_id = ? ORDER BY d.id")
                 .param(branchId).query(rs -> {
                     String n = Matcher.normalizePurl(rs.getString("purl"));
                     String key = n != null ? n : rs.getString("name").toLowerCase();
+                    String version = rs.getString("version") != null ? rs.getString("version") : Matcher.purlVersion(rs.getString("purl"));
                     inventories.computeIfAbsent(rs.getLong("snapshot_id"), k -> new TreeMap<>())
-                            .merge(key, String.valueOf(rs.getString("version")), (a, b) -> a + ", " + b);
+                            .computeIfAbsent(key, k -> new TreeSet<>()).add(version == null ? "(no version)" : version);
+                    rowCounts.merge(rs.getLong("snapshot_id"), 1, Integer::sum);
                 });
         List<Snap> out = new ArrayList<>();
         Map<String, String> prev = Map.of();
         for (Map<String, Object> s : snaps) {
             long id = ((Number) s.get("ID")).longValue();
-            Map<String, String> inv = inventories.getOrDefault(id, Map.of());
+            Map<String, String> inv = new TreeMap<>();
+            inventories.getOrDefault(id, Map.of()).forEach((k, versions) -> inv.put(k, String.join(", ", versions)));
             out.add(new Snap(id, ((OffsetDateTime) s.get("OBSERVED_AT")).toInstant(), (String) s.get("SBOM_URL"),
-                    inv.values().stream().mapToInt(v -> v.split(", ").length).sum(), diff(prev, inv)));
+                    rowCounts.getOrDefault(id, 0), diff(prev, inv)));
             prev = inv;
         }
         return out;

@@ -85,7 +85,7 @@ public class PagesController {
         model.addAttribute("eol", ledger.eol(c));
         model.addAttribute("affected", affected);
         model.addAttribute("repoCount", affected.stream().map(a -> a.branch().repoUrl()).distinct().count());
-        model.addAttribute("installed", new TreeSet<>(affected.stream().map(a -> String.valueOf(a.dep().version())).toList()));
+        model.addAttribute("installed", new TreeSet<>(affected.stream().map(a -> a.dep().displayVersion()).toList()));
         return "cycle";
     }
 

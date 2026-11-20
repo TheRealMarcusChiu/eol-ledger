@@ -67,6 +67,15 @@ public final class Matcher {
                     ? "No catalogue identifier or mapping for package name " + name + " (no purl)"
                     : "No catalogue identifier or mapping for " + norm);
         }
+        String fromPurl = purlVersion(purl);
+        if (version != null && fromPurl != null && !version.equals(fromPurl)) {
+            return new Match(product, null, evidence + "; SBOM version " + version + " conflicts with purl version " + fromPurl
+                    + ", so no cycle is guessed");
+        }
+        if (version == null && fromPurl != null) {
+            version = fromPurl;
+            evidence += "; version " + version + " taken from the purl (the SBOM record states none)";
+        }
         String cycle = matchCycle(version, cyclesByProduct.getOrDefault(product, List.of()));
         if (cycle == null && !isPlainRelease(version)) {
             evidence += "; version " + version + " is not a plain release version (digits and dots, optional leading v or .Final/.RELEASE/.GA), so no cycle is guessed";
@@ -113,6 +122,20 @@ public final class Matcher {
             segments.add(s);
         }
         return "pkg:" + type + "/" + String.join("/", segments);
+    }
+
+    /** Percent-decoded version after '@' in the purl's final segment ('+' stays '+'), or null when absent or undecodable. */
+    static String purlVersion(String purl) {
+        if (purl == null) return null;
+        String p = purl.trim().replaceAll("[?#].*$", "");
+        int at = p.indexOf('@', p.lastIndexOf('/') + 1);
+        if (at < 0) return null;
+        try {
+            String v = URLDecoder.decode(p.substring(at + 1).replace("+", "%2B"), StandardCharsets.UTF_8);
+            return v.isBlank() ? null : v;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     /** True for digits-and-dots versions with an optional leading v and optional .Final/.RELEASE/.GA suffix. */

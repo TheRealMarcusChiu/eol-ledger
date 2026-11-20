@@ -42,7 +42,7 @@
                      href=${d.cycle() != null} ? @{/products/{p}(p=${d.cycle().product()},cycle=${d.cycle().name()})} : ${detail}"
             th:attr="data-href=${href}">
             <td><a th:href="${href}" th:text="${d.name()}">pkg</a></td>
-            <td th:text="${d.version() ?: 'not stated'}">1.0</td>
+            <td th:text="${d.displayVersion()}">1.0</td>
             <td><span th:text="${d.ecosystem() ?: 'n/a'}">npm</span><br><code class="small muted" th:if="${d.purl()}" th:text="${d.purl()}">purl</code></td>
             <td>
                 <span th:if="${d.cycle() != null}" th:text="${d.cycle().productLabel() + ' ' + d.cycle().name()}">React 18</span>

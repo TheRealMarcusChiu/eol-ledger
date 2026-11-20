@@ -13,7 +13,7 @@
     <section class="panel">
         <dl class="facts">
             <dt>Installed version</dt>
-            <dd><code th:text="${d.version() ?: 'not stated in SBOM'}">1.0</code></dd>
+            <dd><code th:text="${d.displayVersion()}">1.0</code></dd>
             <dt>purl</dt>
             <dd><code th:text="${d.purl() ?: 'none in SBOM'}">purl</code></dd>
             <dt>Normalized identity</dt>
