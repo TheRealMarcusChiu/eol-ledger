@@ -41,7 +41,7 @@ public record EolProperties(
     }
 
     public record Sbom(
-            @DefaultValue("") List<Host> hosts,
+            @DefaultValue List<Host> hosts,
             @DefaultValue("30s") Duration timeout,
             @DefaultValue("10485760") long maxBytes) {
     }
