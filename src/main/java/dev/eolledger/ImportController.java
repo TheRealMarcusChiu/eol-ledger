@@ -1,0 +1,134 @@
+package dev.eolledger;
+
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.view.RedirectView;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.function.Supplier;
+
+@Controller
+public class ImportController {
+
+    record Run(java.time.Instant ranAt, String source, boolean ok, int rows, int newSnapshots, String message) {
+    }
+
+    private final ImportService imports;
+    private final CatalogService catalog;
+    private final EolProperties props;
+    private final JdbcClient db;
+    private final String catalogCron;
+    private final String refreshCron;
+
+    public ImportController(ImportService imports, CatalogService catalog, EolProperties props, JdbcClient db,
+                            @Value("${eol.jobs.catalog-sync.cron:-}") String catalogCron,
+                            @Value("${eol.jobs.repo-refresh.cron:-}") String refreshCron) {
+        this.imports = imports;
+        this.catalog = catalog;
+        this.props = props;
+        this.db = db;
+        this.catalogCron = catalogCron;
+        this.refreshCron = refreshCron;
+    }
+
+    @GetMapping("/imports")
+    String page(Model model) {
+        model.addAttribute("header", RegistryCsv.HEADER);
+        model.addAttribute("providers", RegistryCsv.PROVIDERS);
+        model.addAttribute("hosts", props.sbom().hosts().stream().map(EolProperties.Host::host).toList());
+        model.addAttribute("status", catalog.status());
+        model.addAttribute("catalogBase", props.catalog().baseUrl());
+        model.addAttribute("catalogMode", props.catalog().products().stream().anyMatch(s -> !s.isBlank())
+                ? "configured products: " + String.join(", ", props.catalog().products()) : "whole catalogue (one request to /products/full)");
+        model.addAttribute("catalogCron", catalogCron);
+        model.addAttribute("refreshCron", refreshCron);
+        model.addAttribute("refreshCsv", props.refreshCsvPath());
+        model.addAttribute("registered", db.sql("SELECT count(*) FROM repo_branch").query(Integer.class).single());
+        model.addAttribute("runs", db.sql("SELECT ran_at, source, ok, rows_total, new_snapshots, message FROM import_run ORDER BY id DESC LIMIT 25")
+                .query((rs, i) -> new Run(rs.getObject(1, OffsetDateTime.class).toInstant(), rs.getString(2), rs.getBoolean(3),
+                        rs.getInt(4), rs.getInt(5), rs.getString(6))).list());
+        return "imports";
+    }
+
+    @PostMapping("/imports")
+    Object upload(@RequestParam(required = false) MultipartFile file, Model model, HttpServletResponse response, RedirectAttributes flash) throws IOException {
+        if (file == null || file.isEmpty()) return fail(List.of("Choose a CSV file to upload."), model, response);
+        String text = new String(file.getBytes(), StandardCharsets.UTF_8);
+        return run(() -> imports.importCsv(text, "upload " + safeName(file.getOriginalFilename())), model, response, flash);
+    }
+
+    @PostMapping("/imports/demo")
+    Object demo(@RequestParam String name, Model model, HttpServletResponse response, RedirectAttributes flash) {
+        if (!name.matches("demo-registry(-update)?\\.csv")) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        return run(() -> imports.importCsv(ImportService.sampleCsv(name), "bundled " + name), model, response, flash);
+    }
+
+    @PostMapping("/imports/refresh")
+    Object refresh(Model model, HttpServletResponse response, RedirectAttributes flash) {
+        return run(() -> imports.refreshRegistry("manual registry refresh"), model, response, flash);
+    }
+
+    @PostMapping("/catalog/sync")
+    RedirectView sync(RedirectAttributes flash) {
+        CatalogService.SyncResult r = catalog.sync();
+        flash.addFlashAttribute(r.ok() ? "message" : "warning", r.message());
+        return seeOther();
+    }
+
+    @GetMapping("/imports/samples/{name}")
+    ResponseEntity<String> sample(@PathVariable String name) {
+        if (!name.matches("demo-registry(-update)?\\.csv")) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        return ResponseEntity.ok()
+                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(name).build().toString())
+                .body(ImportService.sampleCsv(name));
+    }
+
+    private Object run(Supplier<ImportService.Result> action, Model model, HttpServletResponse response, RedirectAttributes flash) {
+        try {
+            flash.addFlashAttribute("message", action.get().message());
+            return seeOther();
+        } catch (RegistryCsv.InvalidCsvException e) {
+            return fail(e.errors(), model, response);
+        } catch (ImportService.ImportFailedException e) {
+            return fail(e.errors(), model, response);
+        }
+    }
+
+    private String fail(List<String> errors, Model model, HttpServletResponse response) {
+        response.setStatus(HttpStatus.BAD_REQUEST.value());
+        model.addAttribute("errors", errors);
+        return page(model);
+    }
+
+    private static String safeName(String name) {
+        if (name == null) return "";
+        String n = name.replaceAll("[^A-Za-z0-9._-]", "_");
+        return n.length() > 80 ? n.substring(0, 80) : n;
+    }
+
+    /** POST-redirect-GET with 303 so a browser reload never re-submits the form. */
+    private static RedirectView seeOther() {
+        RedirectView v = new RedirectView("/imports", true);
+        v.setStatusCode(HttpStatus.SEE_OTHER);
+        return v;
+    }
+}

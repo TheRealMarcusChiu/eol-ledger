@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments :: head('Imports & sync')}"></head>
+<body>
+<header th:replace="~{fragments :: nav('imports')}"></header>
+<main id="main">
+    <div class="page-head">
+        <h1>Imports &amp; sync</h1>
+        <p class="lede">Register repositories with a CSV, fetch their SBOMs, and keep the endoflife.date catalogue current.</p>
+    </div>
+
+    <div th:if="${message}" class="notice notice-ok" role="status" th:text="${message}">done</div>
+    <div th:if="${warning}" class="notice notice-warn" role="status" th:text="${warning}">warning</div>
+    <div th:if="${errors}" class="notice notice-error" role="alert">
+        <strong>Import rejected. Nothing was changed; existing repositories and snapshots are as they were.</strong>
+        <ul><li th:each="e : ${errors}" th:text="${e}">line 2: problem</li></ul>
+    </div>
+
+    <h2 id="upload-h">Upload a registry CSV</h2>
+    <section class="panel" aria-labelledby="upload-h">
+        <form method="post" th:action="@{/imports}" enctype="multipart/form-data" class="filters" style="border:0;padding:0;margin:0;background:none">
+            <div class="field">
+                <label for="file">Registry CSV file</label>
+                <input id="file" name="file" type="file" accept=".csv,text/csv" required>
+            </div>
+            <div class="actions"><button type="submit">Import CSV</button></div>
+        </form>
+        <p class="hint">The first line must be exactly <code th:text="${header}">header</code>.
+            One row per repository branch; <code>provider</code> is one of
+            <span th:text="${#strings.listJoin(providers, ', ')}">github</span>.
+            Listed rows are added or updated; repositories not in the file are left untouched (nothing is deleted).
+            Every row and every SBOM is checked before anything is saved; if one fails, the whole file is rejected.</p>
+        <p class="hint">SBOMs (CycloneDX JSON or SPDX 2.x JSON) are fetched over HTTPS from allowlisted hosts only:
+            <span th:if="${hosts.isEmpty()}">none configured yet (set <code>eol.sbom.hosts</code>)</span>
+            <code th:each="h, s : ${hosts}" th:text="${h} + (${s.last} ? '' : ',')">host</code>.
+            Tokens come from server configuration, never from the CSV.</p>
+    </section>
+
+    <h2 id="demo-h">Demo data</h2>
+    <section class="panel" aria-labelledby="demo-h">
+        <p class="small">The demo registry describes four <strong>fictional DEMO</strong> repository branches (GitLab, GitHub, Azure DevOps)
+            backed by SBOMs bundled with the app. EoL dates still come only from the real endoflife.date catalogue.</p>
+        <div class="actions">
+            <a class="button-quiet" th:href="@{/imports/samples/demo-registry.csv}" download>Download demo CSV</a>
+            <a class="button-quiet" th:href="@{/imports/samples/demo-registry-update.csv}" download>Download demo update CSV</a>
+            <form method="post" th:action="@{/imports/demo}" class="inline">
+                <input type="hidden" name="name" value="demo-registry.csv">
+                <button type="submit">Import demo registry</button>
+            </form>
+            <form method="post" th:action="@{/imports/demo}" class="inline">
+                <input type="hidden" name="name" value="demo-registry-update.csv">
+                <button type="submit">Import demo update</button>
+            </form>
+        </div>
+    </section>
+
+    <h2 id="refresh-h">Refresh registered repositories</h2>
+    <section class="panel" aria-labelledby="refresh-h">
+        <p class="small"><span th:text="${registered}">0</span> branches are registered. Refreshing re-fetches every stored SBOM URL;
+            a branch only gets a new snapshot when its packages or SBOM location changed.</p>
+        <form method="post" th:action="@{/imports/refresh}"><button type="submit">Refresh all now</button></form>
+        <p class="hint">Scheduled refresh: <code th:text="${refreshCron == '-'} ? 'disabled' : ${refreshCron}">cron</code>
+            <span th:if="${refreshCsv != null and !refreshCsv.isBlank()}">from configured CSV file</span>
+            <span th:unless="${refreshCsv != null and !refreshCsv.isBlank()}">from the stored registry</span>.</p>
+    </section>
+
+    <h2 id="sync-h">endoflife.date catalogue</h2>
+    <section class="panel" aria-labelledby="sync-h">
+        <dl class="facts">
+            <dt>Source</dt>
+            <dd><span th:text="${T(dev.eolledger.Ledger).safeLink(catalogBase) ?: '(invalid base URL)'}">url</span>,
+                <span th:text="${catalogMode}">mode</span></dd>
+            <dt>Last attempt</dt>
+            <dd th:text="${status == null} ? 'Never synced' : ${@view.time(status.attemptedAt())}">time</dd>
+            <dt>Last success</dt>
+            <dd th:text="${status == null or status.succeededAt() == null} ? 'None yet' : ${@view.time(status.succeededAt())}">time</dd>
+            <dt>Result</dt>
+            <dd><span th:if="${status != null}" class="eol" th:classappend="${status.ok()} ? 'eol-ok' : 'eol-soon'"
+                      th:text="${status.ok()} ? 'OK' : 'Problems'">OK</span>
+                <span th:text="${status?.message()}">message</span></dd>
+            <dt>Schedule</dt>
+            <dd><code th:text="${catalogCron == '-'} ? 'disabled' : ${catalogCron}">cron</code></dd>
+        </dl>
+        <form method="post" th:action="@{/catalog/sync}" style="margin-top:.8rem"><button type="submit">Sync catalogue now</button></form>
+        <p class="hint">A failed sync keeps the previously synced dates; each product is replaced only when its new data parsed completely.</p>
+    </section>
+
+    <h2>Import history</h2>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Import history">
+        <table>
+            <thead>
+            <tr><th scope="col">When</th><th scope="col">Source</th><th scope="col">Result</th>
+                <th scope="col" class="num">Rows</th><th scope="col" class="num">New snapshots</th><th scope="col">Details</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="r : ${runs}">
+                <td class="date small" th:text="${@view.time(r.ranAt())}">time</td>
+                <td th:text="${r.source()}">upload</td>
+                <td><span class="eol" th:classappend="${r.ok()} ? 'eol-ok' : 'eol-ended'" th:text="${r.ok()} ? 'Imported' : 'Rejected'">ok</span></td>
+                <td class="num" th:text="${r.rows()}">4</td>
+                <td class="num" th:text="${r.newSnapshots()}">4</td>
+                <td class="small" th:text="${r.message()}">message</td>
+            </tr>
+            <tr th:if="${runs.isEmpty()}"><td colspan="6" class="empty">No imports yet.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>
