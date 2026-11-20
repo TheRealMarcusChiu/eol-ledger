@@ -97,6 +97,9 @@ h3 { font-size: 1rem; margin: 1.25rem 0 .4rem; }
 }
 .filters { display: flex; flex-wrap: wrap; gap: .9rem 1.25rem; align-items: flex-end; }
 .filters .hint { flex-basis: 100%; margin: 0; }
+/* A filters-style form nested inside a panel: keep the layout, drop the second box. */
+.filters.filters-bare { border: 0; padding: 0; margin: 0; background: none; }
+.form-gap { margin-top: .8rem; }
 .field { display: flex; flex-direction: column; gap: .3rem; }
 .field label { font-size: .85rem; color: var(--muted); }
 .field-check { flex-direction: row; align-items: center; gap: .5rem; padding-bottom: .45rem; }
@@ -157,6 +160,7 @@ tr[data-href]:hover td, tr[data-href]:focus-within td { background: #1a2e4a; }
 td.num, th.num { text-align: right; }
 td.date { white-space: nowrap; }
 td.empty { color: var(--muted); padding: 1.25rem .8rem; }
+td.col-source, td.col-sbom { font-size: .82rem; min-width: 12rem; max-width: 20rem; overflow-wrap: anywhere; }
 code, .mono { font-family: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: .86em; overflow-wrap: anywhere; }
 .muted { color: var(--muted); }
 .small { font-size: .86rem; }

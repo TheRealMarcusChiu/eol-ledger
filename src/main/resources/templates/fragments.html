@@ -20,7 +20,8 @@
 
 <span th:fragment="eol(e)" class="eol" th:classappend="${'eol-' + e.css()}" th:text="${e.text()}">status</span>
 
-<div th:fragment="depsTable(deps, branchId)" class="table-wrap" tabindex="0" role="region" aria-label="Dependencies">
+<!--/* repoUrl/sbomUrl are shown as text; repoLink/sbomLink are their safe http(s) links or null. History passes the snapshot's own SBOM. */-->
+<div th:fragment="depsTable(deps, branchId, repoUrl, repoLink, sbomUrl, sbomLink)" class="table-wrap" tabindex="0" role="region" aria-label="Dependencies">
     <table>
         <thead>
         <tr>
@@ -31,6 +32,8 @@
             <th scope="col">EoL date</th>
             <th scope="col">Status</th>
             <th scope="col">Matching evidence</th>
+            <th scope="col">Source control</th>
+            <th scope="col">SBOM</th>
         </tr>
         </thead>
         <tbody>
@@ -50,8 +53,10 @@
             <td th:insert="~{fragments :: eol(${d.eol()})}"></td>
             <td class="small"><span th:text="${d.match().evidence()}">evidence</span>
                 <a th:href="${detail}" th:if="${d.cycle() != null}">Details</a></td>
+            <td class="col-source"><a th:if="${repoLink}" th:href="${repoLink}" th:text="${repoUrl}" rel="noopener noreferrer">repo</a><span th:unless="${repoLink}" th:text="${repoUrl}">repo</span></td>
+            <td class="col-sbom"><a th:if="${sbomLink}" th:href="${sbomLink}" th:text="${sbomUrl}" rel="noopener noreferrer">sbom</a><code th:unless="${sbomLink}" th:text="${sbomUrl}">classpath:samples/x.json</code></td>
         </tr>
-        <tr th:if="${deps.isEmpty()}"><td colspan="7" class="empty">No packages in this snapshot.</td></tr>
+        <tr th:if="${deps.isEmpty()}"><td colspan="9" class="empty">No packages in this snapshot.</td></tr>
         </tbody>
     </table>
 </div>

@@ -26,7 +26,7 @@
         </dl>
     </section>
     <h2>Dependencies in the latest snapshot</h2>
-    <div th:replace="~{fragments :: depsTable(${deps}, ${b.id()})}"></div>
+    <div th:replace="~{fragments :: depsTable(${deps}, ${b.id()}, ${b.repoUrl()}, ${b.repoLink()}, ${b.sbomUrl()}, ${b.sbomLink()})}"></div>
 </main>
 <footer th:replace="~{fragments :: footer}"></footer>
 </body>

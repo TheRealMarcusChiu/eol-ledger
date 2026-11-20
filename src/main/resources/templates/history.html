@@ -37,7 +37,7 @@
             <p class="notice">Packages are historical; EoL dates and status below use today's endoflife.date data,
                 not the data that was current on that day.</p>
             <p class="small muted">SBOM: <code th:text="${selected.sbomUrl()}">url</code>. <span th:text="${selected.depCount()}">5</span> packages.</p>
-            <div th:replace="~{fragments :: depsTable(${deps}, ${b.id()})}"></div>
+            <div th:replace="~{fragments :: depsTable(${deps}, ${b.id()}, ${b.repoUrl()}, ${b.repoLink()}, ${selected.sbomUrl()}, ${selected.sbomLink()})}"></div>
         </th:block>
     </th:block>
 

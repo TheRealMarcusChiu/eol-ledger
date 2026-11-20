@@ -18,7 +18,7 @@
 
     <h2 id="upload-h">Upload a registry CSV</h2>
     <section class="panel" aria-labelledby="upload-h">
-        <form method="post" th:action="@{/imports}" enctype="multipart/form-data" class="filters" style="border:0;padding:0;margin:0;background:none">
+        <form method="post" th:action="@{/imports}" enctype="multipart/form-data" class="filters filters-bare">
             <div class="field">
                 <label for="file">Registry CSV file</label>
                 <input id="file" name="file" type="file" accept=".csv,text/csv" required>
@@ -81,7 +81,7 @@
             <dt>Schedule</dt>
             <dd><code th:text="${catalogCron == '-'} ? 'disabled' : ${catalogCron}">cron</code></dd>
         </dl>
-        <form method="post" th:action="@{/catalog/sync}" style="margin-top:.8rem"><button type="submit">Sync catalogue now</button></form>
+        <form method="post" th:action="@{/catalog/sync}" class="form-gap"><button type="submit">Sync catalogue now</button></form>
         <p class="hint">A failed sync keeps the previously synced dates; each product is replaced only when its new data parsed completely.</p>
     </section>
 

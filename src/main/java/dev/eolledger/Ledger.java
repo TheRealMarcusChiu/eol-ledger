@@ -89,6 +89,9 @@ public class Ledger {
     }
 
     public record Snap(long id, Instant observedAt, String sbomUrl, int depCount, Diff diff) {
+        public String sbomLink() {
+            return safeLink(sbomUrl);
+        }
     }
 
     public record Diff(List<String> added, List<String> removed, List<String> changed) {
