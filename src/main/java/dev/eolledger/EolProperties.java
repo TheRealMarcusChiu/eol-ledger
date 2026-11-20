@@ -23,12 +23,15 @@ public record EolProperties(
         return zone.isBlank() ? ZoneId.systemDefault() : ZoneId.of(zone);
     }
 
-    /** "identity=product" entries, identity being a normalized purl or exact package name. */
+    /** "identity=product" entries: a purl (normalized like SBOM purls) or an exact, case-insensitive package name. */
     public Map<String, String> mappingTable() {
         Map<String, String> m = new HashMap<>();
         for (String entry : mappings) {
             int i = entry.lastIndexOf('=');
-            if (i > 0) m.put(entry.substring(0, i).trim().toLowerCase(Locale.ROOT), entry.substring(i + 1).trim());
+            if (i <= 0) continue;
+            String key = entry.substring(0, i).trim();
+            key = key.regionMatches(true, 0, "pkg:", 0, 4) ? Matcher.normalizePurl(key) : key.toLowerCase(Locale.ROOT);
+            if (key != null) m.put(key, entry.substring(i + 1).trim());
         }
         return m;
     }

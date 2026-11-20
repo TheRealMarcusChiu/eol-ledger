@@ -11,7 +11,16 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-/** Reads CycloneDX JSON (nested components) and SPDX 2.x JSON into a sorted, de-duplicated package list. */
+/**
+ * Reads CycloneDX JSON and SPDX 2.x JSON into a sorted, de-duplicated package list.
+ * Accepted profile (anything else rejects the whole SBOM, so a malformed file can never
+ * replace a good inventory): CycloneDX needs a top-level {@code components} array (empty = no
+ * packages), every component an object with a string {@code name}, optional string
+ * {@code group}/{@code version}/{@code purl} and an optional nested {@code components} array.
+ * SPDX needs a {@code packages} array of objects with a string {@code name}, optional string
+ * {@code versionInfo} and an optional {@code externalRefs} array whose purl locators are strings.
+ * A purl, when present, must be a well-formed {@code pkg:type/name}.
+ */
 public final class SbomParser {
 
     public record Dep(String name, String version, String purl) {
@@ -36,7 +45,7 @@ public final class SbomParser {
         if (root == null || !root.isObject()) throw new IllegalArgumentException("SBOM is not a JSON object");
         TreeSet<Dep> deps = new TreeSet<>(ORDER);
         if ("CycloneDX".equals(root.path("bomFormat").asText())) {
-            cyclone(root.path("components"), deps);
+            cyclone(array(root, "components", "CycloneDX"), "components", deps);
         } else if (root.path("spdxVersion").asText().startsWith("SPDX-2.")) {
             spdx(root, deps);
         } else {
@@ -45,14 +54,14 @@ public final class SbomParser {
         return new ArrayList<>(deps);
     }
 
-    private static void cyclone(JsonNode components, Set<Dep> out) {
-        for (JsonNode c : components) {
-            String name = text(c, "name");
-            if (name != null) {
-                String group = text(c, "group");
-                out.add(new Dep(group == null ? name : group + ":" + name, text(c, "version"), text(c, "purl")));
-            }
-            cyclone(c.path("components"), out);
+    private static void cyclone(JsonNode components, String where, Set<Dep> out) {
+        for (int i = 0; i < components.size(); i++) {
+            String at = where + "[" + i + "]";
+            JsonNode c = record(components.get(i), at);
+            String name = required(c, "name", at);
+            String group = optional(c, "group", at);
+            out.add(new Dep(group == null ? name : group + ":" + name, optional(c, "version", at), purl(optional(c, "purl", at), at)));
+            if (c.has("components")) cyclone(array(c, "components", at), at + ".components", out);
         }
     }
 
@@ -64,20 +73,53 @@ public final class SbomParser {
                 described.add(r.path("relatedSpdxElement").asText());
             }
         }
-        for (JsonNode p : root.path("packages")) {
-            String name = text(p, "name");
-            if (name == null || described.contains(p.path("SPDXID").asText())) continue;
+        JsonNode packages = array(root, "packages", "SPDX");
+        for (int i = 0; i < packages.size(); i++) {
+            String at = "packages[" + i + "]";
+            JsonNode p = record(packages.get(i), at);
+            String name = required(p, "name", at);
+            if (described.contains(p.path("SPDXID").asText())) continue;
             String purl = null;
-            for (JsonNode ref : p.path("externalRefs")) {
-                if ("purl".equals(ref.path("referenceType").asText())) purl = text(ref, "referenceLocator");
+            if (p.has("externalRefs")) {
+                JsonNode refs = array(p, "externalRefs", at);
+                for (int j = 0; j < refs.size(); j++) {
+                    String refAt = at + ".externalRefs[" + j + "]";
+                    JsonNode ref = record(refs.get(j), refAt);
+                    if ("purl".equals(ref.path("referenceType").asText())) purl = purl(required(ref, "referenceLocator", refAt), refAt);
+                }
             }
-            out.add(new Dep(name, text(p, "versionInfo"), purl));
+            out.add(new Dep(name, optional(p, "versionInfo", at), purl));
         }
     }
 
-    private static String text(JsonNode n, String field) {
-        String v = n.path(field).asText(null);
-        if (v == null || v.isBlank() || v.equals("NOASSERTION") || v.equals("NONE")) return null;
-        return v.trim();
+    private static JsonNode array(JsonNode parent, String field, String where) {
+        JsonNode a = parent.get(field);
+        if (a == null || !a.isArray()) throw new IllegalArgumentException("SBOM " + where + " must have a \"" + field + "\" array (use [] for none)");
+        return a;
+    }
+
+    private static JsonNode record(JsonNode n, String where) {
+        if (!n.isObject()) throw new IllegalArgumentException("SBOM " + where + " must be an object");
+        return n;
+    }
+
+    private static String required(JsonNode n, String field, String where) {
+        String v = optional(n, field, where);
+        if (v == null) throw new IllegalArgumentException("SBOM " + where + " has no \"" + field + "\"");
+        return v;
+    }
+
+    /** A string field, or null when absent, JSON null, blank, NOASSERTION or NONE. Any other type is rejected. */
+    private static String optional(JsonNode n, String field, String where) {
+        JsonNode v = n.get(field);
+        if (v == null || v.isNull()) return null;
+        if (!v.isTextual()) throw new IllegalArgumentException("SBOM " + where + " \"" + field + "\" must be a string");
+        String s = v.asText().trim();
+        return s.isEmpty() || s.equals("NOASSERTION") || s.equals("NONE") ? null : s;
+    }
+
+    private static String purl(String purl, String where) {
+        if (purl != null && Matcher.normalizePurl(purl) == null) throw new IllegalArgumentException("SBOM " + where + " has a malformed purl");
+        return purl;
     }
 }

@@ -196,6 +196,87 @@ class ImportServiceTest extends IntegrationTest {
         assertThat(db.sql("SELECT count(DISTINCT repo_url) FROM repo_branch").query(Integer.class).single()).isEqualTo(3);
     }
 
+    /** Imports a good inventory, then asserts {@code badSbom} is rejected and the good latest snapshot is untouched. */
+    void assertRejectedKeepingPriorInventory(String badSbom, String expectedMessage) {
+        String csv = HEADER + row("https://github.com/acme/web", "main", "/a.json");
+        serve("/a.json", cdx(comp("react", "18.2.0"), comp("left-pad", "1.3.0")));
+        imports.importCsv(csv, "upload");
+        serve("/a.json", badSbom);
+        CLOCK.now = CLOCK.now.plusSeconds(60);
+
+        assertThatThrownBy(() -> imports.importCsv(csv, "upload"))
+                .isInstanceOf(ImportService.ImportFailedException.class).hasMessageContaining(expectedMessage);
+
+        assertThat(count("snapshot")).isEqualTo(1);
+        assertThat(db.sql("SELECT name || '@' || version FROM dependency ORDER BY name").query(String.class).list())
+                .containsExactly("left-pad@1.3.0", "react@18.2.0");
+    }
+
+    @Test
+    void cycloneDxWithoutComponentsArrayKeepsPriorInventory() {
+        assertRejectedKeepingPriorInventory("{\"bomFormat\":\"CycloneDX\",\"specVersion\":\"1.5\"}", "components");
+        assertRejectedKeepingPriorInventory("{\"bomFormat\":\"CycloneDX\",\"components\":{\"name\":\"react\"}}", "components");
+    }
+
+    @Test
+    void spdxWithoutPackagesArrayKeepsPriorInventory() {
+        assertRejectedKeepingPriorInventory("{\"spdxVersion\":\"SPDX-2.3\",\"packages\":null}", "packages");
+    }
+
+    @Test
+    void malformedRecordsKeepPriorInventory() {
+        assertRejectedKeepingPriorInventory(cdx(comp("react", "18.3.1"), "{\"version\":\"1\"}"), "name");
+        assertRejectedKeepingPriorInventory("{\"spdxVersion\":\"SPDX-2.3\",\"packages\":[{\"name\":\"react\",\"versionInfo\":18}]}", "versionInfo");
+    }
+
+    @Test
+    void explicitEmptyComponentsIsAnIntentionalEmptySnapshot() {
+        String csv = HEADER + row("https://github.com/acme/web", "main", "/a.json");
+        serve("/a.json", cdx(comp("react", "18.2.0")));
+        imports.importCsv(csv, "upload");
+        serve("/a.json", cdx());
+        CLOCK.now = CLOCK.now.plusSeconds(60);
+
+        assertThat(imports.importCsv(csv, "upload").newSnapshots()).isEqualTo(1);
+        assertThat(db.sql("SELECT count(*) FROM dependency d JOIN snapshot s ON s.id = d.snapshot_id WHERE s.observed_at = ?")
+                .param(java.sql.Timestamp.from(CLOCK.now)).query(Integer.class).single()).isZero();
+    }
+
+    @Test
+    void allowlistedHostWithoutTokenFetchesUnauthenticated() {
+        serve("/public.json", cdx(comp("react", "18.2.0")));
+        String url = TestSupport.base().replace("127.0.0.1", "localhost") + "/public.json";
+
+        assertThat(imports.importCsv(HEADER + "Pub,https://github.com/acme/pub,github,main," + url + "\n", "upload").newSnapshots()).isEqualTo(1);
+        assertThat(TestSupport.AUTH_HEADERS).containsExactly("null");
+    }
+
+    @Test
+    void unterminatedQuoteRejectsUploadAndKeepsInventory() {
+        serve("/a.json", cdx(comp("react", "18.2.0")));
+        imports.importCsv(HEADER + row("https://github.com/acme/web", "main", "/a.json"), "upload");
+
+        assertThatThrownBy(() -> imports.importCsv(HEADER + "Web,https://github.com/acme/web,github,main,\"" + TestSupport.base() + "/a.json\n", "upload"))
+                .isInstanceOf(RegistryCsv.InvalidCsvException.class).hasMessageContaining("quote");
+
+        assertThat(count("snapshot")).isEqualTo(1);
+        assertThat(db.sql("SELECT ok FROM import_run ORDER BY id DESC LIMIT 1").query(Boolean.class).single()).isFalse();
+    }
+
+    @Test
+    void mavenCoordinatesDifferingOnlyInCaseStayDistinct() {
+        serve("/m.json", "{\"bomFormat\":\"CycloneDX\",\"components\":["
+                + "{\"name\":\"x\",\"version\":\"1\",\"purl\":\"pkg:maven/Org.Acme/x@1\"},"
+                + "{\"name\":\"x\",\"version\":\"1\",\"purl\":\"pkg:maven/org.acme/x@1\"}]}");
+        imports.importCsv(HEADER + row("https://github.com/acme/m", "main", "/m.json"), "upload");
+        long branch = db.sql("SELECT id FROM repo_branch").query(Long.class).single();
+
+        assertThat(count("dependency")).isEqualTo(2);
+        assertThat(ledger.timeline(branch).get(0).diff().added()).containsExactlyInAnyOrder("pkg:maven/Org.Acme/x 1", "pkg:maven/org.acme/x 1");
+    }
+
+    @Autowired Ledger ledger;
+
     @Test
     void registryRefreshRefetchesStoredBranches() {
         serve("/a.json", cdx(comp("react", "18.2.0")));

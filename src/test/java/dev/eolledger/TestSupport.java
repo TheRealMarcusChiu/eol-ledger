@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
 
 /** Shared test helpers: a loopback HTTP server with swappable responses, a settable clock, DB reset. */
 final class TestSupport {
@@ -39,6 +40,29 @@ final class TestSupport {
                 if (b.length > 0) ex.getResponseBody().write(b);
                 ex.close();
             });
+            // headers and a few bytes, then the body stalls
+            s.createContext("/stall", ex -> {
+                ex.sendResponseHeaders(200, 1000);
+                ex.getResponseBody().write(new byte[10]);
+                ex.getResponseBody().flush();
+                try {
+                    Thread.sleep(15_000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                ex.close();
+            });
+            // a chunked body far larger than any test cap
+            s.createContext("/huge", ex -> {
+                ex.sendResponseHeaders(200, 0);
+                for (int i = 0; i < 64; i++) ex.getResponseBody().write(new byte[4096]);
+                ex.close();
+            });
+            s.setExecutor(Executors.newCachedThreadPool(r -> {
+                Thread t = new Thread(r, "test-http");
+                t.setDaemon(true);
+                return t;
+            }));
             s.start();
             return s;
         } catch (IOException e) {

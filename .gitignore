@@ -2,5 +2,6 @@ target/
 data/
 *.mv.db
 *.trace.db
+*.log
 .idea/
 *.iml

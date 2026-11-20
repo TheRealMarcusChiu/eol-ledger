@@ -27,8 +27,48 @@ class MatcherTest {
     void normalizesPurlDroppingVersionQualifiersAndDecodingNamespace() {
         assertThat(Matcher.normalizePurl("pkg:npm/%40adonisjs/core@6.2.0?foo=bar#sub")).isEqualTo("pkg:npm/@adonisjs/core");
         assertThat(Matcher.normalizePurl("pkg:npm/@angular/core@17.0.0")).isEqualTo("pkg:npm/@angular/core");
-        assertThat(Matcher.normalizePurl("PKG:Maven/Org.Foo/Bar@1")).isEqualTo("pkg:maven/org.foo/bar");
         assertThat(Matcher.normalizePurl("not a purl")).isNull();
+        assertThat(Matcher.normalizePurl("pkg:npm")).isNull();
+        assertThat(Matcher.normalizePurl("pkg:/")).isNull();
+    }
+
+    @Test
+    void normalizationIsTypeAwareAndPreservesMavenCase() {
+        assertThat(Matcher.normalizePurl("PKG:Maven/Org.Foo/Bar@1")).isEqualTo("pkg:maven/Org.Foo/Bar");
+        assertThat(Matcher.normalizePurl("pkg:maven/org.foo/bar@1")).isNotEqualTo(Matcher.normalizePurl("pkg:maven/Org.Foo/Bar@1"));
+        assertThat(Matcher.normalizePurl("pkg:npm/%40Angular/Core@17")).isEqualTo("pkg:npm/@angular/core");
+        assertThat(Matcher.normalizePurl("pkg:pypi/Django_Rest@1")).isEqualTo("pkg:pypi/django-rest");
+        assertThat(Matcher.normalizePurl("pkg:generic/Python@3")).isEqualTo("pkg:generic/Python");
+        // an encoded slash inside a segment must not collide with a real path separator
+        assertThat(Matcher.normalizePurl("pkg:generic/a%2Fb@1")).isNotEqualTo(Matcher.normalizePurl("pkg:generic/a/b@1"));
+    }
+
+    @Test
+    void mavenCaseDifferenceIsNotMatched() {
+        Matcher m = new Matcher(Map.of("pkg:maven/log4j/log4j", Set.of("log4j")), Map.of("log4j", List.of("1")), Map.of());
+        assertThat(m.match("log4j", "1.2.17", "pkg:maven/log4j/log4j@1.2.17").product()).isEqualTo("log4j");
+        assertThat(m.match("log4j", "1.2.17", "pkg:maven/Log4j/log4j@1.2.17").product()).isNull();
+    }
+
+    @Test
+    void malformedPurlDoesNotFallBackToNameMatch() {
+        Matcher.Match m = matcher.match("react", "18.2.0", "react@18.2.0");
+        assertThat(m.product()).isNull();
+        assertThat(m.evidence()).contains("malformed purl");
+    }
+
+    @Test
+    void cycleMatchRejectsJunkAndPrereleaseButAllowsDocumentedSuffixes() {
+        assertThat(Matcher.matchCycle("3.10evil", List.of("3.10", "3"))).isNull();
+        assertThat(Matcher.matchCycle("3.10.0-rc1", List.of("3.10"))).isNull();
+        assertThat(Matcher.matchCycle("6.0.0-SNAPSHOT", List.of("6.0"))).isNull();
+        assertThat(Matcher.matchCycle("3.10.0+build5", List.of("3.10"))).isNull();
+        assertThat(Matcher.matchCycle("6.4.4.Final", List.of("6.4"))).isEqualTo("6.4");
+        assertThat(Matcher.matchCycle("4.3.2.RELEASE", List.of("4.3"))).isEqualTo("4.3");
+        assertThat(Matcher.matchCycle("V2.7.18", List.of("2.7"))).isEqualTo("2.7");
+        Matcher.Match m = matcher.match("react", "19.0.0-rc.1", "pkg:npm/react@19.0.0-rc.1");
+        assertThat(m.cycle()).isNull();
+        assertThat(m.evidence()).contains("not a plain release version");
     }
 
     @Test
@@ -90,6 +130,10 @@ class MatcherTest {
         Matcher.Match m = matcher.match("react", "nightly", "pkg:npm/react@nightly");
         assertThat(m.product()).isEqualTo("react");
         assertThat(m.cycle()).isNull();
-        assertThat(m.evidence()).contains("no release cycle");
+        assertThat(m.evidence()).contains("not a plain release version");
+        Matcher.Match unknownCycle = matcher.match("react", "99.0.0", "pkg:npm/react@99.0.0");
+        assertThat(unknownCycle.product()).isEqualTo("react");
+        assertThat(unknownCycle.cycle()).isNull();
+        assertThat(unknownCycle.evidence()).contains("no release cycle");
     }
 }

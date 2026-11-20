@@ -161,8 +161,8 @@ public class ImportService {
         }
         URI uri = URI.create(url);
         String token = props.sbom().hosts().stream()
-                .filter(h -> h.host().equalsIgnoreCase(uri.getHost().toLowerCase(Locale.ROOT)))
-                .map(EolProperties.Host::token).findFirst().orElse(null);
+                .filter(h -> h.host() != null && h.host().equalsIgnoreCase(uri.getHost()))
+                .findFirst().map(EolProperties.Host::token).orElse(null); // a host without a token is fetched unauthenticated
         return Http.get(uri, token, props.sbom().timeout(), props.sbom().maxBytes());
     }
 

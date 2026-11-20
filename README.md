@@ -30,15 +30,17 @@ Content-Security-Policy.
 
 ## Configuration
 
-Set values in `application.properties`, with `--name=value` arguments, or as environment variables
-(Spring relaxed binding: `eol.sbom.hosts[0].token` → `EOL_SBOM_HOSTS_0_TOKEN`).
+Set values in `application.properties`, with `--name=value` arguments, or as environment variables.
+Spring Boot's environment-variable rule: upper-case, `.` and `[n]` become `_`, and **dashes are
+removed** (`eol.catalog.base-url` → `EOL_CATALOG_BASEURL`, `eol.sbom.hosts[0].token` →
+`EOL_SBOM_HOSTS_0_TOKEN`). The names in the table below are covered by a test (`EolPropertiesTest`).
 
 | Property | Env | Default | Meaning |
 |---|---|---|---|
 | `server.address` / `server.port` | `SERVER_ADDRESS` / `SERVER_PORT` | `127.0.0.1` / `8092` | Bind address and port |
 | `spring.datasource.url` | `SPRING_DATASOURCE_URL` | `jdbc:h2:file:./data/eol-ledger` | Database |
 | `eol.zone` | `EOL_ZONE` | JVM zone | Zone for "today" and "as of day" boundaries |
-| `eol.catalog.base-url` | `EOL_CATALOG_BASE_URL` | `https://endoflife.date/api/v1` | endoflife.date API base URL (must be HTTPS) |
+| `eol.catalog.base-url` | `EOL_CATALOG_BASEURL` | `https://endoflife.date/api/v1` | endoflife.date API base URL (must be HTTPS) |
 | `eol.catalog.products` | `EOL_CATALOG_PRODUCTS` | blank | Blank = whole catalogue via `GET /products/full`. Or a list such as `python,nodejs,spring-boot` (one request each) |
 | `eol.catalog.timeout` / `max-bytes` | | `60s` / 32 MB | Catalogue fetch limits |
 | `eol.sbom.hosts[n].host` | `EOL_SBOM_HOSTS_0_HOST` | none | SBOM host allowlist |
@@ -46,32 +48,38 @@ Set values in `application.properties`, with `--name=value` arguments, or as env
 | `eol.sbom.hosts[n].allow-http` | | `false` | Plain HTTP, honoured only for loopback hosts (local dev/test) |
 | `eol.sbom.timeout` / `max-bytes` | | `30s` / 10 MB | SBOM fetch limits |
 | `eol.mappings` | `EOL_MAPPINGS` | blank | Explicit mappings, see below |
-| `eol.jobs.catalog-sync.cron` / `.zone` | `EOL_JOBS_CATALOGSYNC_CRON` | `-` (off) / `UTC` | Scheduled catalogue sync |
-| `eol.jobs.repo-refresh.cron` / `.zone` | `EOL_JOBS_REPOREFRESH_CRON` | `-` (off) / `UTC` | Scheduled SBOM refresh |
-| `eol.refresh-csv-path` | `EOL_REFRESH_CSV_PATH` | blank | CSV re-imported by the refresh job; blank = refresh the stored registry |
+| `eol.jobs.catalog-sync.cron` / `.zone` | `EOL_JOBS_CATALOGSYNC_CRON` / `EOL_JOBS_CATALOGSYNC_ZONE` | `-` (off) / `UTC` | Scheduled catalogue sync |
+| `eol.jobs.repo-refresh.cron` / `.zone` | `EOL_JOBS_REPOREFRESH_CRON` / `EOL_JOBS_REPOREFRESH_ZONE` | `-` (off) / `UTC` | Scheduled SBOM refresh |
+| `eol.refresh-csv-path` | `EOL_REFRESHCSVPATH` | blank | CSV re-imported by the refresh job; blank = refresh the stored registry |
 
 ### Artifactory token setup
 
 ```bash
 export EOL_SBOM_HOSTS_0_HOST=artifactory.example.com
-export EOL_SBOM_HOSTS_0_TOKEN=<access token with read access to the SBOM repository>
+# replace the placeholder with an access token that can read the SBOM repository
+export EOL_SBOM_HOSTS_0_TOKEN='paste-access-token-here'
 java -jar target/eol-ledger-0.1.0.jar
 ```
 
 Artifactory accepts access tokens as Bearer tokens. Tokens never appear in the CSV, links, errors,
-logs or import history.
+logs or import history. An allowlisted host without a token is fetched without authentication.
 
 ### Scheduled jobs
 
 Both jobs are off by default and can be turned on separately. The manual buttons always work.
 
 ```properties
-eol.jobs.catalog-sync.cron=0 0 3 * * *        # daily 03:00
+# daily at 03:00
+eol.jobs.catalog-sync.cron=0 0 3 * * *
 eol.jobs.catalog-sync.zone=Europe/Amsterdam
+# weekdays at 03:30
 eol.jobs.repo-refresh.cron=0 30 3 * * MON-FRI
 eol.jobs.repo-refresh.zone=Europe/Amsterdam
-eol.refresh-csv-path=/srv/eol-ledger/registry.csv   # optional
+# optional: re-import this CSV instead of the stored registry
+eol.refresh-csv-path=/srv/eol-ledger/registry.csv
 ```
+
+`.properties` files have no inline comments: anything after the value, including `#`, becomes part of it.
 
 Failures keep the previous good data, appear on the Imports & sync page and are retried on the
 next run. Tests never enable the jobs and never contact the internet: the catalogue and SBOMs are
@@ -93,7 +101,10 @@ repo_name,repo_url,provider,branch,sbom_url
 | `branch` | Required; slashes are fine (`release/2.x`); no spaces |
 | `sbom_url` | HTTPS URL on an allowlisted host, with no credentials, query or fragment; or a bundled sample `classpath:samples/<file>.json` |
 
-The CSV is a registry of where SBOMs live, not a dependency list. Quoted fields (`"a, b"`) are supported.
+The CSV is a registry of where SBOMs live, not a dependency list. Quoting follows RFC 4180: a
+field is either unquoted or wholly quoted (`"a, b"`, inner quotes doubled: `"say ""hi"""`). A stray
+quote inside an unquoted field, text after a closing quote, or a quote that is never closed rejects
+the whole file.
 
 ### Import semantics
 
@@ -107,10 +118,21 @@ The CSV is a registry of where SBOMs live, not a dependency list. Quoted fields 
   remote changes are picked up, but an unchanged inventory adds no history. Package order does not
   matter. A change back to an earlier state (A → B → A) creates a new snapshot. A change to
   `repo_name`/`provider` alone updates the registry without a snapshot.
-* **Formats.** CycloneDX JSON (nested `components` included) and SPDX 2.x JSON (`packages`, purl from
-  `externalRefs`; the described root package is skipped). XML is not supported.
-* **Fetch safety.** HTTPS to allowlisted hosts only. Redirects are never followed. Timeouts and body
-  size are bounded. `classpath:` is limited to bundled `samples/*.json`. `file:` and other schemes are
+* **Formats.** CycloneDX JSON and SPDX 2.x JSON; XML is not supported. The accepted profile is
+  strict, so a malformed SBOM can never replace a good inventory with an empty or partial one:
+  * CycloneDX: a top-level `components` **array** is required (`[]` means "no packages" and is
+    stored as an empty snapshot). Each component must be an object with a string `name`; `group`,
+    `version` and `purl` must be strings when present; nested `components` must be an array.
+  * SPDX 2.x: a `packages` **array** is required (`[]` allowed). Each package must be an object with
+    a string `name`; `versionInfo` must be a string when present; `externalRefs` must be an array of
+    objects, and a purl reference's `referenceLocator` must be a string. The described root package
+    is skipped.
+  * Any purl must be well formed (`pkg:type/name`). `NOASSERTION`/`NONE` values count as absent.
+  * Anything else (missing or non-array inventory, non-object records, missing names, wrong types,
+    malformed purls) rejects the whole import with the record's position, e.g. `components[3] has no "name"`.
+* **Fetch safety.** HTTPS to allowlisted hosts only. Redirects are never followed. `timeout` is one
+  overall deadline for connect, headers and the whole body (a stalled body is cancelled), and the
+  body is cut off as soon as it exceeds `max-bytes`. `classpath:` is limited to bundled `samples/*.json`. `file:` and other schemes are
   rejected.
 
 ### History and "as of"
@@ -142,11 +164,17 @@ history. EoL dates still come only from a real catalogue sync; the app ships no 
 
 ## Matching rules and limits
 
-1. **purl**: the dependency's purl, normalized to `pkg:type/namespace/name` (lower-case,
-   percent-decoded, no version, qualifiers or subpath), listed as an identifier by exactly one
-   endoflife.date product.
-2. **Explicit mapping**: `eol.mappings=<normalized purl or exact package name>=<product>`, comma
-   separated, for example
+1. **purl**: the dependency's purl, normalized to `pkg:type/namespace/name`, listed as an
+   identifier by exactly one endoflife.date product. Normalization is deliberately conservative:
+   version, qualifiers and subpath are dropped; each segment is percent-decoded (an encoded `/` stays
+   encoded, so it cannot collide with a real separator); scheme and type are lower-cased. Namespace
+   and name are lower-cased **only** for types the purl spec defines as case-insensitive (`npm`,
+   `pypi`, `github`, `bitbucket`, `deb`, `nuget`, `composer`, `hex`, `apk`), and `pypi` maps `_` to
+   `-`. Maven and every other type keep their case, so `pkg:maven/Org.Acme/x` and
+   `pkg:maven/org.acme/x` are different packages. A malformed purl is reported as such and is never
+   matched by package name instead. (A catalogue synced before this rule should be re-synced once.)
+2. **Explicit mapping**: `eol.mappings=<purl or exact package name>=<product>`, comma separated.
+   Purl keys are normalized the same way; package-name keys are case-insensitive. For example
    `eol.mappings=pkg:maven/com.acme/acme-boot-bom=spring-boot,my-base-image=ubuntu`.
    Use this for packages upstream does not list, or for purls listed by several products
    (those stay unmatched until mapped).
@@ -156,9 +184,12 @@ Nothing else matches. A generic name like `core` is never matched by name when t
 purl, and Java/npm/PyPI packages are never assumed to be the language runtime.
 
 The **cycle** is the longest numeric cycle whose dot-separated parts are a prefix of the installed
-version (`3.10.5` → `3.10`, never `3.1`; `18.2.0` → `18`; a leading `v` is ignored). Non-numeric
-cycles (code names) and non-numeric versions are not guessed: the package shows its product with
-"cycle unknown". Upstream boolean or null EoL values are kept as they are: "ended, date not
+version (`3.10.5` → `3.10`, never `3.1`; `18.2.0` → `18`). Only plain release versions are matched:
+digits and dots, an optional leading `v`, and the vendor suffixes `.Final`, `.RELEASE` and `.GA`
+(e.g. `6.4.4.Final`). Pre-releases and anything else (`3.10.0-rc1`, `6.0.0-SNAPSHOT`, `1.0.0+build`,
+`3.10evil`, `nightly`) are not guessed, because upstream support policy for them is unknown.
+Non-numeric cycles (code names) are never guessed either. In both cases the package shows its
+product with "cycle unknown" and the evidence says why. Upstream boolean or null EoL values are kept as they are: "ended, date not
 published" is different from "no EoL date announced". Only upstream `eolFrom` is used. Extended or
 commercial support dates are not shown.
 

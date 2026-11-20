@@ -23,7 +23,11 @@ public final class Matcher {
     }
 
     private static final Pattern NUMERIC = Pattern.compile("\\d+(\\.\\d+)*");
-    private static final Pattern LEADING_NUMERIC = Pattern.compile("^[vV]?(\\d+(?:\\.\\d+)*)");
+    // Pre-releases (-rc1, -SNAPSHOT, .M1), build metadata and other suffixes are deliberately not matched.
+    private static final Pattern PLAIN_RELEASE = Pattern.compile("[vV]?(\\d+(?:\\.\\d+)*)(?:\\.(?i:Final|RELEASE|GA))?");
+    private static final Pattern TYPE = Pattern.compile("[a-z][a-z0-9.+-]*");
+    /** purl types whose namespace and name are case-insensitive per the purl specification. */
+    static final Set<String> CASE_INSENSITIVE = Set.of("npm", "pypi", "github", "bitbucket", "deb", "nuget", "composer", "hex", "apk");
 
     private final Map<String, Set<String>> productsByPurl;
     private final Map<String, List<String>> cyclesByProduct;
@@ -37,6 +41,9 @@ public final class Matcher {
 
     public Match match(String name, String version, String purl) {
         String norm = normalizePurl(purl);
+        if (purl != null && norm == null) {
+            return new Match(null, null, "malformed purl " + purl + "; not matched by package name either");
+        }
         String product = null;
         String evidence;
         Set<String> listed = norm == null ? Set.of() : productsByPurl.getOrDefault(norm, Set.of());
@@ -61,7 +68,9 @@ public final class Matcher {
                     : "No catalogue identifier or mapping for " + norm);
         }
         String cycle = matchCycle(version, cyclesByProduct.getOrDefault(product, List.of()));
-        if (cycle == null) {
+        if (cycle == null && !isPlainRelease(version)) {
+            evidence += "; version " + version + " is not a plain release version (digits and dots, optional leading v or .Final/.RELEASE/.GA), so no cycle is guessed";
+        } else if (cycle == null) {
             evidence += "; no release cycle of " + product + " matches version " + version;
         } else {
             evidence += "; version " + version + " falls in cycle " + cycle;
@@ -69,24 +78,53 @@ public final class Matcher {
         return new Match(product, cycle, evidence);
     }
 
-    /** pkg:type/namespace/name with version, qualifiers and subpath removed; lower-cased and percent-decoded. */
+    /**
+     * Package identity {@code pkg:type/namespace/name}: version, qualifiers and subpath removed, each
+     * segment percent-decoded (a decoded '/' or '%' is re-encoded so segments cannot collide).
+     * Scheme and type are lower-cased; namespace/name only for types the purl spec defines as
+     * case-insensitive (see {@link #CASE_INSENSITIVE}); pypi also maps '_' to '-'. Maven and all
+     * other types keep their case. Returns null for anything that is not a well-formed purl.
+     */
     public static String normalizePurl(String purl) {
         if (purl == null) return null;
         String p = purl.trim();
-        if (!p.regionMatches(true, 0, "pkg:", 0, 4) || p.indexOf('/') < 0) return null;
-        p = p.replaceAll("[?#].*$", "");
-        int slash = p.lastIndexOf('/');
-        int at = p.indexOf('@', slash);
-        if (at > 0) p = p.substring(0, at);
-        p = URLDecoder.decode(p.replace("+", "%2B"), StandardCharsets.UTF_8);
-        return p.toLowerCase(Locale.ROOT);
+        if (!p.regionMatches(true, 0, "pkg:", 0, 4)) return null;
+        p = p.substring(4).replaceFirst("^/+", "").replaceAll("[?#].*$", "");
+        int slash = p.indexOf('/');
+        if (slash <= 0) return null;
+        String type = p.substring(0, slash).toLowerCase(Locale.ROOT);
+        if (!TYPE.matcher(type).matches()) return null;
+        String rest = p.substring(slash + 1).replaceAll("/+$", "");
+        int at = rest.indexOf('@', rest.lastIndexOf('/') + 1);
+        if (at >= 0) rest = rest.substring(0, at);
+        if (rest.isEmpty()) return null;
+        List<String> segments = new ArrayList<>();
+        for (String raw : rest.split("/", -1)) {
+            if (raw.isEmpty()) return null;
+            String s;
+            try {
+                s = URLDecoder.decode(raw.replace("+", "%2B"), StandardCharsets.UTF_8);
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+            s = s.replace("%", "%25").replace("/", "%2F");
+            if (CASE_INSENSITIVE.contains(type)) s = s.toLowerCase(Locale.ROOT);
+            if (type.equals("pypi")) s = s.replace('_', '-');
+            segments.add(s);
+        }
+        return "pkg:" + type + "/" + String.join("/", segments);
     }
 
-    /** Longest numeric cycle whose dot components are a prefix of the version's numeric components. */
+    /** True for digits-and-dots versions with an optional leading v and optional .Final/.RELEASE/.GA suffix. */
+    static boolean isPlainRelease(String version) {
+        return version != null && PLAIN_RELEASE.matcher(version.trim()).matches();
+    }
+
+    /** Longest numeric cycle whose dot components are a prefix of a plain release version's components. */
     public static String matchCycle(String version, Collection<String> cycles) {
         if (version == null) return null;
-        var m = LEADING_NUMERIC.matcher(version.trim());
-        if (!m.find()) return null;
+        var m = PLAIN_RELEASE.matcher(version.trim());
+        if (!m.matches()) return null;
         List<String> v = Arrays.asList(m.group(1).split("\\."));
         String best = null;
         int bestLen = 0;

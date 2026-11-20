@@ -52,6 +52,33 @@ class SbomParserTest {
     }
 
     @Test
+    void explicitEmptyArraysAreIntentionalZeroInventory() {
+        assertThat(SbomParser.parse(b("{\"bomFormat\":\"CycloneDX\",\"components\":[]}"))).isEmpty();
+        assertThat(SbomParser.parse(b("{\"spdxVersion\":\"SPDX-2.3\",\"packages\":[]}"))).isEmpty();
+    }
+
+    @Test
+    void rejectsMissingOrNonArrayInventory() {
+        assertThatThrownBy(() -> SbomParser.parse(b("{\"bomFormat\":\"CycloneDX\"}"))).hasMessageContaining("components");
+        assertThatThrownBy(() -> SbomParser.parse(b("{\"bomFormat\":\"CycloneDX\",\"components\":{\"name\":\"x\"}}"))).hasMessageContaining("components");
+        assertThatThrownBy(() -> SbomParser.parse(b("{\"spdxVersion\":\"SPDX-2.3\"}"))).hasMessageContaining("packages");
+        assertThatThrownBy(() -> SbomParser.parse(b("{\"spdxVersion\":\"SPDX-2.3\",\"packages\":\"none\"}"))).hasMessageContaining("packages");
+    }
+
+    @Test
+    void rejectsMalformedRecords() {
+        assertThatThrownBy(() -> SbomParser.parse(b("{\"bomFormat\":\"CycloneDX\",\"components\":[{\"version\":\"1\"}]}"))).hasMessageContaining("name");
+        assertThatThrownBy(() -> SbomParser.parse(b("{\"bomFormat\":\"CycloneDX\",\"components\":[\"react\"]}"))).hasMessageContaining("object");
+        assertThatThrownBy(() -> SbomParser.parse(b("{\"bomFormat\":\"CycloneDX\",\"components\":[{\"name\":\"a\",\"version\":3}]}"))).hasMessageContaining("version");
+        assertThatThrownBy(() -> SbomParser.parse(b("{\"bomFormat\":\"CycloneDX\",\"components\":[{\"name\":\"a\",\"components\":{}}]}"))).hasMessageContaining("components");
+        assertThatThrownBy(() -> SbomParser.parse(b("{\"bomFormat\":\"CycloneDX\",\"components\":[{\"name\":\"a\",\"purl\":\"react@1\"}]}"))).hasMessageContaining("purl");
+        assertThatThrownBy(() -> SbomParser.parse(b("{\"spdxVersion\":\"SPDX-2.3\",\"packages\":[{\"SPDXID\":\"x\"}]}"))).hasMessageContaining("name");
+        assertThatThrownBy(() -> SbomParser.parse(b("{\"spdxVersion\":\"SPDX-2.3\",\"packages\":[{\"name\":\"a\",\"externalRefs\":{}}]}"))).hasMessageContaining("externalRefs");
+        assertThatThrownBy(() -> SbomParser.parse(b("{\"spdxVersion\":\"SPDX-2.3\",\"packages\":[{\"name\":\"a\",\"externalRefs\":[{\"referenceType\":\"purl\",\"referenceLocator\":7}]}]}")))
+                .hasMessageContaining("referenceLocator");
+    }
+
+    @Test
     void rejectsXmlAndUnknownJson() {
         assertThatThrownBy(() -> SbomParser.parse(b("<bom/>"))).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("JSON");
         assertThatThrownBy(() -> SbomParser.parse(b("{\"hello\":1}"))).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("CycloneDX");

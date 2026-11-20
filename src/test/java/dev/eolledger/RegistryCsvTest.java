@@ -86,6 +86,15 @@ class RegistryCsvTest {
     }
 
     @Test
+    void rejectsUnterminatedOrMisplacedQuotes() {
+        assertThat(errorOf("a,https://github.com/a/b,github,main,\"classpath:samples/x.json\n")).contains("line 2").contains("quote");
+        assertThat(errorOf("a\"b,https://github.com/a/b,github,main,classpath:samples/x.json\n")).contains("line 2").contains("quote");
+        assertThat(errorOf("\"a\"x,https://github.com/a/b,github,main,classpath:samples/x.json\n")).contains("line 2").contains("quote");
+        assertThat(parse("\"a \"\"quoted\"\" name\",https://github.com/a/b,github,main,classpath:samples/x.json\n").get(0).repoName())
+                .isEqualTo("a \"quoted\" name");
+    }
+
+    @Test
     void rejectsEmptyFile() {
         assertThatThrownBy(() -> RegistryCsv.parse(HEADER, hosts)).hasMessageContaining("no data rows");
     }

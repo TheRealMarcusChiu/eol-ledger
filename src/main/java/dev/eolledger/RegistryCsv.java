@@ -124,12 +124,19 @@ public final class RegistryCsv {
         }
     }
 
-    /** Minimal RFC 4180 reader: quoted fields, doubled quotes, CRLF or LF line ends. */
+    /**
+     * Strict RFC 4180 reader: a field is either unquoted (no '"' anywhere) or wholly quoted with
+     * doubled quotes inside; CRLF or LF line ends. Malformed quoting rejects the file.
+     */
     static List<List<String>> records(String text) {
         List<List<String>> out = new ArrayList<>();
         List<String> rec = new ArrayList<>();
         StringBuilder field = new StringBuilder();
         boolean quoted = false;
+        boolean closed = false; // just left a quoted field: only a delimiter or line end may follow
+        boolean fieldStarted = false;
+        int line = 1;
+        int recordLine = 1;
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
             if (quoted) {
@@ -138,28 +145,43 @@ public final class RegistryCsv {
                     i++;
                 } else if (c == '"') {
                     quoted = false;
+                    closed = true;
                 } else {
+                    if (c == '\n') line++;
                     field.append(c);
                 }
+            } else if (c == ',' || c == '\n' || c == '\r') {
+                rec.add(field.toString());
+                field.setLength(0);
+                closed = false;
+                fieldStarted = false;
+                if (c != ',') {
+                    if (c == '\r' && i + 1 < text.length() && text.charAt(i + 1) == '\n') i++;
+                    out.add(rec);
+                    rec = new ArrayList<>();
+                    line++;
+                    recordLine = line;
+                }
+            } else if (closed) {
+                throw quoteError(recordLine, "text after a closing quote; quote the whole field");
             } else if (c == '"') {
+                if (fieldStarted) throw quoteError(recordLine, "unexpected quote inside an unquoted field; quote the whole field and double inner quotes");
                 quoted = true;
-            } else if (c == ',') {
-                rec.add(field.toString());
-                field.setLength(0);
-            } else if (c == '\n' || c == '\r') {
-                if (c == '\r' && i + 1 < text.length() && text.charAt(i + 1) == '\n') i++;
-                rec.add(field.toString());
-                field.setLength(0);
-                out.add(rec);
-                rec = new ArrayList<>();
+                fieldStarted = true;
             } else {
                 field.append(c);
+                fieldStarted = true;
             }
         }
-        if (field.length() > 0 || !rec.isEmpty()) {
+        if (quoted) throw quoteError(recordLine, "a quote is never closed");
+        if (field.length() > 0 || !rec.isEmpty() || closed) {
             rec.add(field.toString());
             out.add(rec);
         }
         return out;
+    }
+
+    private static InvalidCsvException quoteError(int line, String problem) {
+        return new InvalidCsvException(List.of("line " + line + ": malformed CSV quoting: " + problem + ". Nothing was imported."));
     }
 }
