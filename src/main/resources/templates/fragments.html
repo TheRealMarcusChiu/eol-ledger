@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:fragment="head(title)">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' · EoL Ledger'">EoL Ledger</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
+    <script th:src="@{/app.js}" defer></script>
+</head>
+<body>
+<header th:fragment="nav(active)" class="topbar">
+    <a class="skip" href="#main">Skip to content</a>
+    <a class="brand" th:href="@{/}"><span class="brand-mark" aria-hidden="true"></span>EoL Ledger</a>
+    <nav aria-label="Main">
+        <a th:href="@{/}" th:attr="aria-current=${active == 'dashboard'} ? 'page' : null">Release cycles</a>
+        <a th:href="@{/repos}" th:attr="aria-current=${active == 'repos'} ? 'page' : null">Repositories</a>
+        <a th:href="@{/imports}" th:attr="aria-current=${active == 'imports'} ? 'page' : null">Imports &amp; sync</a>
+    </nav>
+</header>
+
+<span th:fragment="eol(e)" class="eol" th:classappend="${'eol-' + e.css()}" th:text="${e.text()}">status</span>
+
+<footer th:fragment="footer" class="footer">
+    EoL dates from <a href="https://endoflife.date">endoflife.date</a>
+    (<a href="https://github.com/endoflife-date/endoflife.date">source, MIT licence</a>).
+    Local single-operator tool: do not expose without authentication.
+</footer>
+</body>
+</html>

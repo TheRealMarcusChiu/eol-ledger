@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments :: head('Release cycles')}"></head>
+<body>
+<header th:replace="~{fragments :: nav('dashboard')}"></header>
+<main id="main">
+    <div class="page-head">
+        <h1>Release cycles in use</h1>
+        <p class="lede">Upstream release cycles matched to the latest SBOM of each repository branch, ordered by end-of-life date.</p>
+    </div>
+
+    <div th:if="${catalogEmpty}" class="notice">
+        The endoflife.date catalogue has not been synced yet, so nothing can be matched.
+        <a th:href="@{/imports}">Sync the catalogue</a> from the imports page.
+    </div>
+    <div th:if="${status != null and !status.ok()}" class="notice notice-warn" role="status">
+        Last catalogue sync had problems; previously synced data is still in use.
+        <a th:href="@{/imports}">See sync status</a>.
+    </div>
+
+    <form class="filters" method="get" th:action="@{/}" aria-describedby="filter-help">
+        <div class="field">
+            <label for="start">EoL from</label>
+            <input id="start" name="start" type="date" th:value="${start}">
+        </div>
+        <div class="field">
+            <label for="end">EoL until</label>
+            <input id="end" name="end" type="date" th:value="${end}">
+        </div>
+        <div class="field">
+            <label for="sort">Order</label>
+            <select id="sort" name="sort">
+                <option value="asc" th:selected="${sort == 'asc'}">Earliest EoL first</option>
+                <option value="desc" th:selected="${sort == 'desc'}">Latest EoL first</option>
+            </select>
+        </div>
+        <div class="field field-check">
+            <input id="unused" name="unused" type="checkbox" value="true" th:checked="${unused}">
+            <label for="unused">Include cycles no repository uses</label>
+        </div>
+        <div class="actions">
+            <button type="submit">Apply</button>
+            <a class="button-quiet" th:href="@{/}">Reset to today</a>
+        </div>
+        <p id="filter-help" class="hint">Both dates are inclusive. Clear a date for an open range; clear both for all time,
+            which also lists cycles whose EoL date is unknown. Default view starts at today
+            (<span th:text="${today}">date</span>).</p>
+    </form>
+
+    <div th:if="${error}" class="notice notice-error" role="alert">
+        <strong>Those filters could not be applied.</strong> <span th:text="${error}">error</span>
+    </div>
+
+    <div class="table-wrap" th:unless="${error}" tabindex="0" role="region" aria-label="Release cycles">
+        <table>
+            <thead>
+            <tr>
+                <th scope="col">Product</th>
+                <th scope="col">Cycle</th>
+                <th scope="col">EoL date</th>
+                <th scope="col">Status</th>
+                <th scope="col" class="num">Repositories</th>
+                <th scope="col" class="num">Branches</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="r : ${rows}" th:with="href=@{/products/{p}(p=${r.cycle().product()},cycle=${r.cycle().name()})}"
+                th:attr="data-row=${r.cycle().key()},data-repos=${r.repos()},data-branches=${r.branches()},data-href=${href}">
+                <td th:text="${r.cycle().productLabel()}">Python</td>
+                <td><a th:href="${href}" th:text="${r.cycle().label() ?: r.cycle().name()}">3.10</a></td>
+                <td class="date" th:text="${r.cycle().eolFrom() ?: 'Not published'}">2026-10-31</td>
+                <td th:insert="~{fragments :: eol(${r.eol()})}"></td>
+                <td class="num" th:text="${r.repos()}">1</td>
+                <td class="num" th:text="${r.branches()}">1</td>
+            </tr>
+            <tr th:if="${rows.isEmpty()}">
+                <td colspan="6" class="empty">No release cycles in this range.
+                    <span th:if="${isDefault}">Clear the start date to include cycles that already ended.</span></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <p class="hint" th:if="${unmatched != null and unmatched > 0}">
+        <span th:text="${unmatched}">3</span> installed packages are not matched to a release cycle and are not listed here;
+        see each <a th:href="@{/repos}">repository branch</a> for the reason.
+    </p>
+</main>
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>

@@ -1,0 +1,111 @@
+package dev.eolledger;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+class DashboardTest extends WebTestBase {
+
+    @BeforeEach
+    void data() {
+        seed();
+    }
+
+    String page(String url) throws Exception {
+        return mvc.perform(get(url)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    }
+
+    @Test
+    void defaultStartsTodayInclusiveAndHidesUnusedCycles() throws Exception {
+        String html = page("/");
+        assertThat(html).contains("data-row=\"python 3.10\"", "data-row=\"django 4.2\"")
+                .doesNotContain("data-row=\"react 18\"", "data-row=\"python 3.1\"", "data-row=\"python 2.7\"", "data-row=\"react 19\"");
+        assertThat(html).contains("value=\"2026-11-20\"");
+    }
+
+    @Test
+    void explicitlyClearedStartMeansAllTimeIncludingUnknownDates() throws Exception {
+        String html = page("/?start=&end=");
+        assertThat(html).contains("data-row=\"react 18\"", "data-row=\"python 3.10\"", "data-row=\"python 3.1\"", "data-row=\"python 2.7\"", "data-row=\"django 4.2\"")
+                .doesNotContain("data-row=\"react 19\"", "data-row=\"python 3.9\"");
+    }
+
+    @Test
+    void endOnlyRunsFromBeginningAndExcludesUnknownDates() throws Exception {
+        String html = page("/?start=&end=2025-01-01");
+        assertThat(html).contains("data-row=\"react 18\"", "data-row=\"python 3.1\"")
+                .doesNotContain("data-row=\"python 2.7\"", "data-row=\"python 3.10\"", "data-row=\"django 4.2\"");
+    }
+
+    @Test
+    void startOnlyRunsForever() throws Exception {
+        String html = page("/?start=2026-11-21");
+        assertThat(html).contains("data-row=\"django 4.2\"").doesNotContain("data-row=\"python 3.10\"");
+    }
+
+    @Test
+    void bothBoundsAreInclusive() throws Exception {
+        String html = page("/?start=2026-11-20&end=2026-11-20");
+        assertThat(html).contains("data-row=\"python 3.10\"").doesNotContain("data-row=\"django 4.2\"");
+    }
+
+    @Test
+    void repositoriesAreCountedOnceAcrossBranches() throws Exception {
+        String html = page("/?start=&end=");
+        assertThat(html).contains("data-row=\"react 18\" data-repos=\"1\" data-branches=\"2\"");
+        assertThat(html).contains("data-row=\"django 4.2\" data-repos=\"2\" data-branches=\"2\"");
+        // 3.1.4 must not be counted under 3.10, nor 3.10.5 under 3.1
+        assertThat(html).contains("data-row=\"python 3.10\" data-repos=\"1\" data-branches=\"1\"");
+        assertThat(html).contains("data-row=\"python 3.1\" data-repos=\"1\" data-branches=\"1\"");
+    }
+
+    @Test
+    void unusedCyclesCanBeShown() throws Exception {
+        String html = page("/?start=&end=&unused=true");
+        assertThat(html).contains("data-row=\"react 19\" data-repos=\"0\"", "data-row=\"python 3.9\" data-repos=\"0\"");
+    }
+
+    @Test
+    void sortsByEolDateBothWays() throws Exception {
+        String asc = page("/?start=&end=&sort=asc");
+        assertThat(asc.indexOf("data-row=\"react 18\"")).isLessThan(asc.indexOf("data-row=\"django 4.2\""));
+        String desc = page("/?start=&end=&sort=desc");
+        assertThat(desc.indexOf("data-row=\"django 4.2\"")).isLessThan(desc.indexOf("data-row=\"react 18\""));
+    }
+
+    @Test
+    void malformedDateIsHelpful400() throws Exception {
+        mvc.perform(get("/?start=2026-13-45")).andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("YYYY-MM-DD")));
+    }
+
+    @Test
+    void reversedRangeIs400() throws Exception {
+        mvc.perform(get("/?start=2026-12-01&end=2026-01-01")).andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("on or before")));
+    }
+
+    @Test
+    void resetLinkPointsToDefaultView() throws Exception {
+        mvc.perform(get("/?start=&end=")).andExpect(content().string(containsString("Reset to today")));
+    }
+
+    @Test
+    void rowsHaveRealLinksToCycleDetail() throws Exception {
+        assertThat(page("/?start=&end=")).contains("href=\"/products/python?cycle=3.10\"");
+    }
+
+    @Test
+    void todayFollowsClockInConfiguredZone() throws Exception {
+        // 23:30 UTC on 19 Nov is already 20 Nov in Amsterdam
+        CLOCK.now = java.time.Instant.parse("2026-11-19T23:30:00Z");
+        mvc.perform(get("/")).andExpect(content().string(containsString("value=\"2026-11-20\"")))
+                .andExpect(content().string(not(containsString("value=\"2026-11-19\""))));
+    }
+}
