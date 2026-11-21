@@ -213,6 +213,22 @@ test('stale stored keys (old dates, filters) never leak into column prefs; filte
   assert.deepStrictEqual(calls, []);
 });
 
+test('menu box stays inside the viewport: flips above a trigger near the bottom, scrolls itself when taller than the room', () => {
+  const { menuBox } = load();
+  const inside = (b, h, vh) => b.top >= 8 && b.top + Math.min(h, b.maxHeight) <= vh - 8;
+  // RED case: 400x400 viewport, trigger at y 364.8..384.5
+  for (const h of [100, 300, 500]) {
+    const b = menuBox(364.8, 384.5, h, 400);
+    assert.ok(inside(b, h, 400), `height ${h}: ${JSON.stringify(b)}`);
+    assert.ok(b.top + Math.min(h, b.maxHeight) <= 364.8, 'above the trigger, not covering it');
+  }
+  const low = menuBox(40, 60, 200, 800);
+  assert.deepStrictEqual(plain(low), { top: 64, maxHeight: 728 }, 'enough room below: opens below');
+  for (const [t, b] of [[-200, -180], [900, 920], [390, 410]]) {
+    for (const h of [50, 1000]) assert.ok(inside(menuBox(t, b, h, 400), h, 400), `trigger ${t}..${b} height ${h}`);
+  }
+});
+
 test('storage uses only its own key', () => {
   const calls = [];
   const store = { getItem: (k) => { calls.push(['get', k]); return null; }, setItem: (k, v) => calls.push(['set', k, v]), removeItem: (k) => calls.push(['remove', k]) };

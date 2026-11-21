@@ -283,6 +283,19 @@ function clearedState(state, key) {
   return next;
 }
 
+/**
+ * Header menu box for a trigger at top..bottom in a viewport vh tall: below it, or above when below is short and above
+ * has more room; always inside the viewport, with the menu scrolling itself when taller than the room.
+ */
+function menuBox(top, bottom, height, vh) {
+  var below = vh - bottom - 12, above = top - 12;
+  var up = height > below && above > below;
+  var room = Math.min(vh - 16, Math.max(up ? above : below, Math.min(height, 120)));
+  var h = Math.min(height, room);
+  var y = up ? top - 4 - h : bottom + 4;
+  return { top: Math.max(8, Math.min(y, vh - 8 - h)), maxHeight: room };
+}
+
 /** Values selection after a checkbox change; selecting every distinct value means "no constraint" again. */
 function toggleValue(selected, all, value, on) {
   var next = (selected || all).filter(function (v) { return v !== value; });
@@ -341,6 +354,7 @@ function initFilters(table) {
     });
     count.textContent = n + ' of ' + trs.length + ' dependency versions'
       + (active.length ? '; filtered by ' + active.map(function (k) { return labels[k]; }).join(', ') : '');
+    place(); // a range error line can change the open menu's height
   }
 
   // Writes one column's state into its menu controls (after a clear, or on first build).
@@ -362,6 +376,7 @@ function initFilters(table) {
       box.parentNode.hidden = !textMatches(f.searchOp, box.parentNode.textContent.trim(), f.search);
     });
     m.sections.forEach(function (s) { s.hidden = s.getAttribute('data-mode') !== f.mode; });
+    place(); // a mode or search change alters the open menu's height
   }
 
   function control(tag, attr, k, label) {
@@ -392,9 +407,12 @@ function initFilters(table) {
   function place() {
     if (!openKey) return;
     var m = menus[openKey].root, r = openButtons[openKey].getBoundingClientRect();
-    var top = r.bottom + 4;
-    m.style.top = top + 'px';
-    m.style.maxHeight = Math.max(160, window.innerHeight - top - 8) + 'px';
+    var scrolled = m.scrollTop;
+    m.style.maxHeight = 'none'; // measure the content's own height for the current mode
+    var box = menuBox(r.top, r.bottom, m.offsetHeight, window.innerHeight);
+    m.style.top = box.top + 'px';
+    m.style.maxHeight = box.maxHeight + 'px';
+    m.scrollTop = scrolled;
     m.style.left = Math.max(8, Math.min(r.left, window.innerWidth - m.offsetWidth - 8)) + 'px';
   }
 
@@ -559,7 +577,9 @@ function initFilters(table) {
     if (e.key === 'Escape' && openKey) { e.preventDefault(); close(true); }
   });
   window.addEventListener('resize', place);
-  window.addEventListener('scroll', place, true);
+  window.addEventListener('scroll', function (e) {
+    if (openKey && !menus[openKey].root.contains(e.target)) place(); // the menu's own scrolling does not move it
+  }, true);
 
   clearAll.addEventListener('click', function () {
     // A legacy ?unused=true page holds rows the default omits: reload the default view (column prefs are stored, so they stay).
