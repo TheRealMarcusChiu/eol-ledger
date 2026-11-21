@@ -358,7 +358,7 @@ td.num, th.num { text-align: right; }
 td.num { font-variant-numeric: tabular-nums; color: var(--ink); }
 td.date { white-space: nowrap; }
 td.empty, td.empty:first-child { color: var(--muted); padding: 2.2rem 1rem; text-align: center; font: italic 400 1.05rem/1.4 var(--serif); }
-td.col-source, td.col-sbom { font-size: .74rem; min-width: 12rem; max-width: 20rem; overflow-wrap: anywhere; }
+td.col-source, td.col-sbom { font-size: .74rem; }
 td a { text-decoration-color: rgba(216, 169, 66, .3); }
 
 /* Header controls built by app.js: the column name sorts, the small caret opens its filter menu. */
@@ -451,10 +451,13 @@ th[data-filter-active="true"] .th-filter { background: var(--gold); color: var(-
 .col-setting { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem 1.5rem; color: var(--ink-2); }
 .col-setting label { display: inline-flex; align-items: center; gap: .5rem; }
 .col-setting input[type="number"] { width: 6rem; min-height: 2rem; padding: .3rem .5rem; }
-#dependencies-table.cols-sized { table-layout: fixed; min-width: 0; }
-#dependencies-table.cols-sized th, #dependencies-table.cols-sized td, #dependencies-table.cols-sized .eol { white-space: normal; overflow-wrap: anywhere; }
+table.cols-sized { table-layout: fixed; min-width: 0; }
+/* Headers never wrap: the column name, its sort arrow and its filter button stay on one line (app.js widens a column to fit). */
+th, th .th-sort { white-space: nowrap; }
 .col-resize { position: absolute; top: 25%; right: 0; bottom: 25%; width: .6rem; cursor: col-resize; touch-action: none; border-right: 1px solid var(--line); }
 .col-resize:hover, .col-resize:focus-visible { border-right-color: var(--gold); }
+th:last-child .col-resize { border-right-color: transparent; }
+th:last-child .col-resize:hover, th:last-child .col-resize:focus-visible { border-right-color: var(--gold); }
 
 /* ---------- Type helpers ---------- */
 code, .mono { font-family: var(--mono); font-size: .9em; overflow-wrap: anywhere; color: var(--ink-2); }
@@ -524,6 +527,28 @@ ul.plain { list-style: none; padding: 0; margin: .2rem 0; }
   dl.facts dd { margin-bottom: .8rem; }
   .panel, .filters { padding: 1.2rem; }
 }
+
+/*
+ * One-line cells (app.js wraps each body cell's content in .cell-clip > .cell-run). Content that does not fit ends in an
+ * ellipsis; hovering or focusing the cell scrolls it end to end and back (marquee) so the whole value can be read.
+ */
+td { white-space: nowrap; }
+.cell-clip { display: block; max-width: 26rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+td.col-source .cell-clip, td.col-sbom .cell-clip { max-width: 20rem; }
+table.cols-sized .cell-clip { max-width: none; }
+.cell-clip.is-marquee { text-overflow: clip; }
+.cell-clip.is-marquee > .cell-run {
+  display: inline-block;
+  animation: cell-marquee var(--marquee-time, 4s) ease-in-out .35s infinite alternate;
+}
+@keyframes cell-marquee {
+  0%, 12% { transform: translateX(0); }
+  88%, 100% { transform: translateX(var(--marquee-dist, 0)); }
+}
+.cell-sep { color: var(--muted); }
+/* Lists inside a cell (history diffs, inline facts) run along the line instead of stacking. */
+.cell-run ul.plain, .cell-run ul.plain li { display: inline; margin: 0; }
+.cell-run ul.plain li + li { margin-left: 1.1rem; }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
