@@ -2,6 +2,7 @@ package dev.eolledger;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -38,8 +39,9 @@ public final class InventoryJson {
     public record Entry(RegistryCsv.Row row, List<SbomParser.Dep> deps, String payload, String fingerprint) {
     }
 
-    // duplicate keys would make the stored payload ambiguous
-    static final ObjectMapper JSON = new ObjectMapper().enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION);
+    // duplicate keys would make the stored payload ambiguous; trailing data after the root would be silently ignored
+    static final ObjectMapper JSON = new ObjectMapper().enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+            .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
     private static final Map<String, String> PURL_TYPE = Map.of("maven", "maven", "python", "pypi", "npm", "npm", "nuget", "nuget");
     private static final List<String> DEP_STRINGS = List.of("groupId", "artifactId", "type", "scope", "parentCoordinate", "projectCoordinate",
             "ecosystem", "packageManager", "projectPath", "recordSource");

@@ -198,6 +198,20 @@ class JsonImportTest extends WebTestBase {
         assertThat(db.sql("SELECT ok FROM import_run ORDER BY id DESC LIMIT 1").query(Boolean.class).single()).isFalse();
     }
 
+    @ParameterizedTest(name = "trailing {0}")
+    @CsvSource(delimiter = '|', value = {"empty array|[]", "object|{\"name\":\"x\"}", "garbage|xyz"})
+    void trailingDataAfterTheRootArrayRejectsEverything(String label, String trailing) {
+        imports.importJson(array(entry("main", "2026-11-20T10:00:00Z", REACT)), "test");
+        CLOCK.now = CLOCK.now.plusSeconds(60);
+
+        assertThatThrownBy(() -> imports.importJson(array(entry("main", "2026-11-20T10:00:00Z", GUAVA_BACKEND)) + "\n" + trailing, "test"))
+                .isInstanceOf(ImportService.ImportFailedException.class).hasMessageContaining("not valid JSON");
+
+        assertThat(count("snapshot")).isEqualTo(1);
+        assertThat(db.sql("SELECT name FROM dependency").query(String.class).list()).containsExactly("react");
+        assertThat(db.sql("SELECT ok FROM import_run ORDER BY id DESC LIMIT 1").query(Boolean.class).single()).isFalse();
+    }
+
     @Test
     void referencedUrlsAreProvenanceAndNeverFetched() {
         String b = TestSupport.base();
@@ -310,18 +324,58 @@ class JsonImportTest extends WebTestBase {
         assertThat(count("repo_branch")).isZero();
     }
 
+    /** The downloadable sample is the real resolver-derived demo; every expectation below is computed from its own JSON. */
     @Test
-    void sampleJsonIsDownloadableAndUploadsAsALabelledFormatExample() throws Exception {
+    void realResolvedDemoSampleDownloadsAndImportsIdempotentlyWithGraphContextsKept() throws Exception {
         byte[] body = mvc.perform(get("/imports/samples/demo-dependency-inventory.json")).andExpect(status().isOk())
                 .andExpect(header().string("Content-Disposition", containsString("attachment")))
                 .andReturn().getResponse().getContentAsByteArray();
+        assertThat(body).isEqualTo(ImportService.sampleCsv("demo-dependency-inventory.json").getBytes(StandardCharsets.UTF_8));
         JsonNode sample = JSON.readTree(body);
-        assertThat(sample.isArray()).isTrue();
-        assertThat(sample.findValuesAsText("recordSource")).allMatch(s -> s.contains("format-example"));
+        assertThat(sample).hasSize(4);
+        List<String> urls = new ArrayList<>();
+        List<String> branches = new ArrayList<>();
+        sample.forEach(e -> {
+            urls.add(e.path("url").asText());
+            branches.add(e.path("branch").asText());
+        });
+        assertThat(urls.stream().distinct()).hasSize(2);
+        assertThat(branches.stream().distinct()).containsExactlyInAnyOrder("main", "release/legacy");
+        List<String> managers = new ArrayList<>();
+        sample.forEach(e -> e.path("projects").forEach(p -> managers.add(p.path("packageManager").asText())));
+        assertThat(managers.stream().distinct()).containsExactlyInAnyOrder("Maven", "Gradle", "NuGet", "pip", "pip3", "uv", "npm", "Yarn");
+        assertThat(sample.findValuesAsText("recordSource")).containsOnly("resolved-dependency-tree");
 
-        mvc.perform(multipart("/imports").file(new MockMultipartFile("file", "sample.json", "application/json", body)).with(csrf()))
+        mvc.perform(multipart("/imports").file(new MockMultipartFile("file", "demo.json", "application/json", body)).with(csrf()))
                 .andExpect(status().isSeeOther());
-        assertThat(count("snapshot_inventory")).isEqualTo(sample.size());
+        assertThat(count("snapshot")).isEqualTo(4);
+        assertThat(imports.importJson(new String(body, StandardCharsets.UTF_8), "reupload").newSnapshots()).isZero();
+        assertThat(count("snapshot")).isEqualTo(4);
+
+        boolean sawMultiModulePackage = false;
+        java.util.Map<String, java.util.Set<String>> inventories = new java.util.HashMap<>();
+        for (JsonNode e : sample) {
+            long snap = ledger.branch(branchId(e.path("url").asText(), e.path("branch").asText())).snapshotId();
+            java.util.Map<String, java.util.Set<String>> modulesByPackage = new java.util.TreeMap<>();
+            e.path("dependencies").forEach(d -> modulesByPackage.computeIfAbsent(Matcher.normalizePurl(d.path("purl").asText()) + "@" + d.path("version").asText(),
+                    k -> new java.util.TreeSet<>()).add(d.path("projectPath").asText()));
+            // one inventory row per package identity + version; every raw graph row stays in the payload
+            assertThat(ledger.deps(snap)).hasSize(modulesByPackage.size());
+            JsonNode stored = JSON.readTree(db.sql("SELECT payload FROM snapshot_inventory WHERE snapshot_id = ?").param(snap).query(String.class).single());
+            assertThat(stored.path("dependencies")).hasSize(e.path("dependencies").size());
+            assertThat(stored.path("appId").asText()).isEqualTo(e.path("appId").asText());
+            for (var m : modulesByPackage.entrySet()) {
+                if (m.getValue().size() < 2) continue;
+                sawMultiModulePackage = true;
+                String identity = m.getKey();
+                assertThat(ledger.deps(snap)).filteredOn(d -> (Matcher.normalizePurl(d.purl()) + "@" + d.version()).equals(identity)).hasSize(1);
+            }
+            inventories.computeIfAbsent(e.path("url").asText(), k -> new java.util.HashSet<>())
+                    .add(String.join(",", new java.util.TreeSet<>(modulesByPackage.keySet())));
+        }
+        assertThat(sawMultiModulePackage).as("the real sample has a package resolved in more than one module").isTrue();
+        // main and release/legacy differ in packages for both repositories
+        assertThat(inventories.values()).allMatch(s -> s.size() == 2);
     }
 
     /** Reverses every object's key order and every array, recursively. */

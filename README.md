@@ -239,8 +239,14 @@ resolved dependencies itself. The root is an array with one object per repositor
 ]
 ```
 
-`Download` on the Imports page offers `demo-dependency-inventory.json`, a small **hand-written format
-example** (not resolver output; its rows say `hand-written-format-example`).
+The Imports page offers `demo-dependency-inventory.json` for download: the **real resolved demo**
+inventory (`src/main/resources/samples/`, byte-identical to the demo deliverable's
+`demo-code-repo-dependency.json`). It describes two fictional DEMO repositories, `enterprise-suite`
+(`DEMO-1001`: Maven, Gradle, NuGet) and `web-platform` (`DEMO-1002`: pip, pip3, uv, npm, Yarn), each
+on `main` and `release/legacy`. Every row comes from a native resolver run: a dependency tree or
+resolution graph, not a flat list. Its `example.invalid` URLs are placeholders, not remotely hosted.
+The git bundles, sources, lock files and raw evidence that its `localRepository`, `evidence`, `tree`
+and `source` paths name ship in the separate demo archive, not in the app.
 
 | Field | Rules |
 |---|---|
@@ -258,7 +264,7 @@ example** (not resolver output; its rows say `hand-written-format-example`).
 
 * **All or nothing, nothing fetched.** Every entry and nested row is validated before anything is
   saved; one bad entry rejects the file (errors name `entry N` and the row, e.g. `dependencies[3]`).
-  JSON with a repeated key in one object is rejected. `sbom.url`, evidence paths and
+  JSON with a repeated key in one object, or anything after the root array, is rejected. `sbom.url`, evidence paths and
   `localRepository` are recorded as provenance and **never fetched or opened**. Unknown fields are kept.
 * **Storage.** Each new snapshot stores the whole validated entry (keys sorted, `projects` and
   `dependencies` in a stable order) in `snapshot_inventory`, so App ID, module paths, managers,

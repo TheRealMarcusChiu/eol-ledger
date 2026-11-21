@@ -45,7 +45,9 @@
             Every row is kept with its snapshot; each distinct package + version is listed once for EoL matching.
             A branch gets a new snapshot when anything except <code>sbom.generatedAt</code> changed. URLs and evidence paths in the file are
             recorded as provenance and never fetched; refreshes skip these branches, so re-upload the JSON to update them.
-            See <a th:href="@{/imports/samples/demo-dependency-inventory.json}" download>the format example</a> (hand-written, not resolver output).</p>
+            Download <a th:href="@{/imports/samples/demo-dependency-inventory.json}" download>the resolved demo inventory</a>: two fictional DEMO
+            repositories (<code>example.invalid</code> placeholders, not remotely hosted), each on <code>main</code> and <code>release/legacy</code>,
+            resolved with Maven, Gradle, NuGet, pip, pip3, uv, npm and Yarn; every row comes from a native dependency-tree run.</p>
     </section>
 
     <h2 id="demo-h">Demo data</h2>

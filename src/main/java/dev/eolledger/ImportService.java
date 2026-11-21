@@ -254,7 +254,7 @@ public class ImportService {
                 .update();
     }
 
-    /** Downloadable bundled samples: the demo registry CSVs and the dependency-inventory JSON format example. */
+    /** Downloadable bundled samples: the demo registry CSVs and the resolved demo dependency-inventory JSON. */
     static final String SAMPLES = "demo-registry(-update)?\\.csv|demo-dependency-inventory\\.json";
 
     /** Bundled sample text (only fixed names under classpath:samples/). */
