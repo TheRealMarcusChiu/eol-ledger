@@ -257,7 +257,7 @@ and `source` paths name ship in the separate demo archive, not in the app.
 | `projects` | Optional array of objects with a unique string `path`; `ecosystem`, `packageManager`, `coordinate`, `resolution{status,command,toolVersion,tree}` are strings |
 | `dependencies` | Required array (`[]` = no packages). One row per resolved graph edge/context; the same package may repeat under different parents or projects |
 | dependency `name`, `version` | Required strings |
-| dependency `purl` | Optional; must be well formed, its `@version` must equal `version` exactly, and its type must match `ecosystem` for Maven/Python/npm/NuGet |
+| dependency `purl` | Optional; must be well formed, its `@version` must equal `version` exactly, and its type must match `ecosystem` for Maven/Python/npm/NuGet. Rows without a purl are identified by name + version, so two such rows with that name and version but a different `ecosystem`, `groupId` or `artifactId` reject the file (add purls) |
 | dependency `dependencyType`, `depth` | `direct` or `transitive`; `depth` a whole number ≥ 1 (direct = 1, transitive ≥ 2) |
 | dependency `projectPath` | When `projects` are declared, must name one of them |
 | other dependency fields | `groupId`, `artifactId`, `type`, `scope`, `parentCoordinate`, `projectCoordinate`, `ecosystem`, `packageManager`, `recordSource` are strings; `optional` boolean; `verification{status,source,context}` strings |
