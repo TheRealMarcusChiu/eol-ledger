@@ -11,7 +11,7 @@
     <div th:if="${message}" class="notice notice-ok" role="status" th:text="${message}">done</div>
     <div th:if="${warning}" class="notice notice-warn" role="status" th:text="${warning}">warning</div>
     <div th:if="${errors}" class="notice notice-error" role="alert">
-        <strong>Import rejected. Nothing was changed; existing repositories and snapshots are as they were.</strong>
+        <strong>Import rejected. Nothing was changed; existing code repos and snapshots are as they were.</strong>
         <ul><li th:each="e : ${errors}" th:text="${e}">line 2: problem</li></ul>
     </div>
 
@@ -27,16 +27,16 @@
         <details class="help">
             <summary>Format help</summary>
             <p id="csv-h"><strong>Registry CSV</strong> (fetches each branch's SBOM). The first line must be exactly <code th:text="${header}">header</code>.
-                One row per repository branch; <code>provider</code> is one of
+                One row per code repo branch; <code>provider</code> is one of
                 <span th:text="${#strings.listJoin(providers, ', ')}">github</span>.
-                Listed rows are added or updated; repositories not in the file are left untouched (nothing is deleted).
+                Listed rows are added or updated; code repos not in the file are left untouched (nothing is deleted).
                 Every row and every SBOM is checked before anything is saved; if one fails, the whole file is rejected.</p>
             <p>SBOMs (CycloneDX JSON or SPDX 2.x JSON) are fetched over HTTPS from allowlisted hosts only:
                 <span th:if="${hosts.isEmpty()}">none configured yet (set <code>eol.sbom.hosts</code>)</span>
                 <code th:each="h, s : ${hosts}" th:text="${h} + (${s.last} ? '' : ',')">host</code>.
                 Tokens come from server configuration, never from the CSV.</p>
             <p id="json-h"><strong>Dependency-inventory JSON</strong> (a <code>.json</code> file, nothing is fetched): a root array with one object per
-                repository branch: required <code>name</code>, <code>url</code> and <code>branch</code> (no default branch is assumed);
+                code repo branch: required <code>name</code>, <code>url</code> and <code>branch</code> (no default branch is assumed);
                 optional <code>appId</code>, <code>provider</code>, <code>sbom</code> (<code>url</code> may be null, <code>generatedAt</code>),
                 <code>projects</code> (<code>path</code>, <code>ecosystem</code>, <code>packageManager</code>, <code>resolution</code>);
                 and a required <code>dependencies</code> array (<code>[]</code> for none) with one row per resolved graph edge:
@@ -45,7 +45,7 @@
                 Every row is kept with its snapshot; each distinct package + version is listed once for EoL matching.
                 A branch gets a new snapshot when anything except <code>sbom.generatedAt</code> changed. URLs and evidence paths in the file are
                 recorded as provenance and never fetched; refreshes skip these branches, so re-upload the JSON to update them.</p>
-            <p>The demo JSON holds two fictional DEMO repositories (<code>example.invalid</code> placeholders, not remotely hosted),
+            <p>The demo JSON holds two fictional DEMO code repos (<code>example.invalid</code> placeholders, not remotely hosted),
                 each on <code>main</code> and <code>release/legacy</code>, resolved with Maven, Gradle, NuGet, pip, pip3, uv, npm and Yarn;
                 every row comes from a native dependency-tree run.</p>
         </details>
@@ -58,17 +58,11 @@
                 <input type="hidden" name="name" value="demo-registry.csv">
                 <button type="submit">Import demo registry</button>
             </form>
-            <form method="post" th:action="@{/imports/demo}" class="inline">
-                <input type="hidden" name="name" value="demo-registry-update.csv">
-                <button type="submit">Import demo update</button>
-            </form>
-            <a class="button-quiet" th:href="@{/imports/samples/demo-registry.csv}" download>Download demo CSV</a>
-            <a class="button-quiet" th:href="@{/imports/samples/demo-registry-update.csv}" download>Download demo update CSV</a>
             <a class="button-quiet" th:href="@{/imports/samples/demo-dependency-inventory.json}" download>Download demo JSON</a>
         </div>
         <details class="help">
             <summary>About the demo</summary>
-            <p>The demo registry describes four <strong>fictional DEMO</strong> repository branches (GitLab, GitHub, Azure DevOps)
+            <p>The demo registry describes four <strong>fictional DEMO</strong> code repo branches (GitLab, GitHub, Azure DevOps)
                 backed by SBOMs bundled with the app. The demo JSON is the resolved dependency inventory described under Format help.
                 EoL dates still come only from the real endoflife.date catalogue.</p>
         </details>

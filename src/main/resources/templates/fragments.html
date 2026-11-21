@@ -12,8 +12,8 @@
     <a class="skip" href="#main">Skip to content</a>
     <a class="brand" th:href="@{/}"><span class="brand-mark" aria-hidden="true"></span>EoL Ledger</a>
     <nav aria-label="Main">
-        <a th:href="@{/}" th:attr="aria-current=${active == 'dashboard'} ? 'page' : null">Cycles</a>
-        <a th:href="@{/repos}" th:attr="aria-current=${active == 'repos'} ? 'page' : null">Repositories</a>
+        <a th:href="@{/}" th:attr="aria-current=${active == 'dashboard'} ? 'page' : null">EoL Packages</a>
+        <a th:href="@{/repos}" th:attr="aria-current=${active == 'repos'} ? 'page' : null">Code repos</a>
         <a th:href="@{/imports}" th:attr="aria-current=${active == 'imports'} ? 'page' : null">Imports</a>
     </nav>
 </header>
@@ -37,7 +37,7 @@
     <dd th:text="${inline.generatedAt() ?: 'Not stated'}">2026-11-20T10:00:00Z</dd>
     <th:block th:if="${inline.demo() or inline.localRepository() != null}">
         <dt>Demo</dt>
-        <dd><span th:if="${inline.demo()}">Fictional synthetic demo repository: its URL is a placeholder and is not remotely hosted.</span>
+        <dd><span th:if="${inline.demo()}">Fictional synthetic demo code repo: its URL is a placeholder and is not remotely hosted.</span>
             <span th:if="${inline.localRepository() != null}">Source: <code th:text="${inline.localRepository()}">sources/x.bundle</code>
                 <span class="muted">(git bundle in the demo download)</span></span></dd>
     </th:block>

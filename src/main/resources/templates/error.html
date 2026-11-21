@@ -16,11 +16,11 @@
         <span th:case="*">Something went wrong</span>
     </h1>
     <p class="lede" th:switch="${status}">
-        <span th:case="404">The repository, product or page does not exist. It may have been typed incorrectly.</span>
+        <span th:case="404">The code repo, product or page does not exist. It may have been typed incorrectly.</span>
         <span th:case="403">The form was missing its security token or the page had expired. Reload the page and try again.</span>
         <span th:case="*">Error <span th:text="${status}">500</span>. Details were written to the server log.</span>
     </p>
-    <p><a th:href="@{/}">Back to release cycles</a></p>
+    <p><a th:href="@{/}">Back to EoL Packages</a></p>
 </main>
 </body>
 </html>

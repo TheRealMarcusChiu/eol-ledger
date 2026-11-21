@@ -18,10 +18,10 @@ Data is stored in `./data/eol-ledger.mv.db` (relative to the working directory).
 Health: `GET /actuator/health`.
 
 First steps:
-1. **Update EoL data** on the Release cycles page (same action as **Imports & sync → Sync catalogue now**;
+1. **Update EoL data** on the EoL Packages page (same action as **Imports & sync → Sync catalogue now**;
    one HTTPS request to endoflife.date, about 3 MB). The result and last success are shown on Imports & sync.
 2. **Import demo registry** (or upload your own CSV).
-3. Open **Release cycles**.
+3. Open **EoL Packages**.
 
 ## Security and deployment
 
@@ -298,11 +298,11 @@ current catalogue**, not from the catalogue as it was on that day, and the page 
 
 ### Demo data
 
-`Download demo CSV` / `Import demo registry` load four **fictional DEMO** branches: a GitLab repo on
+`Import demo registry` loads four **fictional DEMO** branches: a GitLab repo on
 `main` and `release/2.x`, a GitHub repo (SPDX) and an Azure DevOps repo. Their SBOMs are bundled in
 `src/main/resources/samples/` and include unmatched packages (`com.example.demo:core`, guava,
-`internal-ui-kit`, requests). `demo-registry-update.csv` moves `main` to a newer SBOM so you can see
-history. EoL dates still come only from a real catalogue sync; the app ships no EoL dates.
+`internal-ui-kit`, requests). The bundled `demo-registry-update.csv` (no longer offered in the UI; still served at
+`/imports/samples/` and accepted by `POST /imports/demo`) moves `main` to a newer SBOM so you can see history. EoL dates still come only from a real catalogue sync; the app ships no EoL dates.
 
 ## Dashboard semantics
 
@@ -312,7 +312,7 @@ history. EoL dates still come only from a real catalogue sync; the app ships no 
   both (`?start=&end=`) = all time. A deliberately cleared start is different from the default view.
 * Cycles without a published EoL date appear only in the all-time view and are labelled
   "No EoL date announced" or "Ended (date not published)". They never pass a date filter.
-* **Repositories** counts distinct repository URLs. A repo with two branches on the same cycle counts
+* **Code repos** counts distinct repository URLs. A repo with two branches on the same cycle counts
   once. **Branches** counts branches.
 * Malformed or reversed dates return a 400 page that explains the problem.
 
@@ -359,7 +359,7 @@ EoL data comes from the endoflife.date API v1 (`/products/full`, or `/products/<
 generated from [github.com/endoflife-date/endoflife.date](https://github.com/endoflife-date/endoflife.date)
 (MIT licence). That project's README points to this API ([docs](https://endoflife.date/docs/api/v1/))
 as the way to consume its data, so the app does not clone or parse the repository itself. The
-**Update EoL data** button on the Release cycles page runs the same sync as the Imports & sync page. Each product's cycles and identifiers are replaced in one transaction only after
+**Update EoL data** button on the EoL Packages page runs the same sync as the Imports & sync page. Each product's cycles and identifiers are replaced in one transaction only after
 that product parsed completely. A failed request or a malformed product keeps the previous data.
 Products missing from a later response are kept, not deleted. The sync status (last attempt, last
 success, errors) is shown on the Imports & sync page.

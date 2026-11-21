@@ -5,7 +5,7 @@
 <header th:replace="~{fragments :: nav('repos')}"></header>
 <main id="main">
     <div class="page-head">
-        <p class="crumbs"><a th:href="@{/repos}">Repositories</a> /
+        <p class="crumbs"><a th:href="@{/repos}">Code repos</a> /
             <a th:href="@{/repos/{id}(id=${b.id()})}" th:text="${b.repoName()} + ' @ ' + ${b.branch()}">repo</a> / history</p>
         <h1>History: <span th:text="${b.repoName()}">repo</span> @ <span th:text="${b.branch()}">main</span></h1>
     </div>

@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
-<head th:replace="~{fragments :: head('Release cycles')}"></head>
+<head th:replace="~{fragments :: head('EoL Packages')}"></head>
 <body>
 <header th:replace="~{fragments :: nav('dashboard')}"></header>
 <main id="main">
     <div class="page-head title-row">
-        <h1>Release cycles</h1>
+        <h1>EoL Packages</h1>
         <section class="actions" aria-labelledby="update-h">
             <h2 id="update-h" class="sr-only">EoL data</h2>
             <span class="hint" th:if="${status != null and status.succeededAt() != null}">Updated
@@ -49,7 +49,7 @@
         </div>
         <details class="help">
             <summary>Help</summary>
-            <p id="filter-help">Matches upstream release cycles to the latest SBOM of each repository branch.
+            <p id="filter-help">Matches upstream release cycles to the latest SBOM of each code repo branch.
                 Both dates are inclusive. Clear a date for an open range; clear both for all time,
                 which also lists cycles whose EoL date is unknown. Default view starts at today
                 (<span th:text="${today}">date</span>).</p>
@@ -64,7 +64,7 @@
         <strong>Those filters could not be applied.</strong> <span th:text="${error}">error</span>
     </div>
 
-    <div class="table-wrap" th:unless="${error}" tabindex="0" role="region" aria-label="Release cycles">
+    <div class="table-wrap" th:unless="${error}" tabindex="0" role="region" aria-label="EoL Packages">
         <table>
             <thead>
             <tr>
@@ -72,7 +72,7 @@
                 <th scope="col">Cycle</th>
                 <th scope="col">EoL date</th>
                 <th scope="col">Status</th>
-                <th scope="col" class="num">Repositories</th>
+                <th scope="col" class="num">Code repos</th>
                 <th scope="col" class="num">Branches</th>
             </tr>
             </thead>
@@ -95,7 +95,7 @@
     </div>
     <p class="hint" th:if="${unmatched != null and unmatched > 0}">
         <span th:text="${unmatched}">3</span> installed packages have no release cycle;
-        see each <a th:href="@{/repos}">repository branch</a> for why.
+        see each <a th:href="@{/repos}">code repo branch</a> for why.
     </p>
 </main>
 <footer th:replace="~{fragments :: footer}"></footer>

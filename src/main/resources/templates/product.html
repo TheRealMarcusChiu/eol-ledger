@@ -5,7 +5,7 @@
 <header th:replace="~{fragments :: nav('dashboard')}"></header>
 <main id="main">
     <div class="page-head">
-        <p class="crumbs"><a th:href="@{/}">Release cycles</a> / <span th:text="${product.label()}">Python</span></p>
+        <p class="crumbs"><a th:href="@{/}">EoL Packages</a> / <span th:text="${product.label()}">Python</span></p>
         <h1 th:text="${product.label()}">Python</h1>
         <p class="lede"><a th:if="${product.link()}" th:href="${product.link()}" th:text="${product.link()}">link</a>
             <span th:unless="${product.link()}" th:text="'endoflife.date product ' + ${product.name()}">name</span>,
@@ -20,7 +20,7 @@
                 <th scope="col">Released</th>
                 <th scope="col">EoL date</th>
                 <th scope="col">Status</th>
-                <th scope="col" class="num">Repositories</th>
+                <th scope="col" class="num">Code repos</th>
             </tr>
             </thead>
             <tbody>
