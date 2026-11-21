@@ -7,8 +7,8 @@ const vm = require('node:vm');
 
 const source = fs.readFileSync(path.join(__dirname, '../../main/resources/static/app.js'), 'utf8');
 
-function load(window) {
-  const ctx = vm.createContext({ window: window || {}, document: { addEventListener() {}, getElementById() { return null; } } });
+function load(window, document) {
+  const ctx = vm.createContext({ window: window || {}, document: document || { addEventListener() {}, getElementById() { return null; } } });
   vm.runInContext(source, ctx);
   return ctx;
 }
@@ -269,6 +269,56 @@ test('a page holds the filtered and sorted rows of the whole table, not of the p
   assert.deepStrictEqual(page(1).slice(-1).concat(page(2).slice(0, 1)), ['39', '41'], 'page 1 ends and page 2 starts in sorted order');
   assert.deepStrictEqual(page(3), ['81', '83', '85', '87', '89', '91', '93', '95', '97', '99', '101']);
   assert.deepStrictEqual([].concat(page(1), page(2), page(3)), matching.map((i) => rows[i].version), 'pages partition every match once');
+});
+
+// ---- copy a cell's value ----
+
+test('popup point stays 8px inside the viewport', () => {
+  const { popupAt } = load();
+  assert.deepStrictEqual(plain(popupAt(100, 200, 180, 60, 1280, 800)), { left: 100, top: 200 });
+  assert.deepStrictEqual(plain(popupAt(1270, 790, 180, 60, 1280, 800)), { left: 1092, top: 732 }, 'bottom-right corner flips inside');
+  assert.deepStrictEqual(plain(popupAt(-5, -5, 180, 60, 400, 800)), { left: 8, top: 8 });
+  assert.deepStrictEqual(plain(popupAt(50, 50, 500, 60, 400, 800)), { left: 8, top: 50 }, 'wider than the viewport: pinned left');
+});
+
+/** A document whose execCommand('copy') returns `copies` (or throws), recording the textarea it was given. */
+function fakeDoc(copies) {
+  const seen = { appended: [], removed: 0, selected: '' };
+  const doc = {
+    addEventListener() {}, getElementById() { return null; },
+    createElement() {
+      return { value: '', style: {}, setAttribute() {}, focus() {}, select() { seen.selected = this.value; }, remove() { seen.removed++; } };
+    },
+    execCommand(cmd) { seen.cmd = cmd; if (copies === 'throw') throw new Error('nope'); return copies; },
+  };
+  const host = { appendChild(el) { seen.appended.push(el); } };
+  return { doc, host, seen };
+}
+
+test('copy: execCommand copy on a temporary textarea, true only when it really copied; nothing left behind', async () => {
+  const { doc, host, seen } = fakeDoc(true);
+  const ctx = load({ navigator: {} }, doc);
+  assert.strictEqual(await ctx.copyText('a <b> & "c"', host), true);
+  assert.strictEqual(seen.cmd, 'copy');
+  assert.strictEqual(seen.selected, 'a <b> & "c"', 'the exact plain text');
+  assert.strictEqual(seen.removed, 1);
+});
+
+test('copy: no clipboard API (plain-HTTP LAN page) and execCommand refusing or throwing is reported as a failure', async () => {
+  for (const copies of [false, 'throw']) {
+    const { doc, host, seen } = fakeDoc(copies);
+    assert.strictEqual(await load({ navigator: {} }, doc).copyText('x', host), false, String(copies));
+    assert.strictEqual(seen.removed, 1);
+  }
+});
+
+test('copy: the Clipboard API is the fallback when execCommand fails, and its rejection is a failure too', async () => {
+  const writes = [];
+  const ok = fakeDoc(false);
+  assert.strictEqual(await load({ navigator: { clipboard: { writeText: async (t) => { writes.push(t); } } } }, ok.doc).copyText('v1', ok.host), true);
+  assert.deepStrictEqual(writes, ['v1']);
+  const denied = fakeDoc(false);
+  assert.strictEqual(await load({ navigator: { clipboard: { writeText: async () => { throw new Error('denied'); } } } }, denied.doc).copyText('v2', denied.host), false);
 });
 
 test('storage uses only its own key', () => {

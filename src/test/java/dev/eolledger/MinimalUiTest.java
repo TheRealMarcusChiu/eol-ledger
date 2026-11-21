@@ -53,9 +53,12 @@ class MinimalUiTest extends WebTestBase {
     @Test
     void importsActionsAndStatusAreVisibleAndFormatDocsArePreserved() throws Exception {
         String html = page("/imports");
-        assertThat(visible(html)).contains(">Import file</button>", ">Download demo JSON</a>", ">Sync catalogue now</button>",
-                        "href=\"/imports/samples/demo-dependency-inventory.json\"", "Last success", "Import history", "<summary>Format help</summary>")
+        assertThat(visible(html)).contains(">Import file</button>", ">Import History</button>", ">Sync catalogue now</button>",
+                        "Last success", "Import history", "<summary>Format help</summary>")
                 .doesNotContain("repo_name,repo_url,provider,branch,sbom_url");
+        // the demo download moved into the closed Format help
+        assertThat(visible(html)).doesNotContain(">Download demo JSON</a>");
+        assertThat(html).contains("href=\"/imports/samples/demo-dependency-inventory.json\" download>Download demo JSON</a>");
         // CSV import, the demo registry and the SBOM refresh were removed
         assertThat(html).doesNotContain("Import demo registry", "demo-registry", "Refresh all now", "branches registered", "Demo data",
                 "Registry CSV", "text/csv");

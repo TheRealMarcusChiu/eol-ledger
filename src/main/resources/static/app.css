@@ -436,6 +436,9 @@ form.inline { display: inline; }
 .import-dialog form { display: flex; flex-direction: column; gap: 1rem; }
 .import-dialog .hint { margin: 0; }
 .import-dialog input[type="file"] { width: 100%; }
+/* Import History popup: the same native popover, wide enough for its table; header filter menus stay inside it. */
+.import-dialog.history-dialog { width: min(72rem, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); }
+.dialog-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
 
 /* ---------- Notices ---------- */
 .notice {
@@ -717,11 +720,31 @@ table.cols-sized .cell-clip { max-width: none; }
   display: inline-block;
   animation: cell-marquee var(--marquee-time, 4s) ease-in-out .35s infinite alternate;
 }
+.cell-clip.is-held > .cell-run { animation-play-state: paused; } /* pressed or selected: the text holds still (app.js) */
 @keyframes cell-marquee {
   0%, 12% { transform: translateX(0); }
   88%, 100% { transform: translateX(var(--marquee-dist, 0)); }
 }
 .cell-sep { color: var(--muted); }
+/* A body cell's value is text to select (I-beam); the padding around it keeps the row link's pointer (app.js). */
+tbody .cell-run { cursor: text; -webkit-user-select: text; user-select: text; } /* explicit: Chromium will not start a drag selection inside a link otherwise */
+.copy-menu {
+  position: fixed;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  max-width: calc(100vw - 16px);
+  padding: .6rem;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  box-shadow: 0 18px 48px var(--shadow);
+}
+.copy-menu[hidden] { display: none; }
+.copy-menu p { margin: 0; color: var(--muted); font: 400 .72rem/1.4 var(--mono); white-space: normal; }
+.copy-menu p:empty { display: none; }
+.copy-buffer { position: fixed; top: 0; left: 0; width: 1px; height: 1px; opacity: 0; }
 /* Lists inside a cell (history diffs, inline facts) run along the line instead of stacking. */
 .cell-run ul.plain, .cell-run ul.plain li { display: inline; margin: 0; }
 .cell-run ul.plain li + li { margin-left: 1.1rem; }

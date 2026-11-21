@@ -19,7 +19,7 @@
         <h2 id="upload-h">Code Repo &amp; dependency Data</h2>
         <div class="actions">
             <button type="button" popovertarget="import-dialog">Import file</button>
-            <a class="button-quiet" th:href="@{/imports/samples/demo-dependency-inventory.json}" download>Download demo JSON</a>
+            <button type="button" class="button-quiet" popovertarget="history-dialog">Import History</button>
         </div>
         <!--/* Native popover: opens from the button above with no script; Esc or Cancel closes it. */-->
         <div id="import-dialog" class="import-dialog" popover role="dialog" aria-labelledby="import-dialog-h">
@@ -35,6 +35,32 @@
                     <button type="button" class="button-quiet" popovertarget="import-dialog" popovertargetaction="hide">Cancel</button>
                 </div>
             </form>
+        </div>
+        <!--/* The import history lives only in this popover (closed until the button above opens it; Esc, Close or a click outside closes it). */-->
+        <div id="history-dialog" class="import-dialog history-dialog" popover role="dialog" aria-labelledby="history-dialog-h">
+            <div class="dialog-head">
+                <h3 id="history-dialog-h">Import History</h3>
+                <button type="button" class="button-quiet" popovertarget="history-dialog" popovertargetaction="hide">Close</button>
+            </div>
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Import history">
+                <table data-noun="import runs">
+                    <thead>
+                    <tr><th scope="col" data-type="datetime">When</th><th scope="col">Source</th><th scope="col">Result</th>
+                        <th scope="col" data-type="number" class="num">Rows</th><th scope="col" data-type="number" class="num">New snapshots</th><th scope="col">Details</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="r : ${runs}">
+                        <td class="date small" th:text="${@view.time(r.ranAt())}">time</td>
+                        <td th:text="${r.source()}">upload</td>
+                        <td><span class="eol" th:classappend="${r.ok()} ? 'eol-ok' : 'eol-ended'" th:text="${r.ok()} ? 'Imported' : 'Rejected'">ok</span></td>
+                        <td class="num" th:text="${r.rows()}">4</td>
+                        <td class="num" th:text="${r.newSnapshots()}">4</td>
+                        <td class="small" th:text="${r.message()}">message</td>
+                    </tr>
+                    <tr th:if="${runs.isEmpty()}"><td colspan="6" class="empty">No imports yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
         <details class="help">
             <summary>Format help</summary>
@@ -55,6 +81,7 @@
                 each on <code>main</code> and <code>release/legacy</code>, resolved with Maven, Gradle, NuGet, pip, pip3, uv, npm and Yarn;
                 every row comes from a native dependency-tree run. Upload it here to try the app; EoL dates still come only from the
                 real endoflife.date catalogue.</p>
+            <p><a class="button-quiet" th:href="@{/imports/samples/demo-dependency-inventory.json}" download>Download demo JSON</a></p>
         </details>
     </section>
 
@@ -81,27 +108,6 @@
             <p>A failed sync keeps the previously synced dates; each product is replaced only when its new data parsed completely.</p>
         </details>
     </section>
-
-    <h2>Import history</h2>
-    <div class="table-wrap" tabindex="0" role="region" aria-label="Import history">
-        <table data-noun="import runs">
-            <thead>
-            <tr><th scope="col" data-type="datetime">When</th><th scope="col">Source</th><th scope="col">Result</th>
-                <th scope="col" data-type="number" class="num">Rows</th><th scope="col" data-type="number" class="num">New snapshots</th><th scope="col">Details</th></tr>
-            </thead>
-            <tbody>
-            <tr th:each="r : ${runs}">
-                <td class="date small" th:text="${@view.time(r.ranAt())}">time</td>
-                <td th:text="${r.source()}">upload</td>
-                <td><span class="eol" th:classappend="${r.ok()} ? 'eol-ok' : 'eol-ended'" th:text="${r.ok()} ? 'Imported' : 'Rejected'">ok</span></td>
-                <td class="num" th:text="${r.rows()}">4</td>
-                <td class="num" th:text="${r.newSnapshots()}">4</td>
-                <td class="small" th:text="${r.message()}">message</td>
-            </tr>
-            <tr th:if="${runs.isEmpty()}"><td colspan="6" class="empty">No imports yet.</td></tr>
-            </tbody>
-        </table>
-    </div>
 
     <section class="panel" aria-labelledby="clear-h">
         <h2 id="clear-h">Clear all data</h2>

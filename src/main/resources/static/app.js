@@ -1,5 +1,16 @@
+// A mouse click on a body cell's value text (.cell-run) is for selecting it, so it does not navigate; touch taps still do.
+var pointerType = 'mouse';
+document.addEventListener('pointerdown', function (e) { pointerType = e.pointerType; }, true);
+
 // Whole-row navigation for tables; every row also carries a real link for keyboard and assistive tech.
 document.addEventListener('click', function (e) {
+  // A drag that selected text and ended beside the value clicks the cell link around it: that is a selection too.
+  var selected = window.getSelection && String(window.getSelection());
+  if (e.detail > 0 && pointerType !== 'touch' && e.target.closest && !e.target.closest('a:not(.cell-link)')
+      && (e.target.closest('tbody .cell-run') || (selected && e.target.closest('tbody a.cell-link')))) {
+    if (e.target.closest('a.cell-link')) e.preventDefault();
+    return;
+  }
   var row = e.target.closest('tr[data-href]');
   if (!row || e.target.closest('a, button, input, select, label, summary, [data-column-resize]')) return;
   if (window.getSelection && String(window.getSelection())) return;
@@ -612,7 +623,8 @@ function initTable(table, opts) {
     openKey = null;
     menus[k].root.hidden = true;
     openButtons[k].setAttribute('aria-expanded', 'false');
-    if (focus) openButtons[k].focus();
+    // No scroll: an outside click closes the menu on pointerdown, and scrolling back to the header would move its target.
+    if (focus) openButtons[k].focus({ preventScroll: true });
   }
 
   function open(k) {
@@ -911,12 +923,20 @@ function marqueeSeconds(distance) {
 }
 
 function initMarquee() {
-  var current = null;
+  var current = null, pressed = false;
   var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Text never moves under a selection: a press pauses the running marquee where it is (removing it would swap the value's
+  // layout box and Chromium would start no selection), it stays paused while it holds the selection, and no other starts meanwhile.
+  document.addEventListener('mousedown', function () { pressed = true; if (current) current.classList.add('is-held'); }, true);
+  document.addEventListener('mouseup', function () { pressed = false; if (current && !selecting(current)) current.classList.remove('is-held'); }, true);
+  function selecting(clip) {
+    var s = window.getSelection && window.getSelection();
+    return pressed || !!(s && !s.isCollapsed && s.containsNode(clip, true));
+  }
 
   function stop() {
     if (!current) return;
-    current.classList.remove('is-marquee');
+    current.classList.remove('is-marquee', 'is-held');
     current = null;
   }
 
@@ -928,7 +948,7 @@ function initMarquee() {
     var td = clip.parentNode;
     // The full value is always available as a tooltip, which is all a reduced-motion user gets.
     if (!td.title) td.title = cellText(td).replace(/ · /g, ' ');
-    if (still) return;
+    if (still || selecting(clip)) return;
     clip.style.setProperty('--marquee-dist', -over + 'px');
     clip.style.setProperty('--marquee-time', marqueeSeconds(over) + 's');
     clip.classList.add('is-marquee');
@@ -941,14 +961,112 @@ function initMarquee() {
   }
 
   document.addEventListener('mouseover', function (e) {
+    if (pressed) return; // mid-drag: leave the pressed value as it is
     var clip = clipFor(e.target);
     if (clip) start(clip); else stop();
   });
   document.addEventListener('mouseleave', stop);
   document.addEventListener('focusin', function (e) {
+    if (pressed) return;
     var clip = clipFor(e.target);
     if (clip) start(clip); else stop();
   });
+}
+
+// ---- Right-click a cell's value: a small popup with one button that copies the value as plain text ----
+
+/** Top-left for a w x h popup at point x,y, kept 8px inside a vw x vh viewport. */
+function popupAt(x, y, w, h, vw, vh) {
+  return { left: Math.max(8, Math.min(x, vw - w - 8)), top: Math.max(8, Math.min(y, vh - h - 8)) };
+}
+
+/**
+ * Copies plain text from a click: execCommand('copy') on a temporary textarea first, because this app is served over plain
+ * HTTP on the LAN where navigator.clipboard does not exist; the Clipboard API only when that fails. Resolves true only when a
+ * copy really happened.
+ */
+function copyText(text, host) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.className = 'copy-buffer';
+  host.appendChild(ta);
+  ta.focus({ preventScroll: true });
+  ta.select();
+  var ok = false;
+  try { ok = document.execCommand('copy') === true; } catch (e) { /* not copied */ }
+  ta.remove();
+  var clip = window.navigator && window.navigator.clipboard;
+  if (ok || !clip || !clip.writeText) return Promise.resolve(ok);
+  return clip.writeText(text).then(function () { return true; }, function () { return false; });
+}
+
+/** A cell value's text as shown: list items and " · " separators kept apart, <noscript> fallbacks left out, whitespace collapsed. */
+function valueText(run) {
+  var c = run.cloneNode(true);
+  c.querySelectorAll('noscript').forEach(function (n) { n.remove(); });
+  c.querySelectorAll('li').forEach(function (li) { li.append(' '); });
+  return c.textContent.replace(/\s+/g, ' ').trim();
+}
+
+function initCopy() {
+  var menu = document.createElement('div');
+  menu.className = 'copy-menu';
+  menu.setAttribute('role', 'dialog');
+  menu.setAttribute('aria-label', 'Cell value');
+  menu.tabIndex = -1;
+  menu.hidden = true;
+  var copy = document.createElement('button');
+  copy.type = 'button';
+  copy.className = 'button-quiet';
+  copy.setAttribute('data-copy-value', '');
+  copy.textContent = 'Copy text value';
+  var note = document.createElement('p');
+  note.setAttribute('data-copy-status', '');
+  note.setAttribute('role', 'status');
+  menu.append(copy, note);
+  var value = '', back = null;
+
+  function close(focus) {
+    if (menu.hidden) return;
+    menu.hidden = true;
+    if (focus && back && back.focus) back.focus({ preventScroll: true });
+  }
+
+  document.addEventListener('contextmenu', function (e) {
+    var td = e.target.closest && e.target.closest('main tbody td');
+    var run = td && td.querySelector('.cell-run');
+    // The mouse must be on the value itself; the menu key / Shift+F10 on a focused cell link uses that cell's value.
+    var keyed = e.button !== 2 && e.target === document.activeElement && e.target.matches('a.cell-link');
+    if (!run || !(run.contains(e.target) || keyed)) { close(false); return; }
+    e.preventDefault();
+    if (menu.hidden) back = document.activeElement;
+    value = valueText(run);
+    copy.disabled = !value;
+    note.textContent = value ? '' : 'This cell has no text to copy.';
+    // Inside an open popover (top layer) the menu must live in it to show above it and not light-dismiss it.
+    (td.closest('[popover]') || document.body).appendChild(menu);
+    menu.hidden = false;
+    var r = run.getBoundingClientRect();
+    var at = popupAt(keyed ? r.left : e.clientX, keyed ? r.bottom + 4 : e.clientY, menu.offsetWidth, menu.offsetHeight,
+      window.innerWidth, window.innerHeight);
+    menu.style.left = at.left + 'px';
+    menu.style.top = at.top + 'px';
+    (value ? copy : menu).focus({ preventScroll: true });
+  });
+
+  copy.addEventListener('click', function () {
+    copyText(value, menu).then(function (ok) {
+      note.textContent = ok ? 'Copied.' : 'Copy failed: this browser blocked the clipboard. Select the text and press Ctrl+C.';
+    });
+    copy.focus({ preventScroll: true }); // the temporary textarea took focus
+  });
+
+  document.addEventListener('pointerdown', function (e) { if (!menu.contains(e.target)) close(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !menu.hidden) { e.preventDefault(); close(true); } });
+  menu.addEventListener('focusout', function (e) { if (e.relatedTarget && !menu.contains(e.relatedTarget)) close(false); });
+  window.addEventListener('resize', function () { close(false); });
+  window.addEventListener('scroll', function (e) { if (!menu.contains(e.target)) close(false); }, true);
 }
 
 // ---- Whole-row links: every cell of a linked row is a real <a>, so the browser shows the row's URL on hover ----
@@ -980,6 +1098,7 @@ function linkRows(table) {
       var link = document.createElement('a');
       link.className = 'cell-link';
       link.href = href;
+      link.draggable = false; // dragging over the value selects its text instead of dragging the link
       if (!first) {
         link.tabIndex = -1;
         link.setAttribute('aria-hidden', 'true');
@@ -1127,10 +1246,21 @@ if (document.querySelectorAll) {
   document.querySelectorAll('main table').forEach(clipCells);
   document.querySelectorAll('main table').forEach(linkRows);
   initMarquee();
+  initCopy();
   // Every other table: measure its natural column widths (now one-line), then make them draggable.
   var refits = [];
   document.querySelectorAll('main table').forEach(function (t) {
     if (t === dependenciesTable) return;
+    var pop = t.closest('[popover]');
+    if (pop && !t.offsetWidth) {
+      // A table in a closed popover has no size yet: measure it the first time the popover opens.
+      pop.addEventListener('toggle', function first(e) {
+        if (e.newState !== 'open') return;
+        pop.removeEventListener('toggle', first);
+        initResize(t);
+      });
+      return;
+    }
     var refit = initResize(t);
     if (refit) refits.push(refit);
   });

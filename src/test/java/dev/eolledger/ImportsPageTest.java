@@ -40,6 +40,32 @@ class ImportsPageTest extends IntegrationTest {
     }
 
     @Test
+    void importHistoryIsOnePopoverOpenedBesideImportFileAndTheDemoDownloadSitsInFormatHelp() throws Exception {
+        String html = mvc.perform(get("/imports")).andReturn().getResponse().getContentAsString();
+        String main = html.substring(html.indexOf("<main"), html.indexOf("</main>"));
+        String upload = main.substring(main.indexOf("aria-labelledby=\"upload-h\""), main.indexOf("</section>", main.indexOf("aria-labelledby=\"upload-h\"")));
+        // the actions row: Import file, then Import History right after it, nothing else
+        String actions = upload.substring(upload.indexOf("<div class=\"actions\">"), upload.indexOf("</div>", upload.indexOf("<div class=\"actions\">")));
+        assertThat(actions.replaceAll("\\s+", " ")).isEqualTo("<div class=\"actions\"> <button type=\"button\" popovertarget=\"import-dialog\">Import file</button>"
+                + " <button type=\"button\" class=\"button-quiet\" popovertarget=\"history-dialog\">Import History</button> ");
+        // exactly one history table, inside the closed native popover the button targets, with a title and a Close button
+        assertThat(main.split("data-noun=\"import runs\"", -1)).hasSize(2);
+        assertThat(main.split("aria-label=\"Import history\"", -1)).hasSize(2);
+        String dialog = upload.substring(upload.indexOf("<div id=\"history-dialog\""), upload.indexOf("<details"));
+        assertThat(dialog).contains("class=\"import-dialog history-dialog\" popover role=\"dialog\" aria-labelledby=\"history-dialog-h\"",
+                "<h3 id=\"history-dialog-h\">Import History</h3>", "popovertarget=\"history-dialog\" popovertargetaction=\"hide\">Close</button>",
+                "data-noun=\"import runs\"", ">When</th>", ">New snapshots</th>", ">Details</th>", "No imports yet.");
+        assertThat(dialog).doesNotContain(" open");
+        // the demo download is only inside the closed Format help, same endpoint
+        String help = upload.substring(upload.indexOf("<summary>Format help</summary>"));
+        assertThat(help).contains("<a class=\"button-quiet\" href=\"/imports/samples/demo-dependency-inventory.json\" download>Download demo JSON</a>");
+        assertThat(main.split("Download demo JSON", -1)).hasSize(2);
+        // Clear all data stays the last section
+        assertThat(main.lastIndexOf("<section")).isEqualTo(main.indexOf("aria-labelledby=\"clear-h\"") - "<section class=\"panel\" ".length());
+        assertThat(main.indexOf("data-noun=\"import runs\"")).isLessThan(main.lastIndexOf("<section"));
+    }
+
+    @Test
     void demoJsonIsDownloadableFromTheUploadSectionAndUploadable() throws Exception {
         String html = mvc.perform(get("/imports")).andReturn().getResponse().getContentAsString();
         String upload = html.substring(html.indexOf("aria-labelledby=\"upload-h\""), html.indexOf("</section>", html.indexOf("aria-labelledby=\"upload-h\"")));
