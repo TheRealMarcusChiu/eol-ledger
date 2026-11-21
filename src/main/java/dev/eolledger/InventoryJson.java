@@ -9,6 +9,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -33,11 +35,26 @@ import java.util.TreeMap;
  */
 public final class InventoryJson {
 
+    /** A code repo branch as stored in repo_branch; sbomUrl is always {@link ImportService#INLINE} for JSON uploads. */
+    public record Row(String repoName, String repoUrl, String provider, String branch, String sbomUrl) {
+    }
+
+    /** One package identity + version in a snapshot's inventory (the unit the lifecycle views match). */
+    public record Dep(String name, String version, String purl) {
+    }
+
+    static final Comparator<Dep> ORDER = Comparator.comparing(Dep::name)
+            .thenComparing(Dep::version, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(Dep::purl, Comparator.nullsFirst(Comparator.naturalOrder()));
+
+    public static final List<String> PROVIDERS = List.of("github", "gitlab", "azure-devops", "tfs", "bitbucket", "other");
+    static final int MAX_ENTRIES = 5000;
+
     /**
-     * One validated entry: its registry row (SBOM location = {@link ImportService#INLINE}), the unique package
+     * One validated entry: its branch row (SBOM location = {@link ImportService#INLINE}), the unique package
      * identities for the lifecycle views, the canonical payload kept per snapshot and the change fingerprint.
      */
-    public record Entry(RegistryCsv.Row row, List<SbomParser.Dep> deps, String payload, String fingerprint) {
+    public record Entry(Row row, List<Dep> deps, String payload, String fingerprint) {
     }
 
     // duplicate keys would make the stored payload ambiguous; trailing data after the root would be silently ignored
@@ -59,7 +76,7 @@ public final class InventoryJson {
         }
         if (root == null || !root.isArray()) throw new ImportService.ImportFailedException(List.of("JSON root must be a JSON array of repository branch entries"));
         if (root.isEmpty()) throw new ImportService.ImportFailedException(List.of("JSON array has no entries"));
-        if (root.size() > RegistryCsv.MAX_ROWS) throw new ImportService.ImportFailedException(List.of("JSON has more than " + RegistryCsv.MAX_ROWS + " entries"));
+        if (root.size() > MAX_ENTRIES) throw new ImportService.ImportFailedException(List.of("JSON has more than " + MAX_ENTRIES + " entries"));
         List<String> errors = new ArrayList<>();
         List<Entry> out = new ArrayList<>();
         Set<String> seen = new HashSet<>();
@@ -82,7 +99,7 @@ public final class InventoryJson {
         sortRows(e, "projects");
         sortRows(e, "dependencies");
         String name = text(e, "name", "", 300, true);
-        String url = RegistryCsv.normalizeRepoUrl(text(e, "url", "", 1000, true));
+        String url = normalizeRepoUrl(text(e, "url", "", 1000, true));
         if (url == null) throw new IllegalArgumentException("url must be an http(s) URL with a host and no credentials, query or fragment");
         String branch = text(e, "branch", "", 500, false);
         if (branch == null || branch.isEmpty() || !branch.chars().allMatch(c -> c > 32 && c != 127)) {
@@ -90,7 +107,7 @@ public final class InventoryJson {
         }
         String provider = text(e, "provider", "", 50, false);
         provider = provider == null ? "other" : provider.trim().toLowerCase(Locale.ROOT).replaceAll("[\\s_]+", "-");
-        if (!RegistryCsv.PROVIDERS.contains(provider)) throw new IllegalArgumentException("provider must be one of " + String.join(", ", RegistryCsv.PROVIDERS));
+        if (!PROVIDERS.contains(provider)) throw new IllegalArgumentException("provider must be one of " + String.join(", ", PROVIDERS));
         e.put("url", url);
         e.put("provider", provider);
         text(e, "appId", "", 200, false);
@@ -101,7 +118,7 @@ public final class InventoryJson {
         if (e.has("sbom") && !e.get("sbom").isNull()) {
             JsonNode s = object(e.get("sbom"), "sbom");
             String sbomUrl = text(s, "url", "sbom.", 2000, false);
-            if (sbomUrl != null && (RegistryCsv.normalizeRepoUrl(sbomUrl) == null || Ledger.safeLink(sbomUrl) == null)) {
+            if (sbomUrl != null && (normalizeRepoUrl(sbomUrl) == null || Ledger.safeLink(sbomUrl) == null)) {
                 throw new IllegalArgumentException("sbom.url must be null or an http(s) URL without credentials, query or fragment (it is provenance only and never fetched)");
             }
             for (String f : List.of("format", "evidence")) text(s, f, "sbom.", 2000, false);
@@ -133,13 +150,13 @@ public final class InventoryJson {
         JsonNode deps = e.get("dependencies");
         if (deps == null || !deps.isArray()) throw new IllegalArgumentException("must have a \"dependencies\" array (use [] for none)");
         // one inventory row per package identity + version; every graph-context row stays in the payload
-        TreeMap<String, SbomParser.Dep> unique = new TreeMap<>();
-        List<SbomParser.Dep> all = new ArrayList<>();
+        TreeMap<String, Dep> unique = new TreeMap<>();
+        List<Dep> all = new ArrayList<>();
         Map<String, String> purlFreeOrigin = new HashMap<>();
         for (int i = 0; i < deps.size(); i++) {
             String at = "dependencies[" + i + "]";
             JsonNode d = object(deps.get(i), at);
-            SbomParser.Dep dep = dep(d, at, paths);
+            Dep dep = dep(d, at, paths);
             all.add(dep);
             if (dep.purl() != null) continue;
             // without a purl only the name identifies the package: it must not merge packages from different ecosystems/coordinates
@@ -150,20 +167,20 @@ public final class InventoryJson {
                         + " has no purl and another row with that name and version has a different ecosystem, groupId or artifactId; add a purl to both");
             }
         }
-        all.sort(SbomParser.ORDER);
-        for (SbomParser.Dep d : all) {
+        all.sort(ORDER);
+        for (Dep d : all) {
             String id = d.purl() != null ? Matcher.normalizePurl(d.purl()) : d.name();
             unique.putIfAbsent(id + "\n" + d.version(), d);
         }
-        List<SbomParser.Dep> flat = new ArrayList<>(unique.values());
-        flat.sort(SbomParser.ORDER);
+        List<Dep> flat = new ArrayList<>(unique.values());
+        flat.sort(ORDER);
 
         ObjectNode identity = e.deepCopy();
         if (identity.get("sbom") instanceof ObjectNode s) s.remove("generatedAt"); // regeneration time alone is not an inventory change
-        return new Entry(new RegistryCsv.Row(name.trim(), url, provider, branch, ImportService.INLINE), flat, write(e), sha256("inline-json\n" + write(identity)));
+        return new Entry(new Row(name.trim(), url, provider, branch, ImportService.INLINE), flat, write(e), sha256("inline-json\n" + write(identity)));
     }
 
-    private static SbomParser.Dep dep(JsonNode d, String at, Set<String> paths) {
+    private static Dep dep(JsonNode d, String at, Set<String> paths) {
         String name = text(d, "name", at + " ", 500, true).trim();
         String version = text(d, "version", at + " ", 200, true).trim();
         String purl = text(d, "purl", at + " ", 1000, false);
@@ -196,7 +213,24 @@ public final class InventoryJson {
             JsonNode v = object(d.get("verification"), at + ".verification");
             for (String f : List.of("status", "source", "context")) text(v, f, at + ".verification.", 4000, false);
         }
-        return new SbomParser.Dep(name, version, purl);
+        return new Dep(name, version, purl);
+    }
+
+    /** Lower-cases scheme/host and drops a trailing slash or .git so the same repo is one identity; null when not a plain http(s) URL. */
+    static String normalizeRepoUrl(String raw) {
+        URI u;
+        try {
+            u = new URI(raw);
+        } catch (URISyntaxException e) {
+            return null;
+        }
+        if (u.getScheme() == null || u.getHost() == null || u.getRawUserInfo() != null || u.getRawQuery() != null || u.getRawFragment() != null) return null;
+        String scheme = u.getScheme().toLowerCase(Locale.ROOT);
+        if (!scheme.equals("https") && !scheme.equals("http")) return null;
+        String path = u.getRawPath() == null ? "" : u.getRawPath();
+        path = path.replaceAll("/+$", "").replaceAll("\\.git$", "").replaceAll("/+$", "");
+        String port = u.getPort() < 0 ? "" : ":" + u.getPort();
+        return scheme + "://" + u.getHost().toLowerCase(Locale.ROOT) + port + path;
     }
 
     private static JsonNode object(JsonNode n, String where) {

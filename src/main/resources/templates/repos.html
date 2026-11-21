@@ -33,7 +33,7 @@
                 <td data-column="snapshot" class="date small" th:attr="data-value=${b.observedAt() != null} ? ${@view.time(b.observedAt())} : ''" th:text="${b.observedAt() != null} ? ${@view.time(b.observedAt())} : 'No snapshot yet'">time</td>
             </tr>
             <tr th:if="${branches.isEmpty()}">
-                <td colspan="6" class="empty">No code repos yet. <a th:href="@{/imports}">Import a CSV or JSON</a>.</td>
+                <td colspan="6" class="empty">No code repos yet. <a th:href="@{/imports}">Upload a dependency-inventory JSON</a>.</td>
             </tr>
             </tbody>
         </table>

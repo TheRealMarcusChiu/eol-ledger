@@ -1,8 +1,9 @@
 # EoL Ledger
 
 A local web app that shows which end-of-life (EoL) release cycles your repositories depend on.
-It reads a CSV registry of repository branches, fetches each branch's SBOM, matches packages to
-[endoflife.date](https://endoflife.date) release cycles and keeps a snapshot history per branch.
+You upload a dependency-inventory JSON describing your repository branches and their resolved
+dependencies; it matches packages to [endoflife.date](https://endoflife.date) release cycles and keeps
+a snapshot history per branch. Nothing but the endoflife.date catalogue is ever fetched.
 
 Java 21 · Spring Boot 3.5 · Thymeleaf (server-rendered, one tiny script) · H2 file database by default,
 or an external MySQL 8 server (see [Database: H2 or MySQL](#database-h2-or-mysql)). No external UI assets.
@@ -20,7 +21,7 @@ Health: `GET /actuator/health`.
 First steps:
 1. **Imports & sync → Sync catalogue now** (one HTTPS request to endoflife.date, about 3 MB). The result
    and last success are shown on Imports & sync.
-2. **Import demo registry** (or upload your own CSV).
+2. **Download demo JSON**, then upload it with **Import file** (or upload your own dependency-inventory JSON).
 3. Open **EoL Dependencies**.
 
 ## Security and deployment
@@ -34,8 +35,8 @@ Content-Security-Policy.
 
 Set values in `application.properties`, with `--name=value` arguments, or as environment variables.
 Spring Boot's environment-variable rule: upper-case, `.` and `[n]` become `_`, and **dashes are
-removed** (`eol.catalog.base-url` → `EOL_CATALOG_BASEURL`, `eol.sbom.hosts[0].token` →
-`EOL_SBOM_HOSTS_0_TOKEN`). The names in the table below are covered by a test (`EolPropertiesTest`).
+removed** (`eol.catalog.base-url` → `EOL_CATALOG_BASEURL`, `eol.jobs.catalog-sync.cron` →
+`EOL_JOBS_CATALOGSYNC_CRON`). The names in the table below are covered by a test (`EolPropertiesTest`).
 
 | Property | Env | Default | Meaning |
 |---|---|---|---|
@@ -45,14 +46,8 @@ removed** (`eol.catalog.base-url` → `EOL_CATALOG_BASEURL`, `eol.sbom.hosts[0].
 | `eol.catalog.base-url` | `EOL_CATALOG_BASEURL` | `https://endoflife.date/api/v1` | endoflife.date API base URL (must be HTTPS) |
 | `eol.catalog.products` | `EOL_CATALOG_PRODUCTS` | blank | Blank = whole catalogue via `GET /products/full`. Or a list such as `python,nodejs,spring-boot` (one request each) |
 | `eol.catalog.timeout` / `max-bytes` | | `60s` / 32 MB | Catalogue fetch limits |
-| `eol.sbom.hosts[n].host` | `EOL_SBOM_HOSTS_0_HOST` | none | SBOM host allowlist |
-| `eol.sbom.hosts[n].token` | `EOL_SBOM_HOSTS_0_TOKEN` | none | Sent as `Authorization: Bearer <token>` to that host only |
-| `eol.sbom.hosts[n].allow-http` | | `false` | Plain HTTP, honoured only for loopback hosts (local dev/test) |
-| `eol.sbom.timeout` / `max-bytes` | | `30s` / 10 MB | SBOM fetch limits |
 | `eol.mappings` | `EOL_MAPPINGS` | blank | Explicit mappings, see below |
 | `eol.jobs.catalog-sync.cron` / `.zone` | `EOL_JOBS_CATALOGSYNC_CRON` / `EOL_JOBS_CATALOGSYNC_ZONE` | `-` (off) / `UTC` | Scheduled catalogue sync |
-| `eol.jobs.repo-refresh.cron` / `.zone` | `EOL_JOBS_REPOREFRESH_CRON` / `EOL_JOBS_REPOREFRESH_ZONE` | `-` (off) / `UTC` | Scheduled SBOM refresh |
-| `eol.refresh-csv-path` | `EOL_REFRESHCSVPATH` | blank | CSV re-imported by the refresh job; blank = refresh the stored registry |
 
 ### Database: H2 or MySQL
 
@@ -98,41 +93,24 @@ GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX, REFERENCES ON eol_ledger.* 
   full values.
 * Run **one app instance per database**. Imports and syncs are serialized inside one process only.
 * **Switching is not migration.** Choosing MySQL starts with an empty database: run **Update EoL
-  data** and import your registry CSV again (history starts from that import). Nothing is copied
+  data** and upload your dependency-inventory JSON again (history starts from that import). Nothing is copied
   between databases. The H2 file is left untouched; start without the `mysql` profile to use it again.
-
-### Artifactory token setup
-
-```bash
-export EOL_SBOM_HOSTS_0_HOST=artifactory.example.com
-# replace the placeholder with an access token that can read the SBOM repository
-export EOL_SBOM_HOSTS_0_TOKEN='paste-access-token-here'
-java -jar target/eol-ledger-0.1.0.jar
-```
-
-Artifactory accepts access tokens as Bearer tokens. Tokens never appear in the CSV, links, errors,
-logs or import history. An allowlisted host without a token is fetched without authentication.
 
 ### Scheduled jobs
 
-Both jobs are off by default and can be turned on separately. The manual buttons always work.
+The catalogue sync job is off by default. The **Sync catalogue now** button always works.
 
 ```properties
 # daily at 03:00
 eol.jobs.catalog-sync.cron=0 0 3 * * *
 eol.jobs.catalog-sync.zone=Europe/Amsterdam
-# weekdays at 03:30
-eol.jobs.repo-refresh.cron=0 30 3 * * MON-FRI
-eol.jobs.repo-refresh.zone=Europe/Amsterdam
-# optional: re-import this CSV instead of the stored registry
-eol.refresh-csv-path=/srv/eol-ledger/registry.csv
 ```
 
 `.properties` files have no inline comments: anything after the value, including `#`, becomes part of it.
 
 Failures keep the previous good data, appear on the Imports & sync page and are retried on the
-next run. Tests never enable the jobs and never contact the internet: the catalogue and SBOMs are
-served by a loopback test server.
+next run. Tests never enable the job and never contact the internet: the catalogue is served by a
+loopback test server.
 
 ### Real MySQL tests (opt-in)
 
@@ -157,60 +135,9 @@ mvn test -Dtest='MySqlStorageTest'
 The URL names the server only (no database). Each run creates one new `eol_test_<random>` database,
 uses only that, and drops only that database at the end. It never touches other databases.
 
-## Registry CSV
-
-The header must be exactly:
-
-```
-repo_name,repo_url,provider,branch,sbom_url
-```
-
-| Column | Rules |
-|---|---|
-| `repo_name` | Display name, required |
-| `repo_url` | `http(s)` URL with no credentials, query or fragment. Normalized (lower-case host, no trailing `/` or `.git`); this plus `branch` is the identity |
-| `provider` | `github`, `gitlab`, `azure-devops` (also accepts `Azure DevOps`), `tfs`, `bitbucket`, `other`. Metadata only: no SCM API is called |
-| `branch` | Required; slashes are fine (`release/2.x`); no spaces |
-| `sbom_url` | HTTPS URL on an allowlisted host, with no credentials, query or fragment; or a bundled sample `classpath:samples/<file>.json` |
-
-The CSV is a registry of where SBOMs live, not a dependency list. Quoting follows RFC 4180: a
-field is either unquoted or wholly quoted (`"a, b"`, inner quotes doubled: `"say ""hi"""`). A stray
-quote inside an unquoted field, text after a closing quote, or a quote that is never closed rejects
-the whole file.
-
-### Import semantics
-
-* **All or nothing.** Every row is validated and every SBOM is fetched and parsed before anything
-  is saved. One bad row or one failed fetch rejects the file and leaves existing data as it was.
-  Every error is listed with its line number.
-* **Upsert, never delete.** Listed rows are added or updated. Rows left out of the file are untouched.
-* **Snapshots.** Each branch has its own history. A new snapshot is stored only when the branch's
-  normalized inventory (SBOM URL plus the sorted, de-duplicated list of name, version and purl)
-  differs from that branch's *latest* snapshot. Re-importing the same CSV re-fetches every SBOM, so
-  remote changes are picked up, but an unchanged inventory adds no history. Package order does not
-  matter. A change back to an earlier state (A → B → A) creates a new snapshot. A change to
-  `repo_name`/`provider` alone updates the registry without a snapshot.
-* **Formats.** CycloneDX JSON and SPDX 2.x JSON; XML is not supported. The accepted profile is
-  strict, so a malformed SBOM can never replace a good inventory with an empty or partial one:
-  * CycloneDX: a top-level `components` **array** is required (`[]` means "no packages" and is
-    stored as an empty snapshot). Each component must be an object with a string `name`; `group`,
-    `version` and `purl` must be strings when present; nested `components` must be an array.
-  * SPDX 2.x: a `packages` **array** is required (`[]` allowed). Each package must be an object with
-    a string `name`; `versionInfo` must be a string when present; `externalRefs` must be an array of
-    objects, and a purl reference's `referenceLocator` must be a string. The described root package
-    is skipped.
-  * Any purl must be well formed (`pkg:type/name`). `NOASSERTION`/`NONE` values count as absent.
-  * Anything else (missing or non-array inventory, non-object records, missing names, wrong types,
-    malformed purls) rejects the whole import with the record's position, e.g. `components[3] has no "name"`.
-* **Fetch safety.** HTTPS to allowlisted hosts only. Redirects are never followed. `timeout` is one
-  overall deadline for connect, headers and the whole body (a stalled body is cancelled), and the
-  body is cut off as soon as it exceeds `max-bytes`. `classpath:` is limited to bundled `samples/*.json`. `file:` and other schemes are
-  rejected.
-
 ## Dependency inventory JSON
 
-Instead of pointing at an SBOM, a `.json` upload on the same Imports page carries each branch's
-resolved dependencies itself. The root is an array with one object per repository branch:
+A `.json` upload on the Imports page carries each branch's resolved dependencies itself. The root is an array with one object per repository branch:
 
 ```json
 [
@@ -250,8 +177,8 @@ and `source` paths name ship in the separate demo archive, not in the app.
 
 | Field | Rules |
 |---|---|
-| `name`, `url`, `branch` | Required. `url` follows the registry CSV `repo_url` rules and normalization; `branch` has no default (no `main` is assumed) |
-| `provider` | Optional, as in the CSV; default `other` |
+| `name`, `url`, `branch` | Required. `url` is an `http(s)` URL with no credentials, query or fragment, normalized (lower-case host, no trailing `/` or `.git`); `url` + `branch` is the identity. `branch` has no default (no `main` is assumed); slashes are fine, spaces are not |
+| `provider` | Optional: `github`, `gitlab`, `azure-devops` (also accepts `Azure DevOps`), `tfs`, `bitbucket`, `other` (default). Metadata only: no SCM API is called |
 | `appId`, `localRepository`, `schemaVersion` (must be 1), `demo` (boolean) | Optional |
 | `sbom` | Optional object: `url` (null, or an http(s) URL without credentials/query/fragment), `format`, `generatedAt` (ISO-8601 instant), `evidence` |
 | `projects` | Optional array of objects with a unique string `path`; `ecosystem`, `packageManager`, `coordinate`, `resolution{status,command,toolVersion,tree}` are strings |
@@ -266,6 +193,7 @@ and `source` paths name ship in the separate demo archive, not in the app.
   saved; one bad entry rejects the file (errors name `entry N` and the row, e.g. `dependencies[3]`).
   JSON with a repeated key in one object, or anything after the root array, is rejected. `sbom.url`, evidence paths and
   `localRepository` are recorded as provenance and **never fetched or opened**. Unknown fields are kept.
+* **Upsert, never delete.** Listed branches are added or updated. Branches left out of the file are untouched.
 * **Storage.** Each new snapshot stores the whole validated entry (keys sorted, `projects` and
   `dependencies` in a stable order) in `snapshot_inventory`, so App ID, module paths, managers,
   scopes, depth, parents and verification survive. For dashboards and EoL matching, each distinct
@@ -275,17 +203,14 @@ and `source` paths name ship in the separate demo archive, not in the app.
   differs from its latest snapshot, including graph context only (a changed scope or parent with the
   same packages). Reordered keys, rows or entries and a regenerated-but-identical inventory add no
   snapshot; the stored `generatedAt` is then the first observation of that inventory.
-* **Refresh.** JSON branches are stored with the SBOM location `inline:json-upload` and are marked
-  "Inline JSON upload" in the UI. The registry refresh (button or schedule) skips them and says how
-  many it skipped; a scheduled `eol.refresh-csv-path` CSV naming such a branch is skipped the same way,
-  so a declared `sbom.url` never silently replaces the uploaded inventory. Imports and refreshes run
-  one at a time and a refresh reads the registry only once it runs, so a refresh that was waiting on
-  a JSON upload skips that branch too. Only an explicit upload
-  (new JSON, or a manual registry CSV upload for that url + branch) changes it.
+* **Updating.** A branch changes only when you upload new JSON for it; nothing refreshes on its own.
+  Branches are stored with the SBOM location `inline:json-upload` and marked "Inline JSON upload".
+  Branches registered by earlier versions (which fetched SBOMs from a CSV registry) keep their stored
+  data and are shown as before; uploading JSON for the same url + branch takes them over.
 * **Pages.** Branch and history pages show App ID, projects/managers, declared SBOM (if any),
   generated time and demo status, and add a *Project context* column (project: scope, direct or
   transitive with depth). Synthetic `example.invalid` URLs are labelled as a placeholder demo that is
-  not remotely hosted. CSV-registered branches look exactly as before.
+  not remotely hosted.
 * **Limits.** Uploads up to 10 MB. Purl-to-name consistency is not checked (only purl syntax,
   version and ecosystem type).
 
@@ -298,11 +223,10 @@ current catalogue**, not from the catalogue as it was on that day, and the page 
 
 ### Demo data
 
-`Import demo registry` loads four **fictional DEMO** branches: a GitLab repo on
-`main` and `release/2.x`, a GitHub repo (SPDX) and an Azure DevOps repo. Their SBOMs are bundled in
-`src/main/resources/samples/` and include unmatched packages (`com.example.demo:core`, guava,
-`internal-ui-kit`, requests). The bundled `demo-registry-update.csv` (no longer offered in the UI; still served at
-`/imports/samples/` and accepted by `POST /imports/demo`) moves `main` to a newer SBOM so you can see history. EoL dates still come only from a real catalogue sync; the app ships no EoL dates.
+**Download demo JSON** (in the upload section) gives a resolver-derived inventory of two **fictional
+DEMO** code repos (`example.invalid` placeholders, not remotely hosted), each on `main` and
+`release/legacy`. Upload it with **Import file** to try the app. EoL dates still come only from a real
+catalogue sync; the app ships no EoL dates.
 
 ## Dashboard semantics
 
@@ -343,11 +267,10 @@ current catalogue**, not from the catalogue as it was on that day, and the page 
 ## Code repos page
 
 One row per branch: App ID, Code repo, Branch, Provider, Packages, Latest snapshot. **App ID** is the
-`appId` of the branch's latest snapshot when that snapshot came from a JSON upload; CSV/SBOM snapshots
-show `—` (a CSV re-registration after a JSON upload clears it; older snapshots and other branches are
-never used). **Code repo** is the repository URL, a link only for `http(s)` URLs without credentials,
-otherwise plain text. Clicking or pressing Enter on a row opens the branch page (Ctrl/⌘ for a new
-tab); the repo link itself goes to the external site. Without JavaScript a *Details* link in the Branch
+`appId` of the branch's latest snapshot, or `—` when it states none (older snapshots and other
+branches are never used). **Code repo** is the repository URL, a link only for `http(s)` URLs without credentials,
+otherwise plain text. Every cell of a row is a real link to the branch page, so the browser shows the
+URL on hover and Ctrl/⌘-click opens a new tab; the repo link itself goes to the external site. Without JavaScript a *Details* link in the Branch
 cell opens the branch page.
 
 ## Matching rules and limits
@@ -378,7 +301,7 @@ digits and dots, an optional leading `v`, and the vendor suffixes `.Final`, `.RE
 `3.10evil`, `nightly`) are not guessed, because upstream support policy for them is unknown.
 Non-numeric cycles (code names) are never guessed either.
 
-The version used is the SBOM record's own version. If it is missing, the purl's version (after
+The version used is the dependency row's own version. If it is missing, the purl's version (after
 `@` in the last segment, percent-decoded, `+` kept) is used and shown as "x (from purl)". If both
 are present and differ, the product is still shown but **no cycle or EoL date is assigned**; the
 version shows as "x (purl: y)" and the evidence names the conflict. This is applied when pages are

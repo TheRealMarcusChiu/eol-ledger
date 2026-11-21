@@ -39,9 +39,8 @@ final class Http {
     private Http() {
     }
 
-    static byte[] get(URI uri, String bearerToken, Duration timeout, long maxBytes) throws FetchException {
+    static byte[] get(URI uri, Duration timeout, long maxBytes) throws FetchException {
         HttpRequest.Builder req = HttpRequest.newBuilder(uri).timeout(timeout).header("Accept", "application/json").GET();
-        if (bearerToken != null && !bearerToken.isBlank()) req.header("Authorization", "Bearer " + bearerToken);
         CompletableFuture<HttpResponse<byte[]>> call = CLIENT.sendAsync(req.build(),
                 info -> info.statusCode() == 200 ? new Capped(maxBytes) : HttpResponse.BodySubscribers.replacing(null));
         HttpResponse<byte[]> res;

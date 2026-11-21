@@ -22,12 +22,12 @@
             <dd th:text="${d.ecosystem() ?: 'Unknown'}">npm</dd>
             <dt>Upstream product</dt>
             <dd>
-                <a th:if="${d.match().product() != null}" th:href="@{/products/{p}(p=${d.match().product()})}" th:text="${d.match().product()}">react</a>
+                <a th:if="${d.match().product() != null}" th:href="@{/dependencies/{p}(p=${d.match().product()})}" th:text="${d.match().product()}">react</a>
                 <span th:if="${d.match().product() == null}">Not mapped to an endoflife.date product</span>
             </dd>
             <dt>Release cycle</dt>
             <dd>
-                <a th:if="${d.cycle() != null}" th:href="@{/products/{p}(p=${d.cycle().product()},cycle=${d.cycle().name()})}" th:text="${d.cycle().name()}">18</a>
+                <a th:if="${d.cycle() != null}" th:href="@{/dependencies/{p}(p=${d.cycle().product()},version=${d.cycle().name()})}" th:text="${d.cycle().name()}">18</a>
                 <span th:if="${d.cycle() == null}">Unknown</span>
             </dd>
             <dt>EoL status</dt>

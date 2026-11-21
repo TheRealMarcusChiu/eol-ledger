@@ -8,12 +8,15 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.view.RedirectView;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -68,9 +71,20 @@ public class PagesController {
         return "dashboard";
     }
 
-    /** All release cycles of a product, or one cycle's detail when {@code cycle} is given. */
+    /** Old links (/products/{product}?cycle=...) moved permanently to /dependencies/{product}?version=... */
     @GetMapping("/products/{product}")
-    String product(@PathVariable String product, @RequestParam(required = false) String cycle, Model model) {
+    RedirectView legacyProduct(@PathVariable String product, @RequestParam(required = false) String cycle) {
+        String url = UriComponentsBuilder.fromPath("/dependencies/{product}")
+                .queryParamIfPresent("version", Optional.ofNullable(cycle))
+                .buildAndExpand(product).encode().toUriString();
+        RedirectView v = new RedirectView(url, true);
+        v.setStatusCode(HttpStatus.MOVED_PERMANENTLY);
+        return v;
+    }
+
+    /** All release cycles (versions) of a dependency, or one version's detail when {@code version} is given. */
+    @GetMapping("/dependencies/{product}")
+    String product(@PathVariable String product, @RequestParam(name = "version", required = false) String cycle, Model model) {
         Ledger.Product p = ledger.product(product);
         if (p == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown product");
         List<Ledger.Cycle> cycles = ledger.productCycles(product);

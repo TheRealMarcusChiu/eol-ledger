@@ -36,24 +36,25 @@ class VersionProvenanceTest extends WebTestBase {
         long missing = db.sql("SELECT id FROM dependency WHERE name = 'react-dom'").query(Long.class).single();
         long conflict = db.sql("SELECT id FROM dependency WHERE snapshot_id = ? AND name = 'react'").param(snap).query(Long.class).single();
         // missing version resolved from the purl: row goes to the cycle; conflict: row goes to the unknown-cycle detail
-        assertThat(html).contains("<a href=\"/products/react?cycle=18\">react-dom</a>");
+        assertThat(html).contains("<a href=\"/dependencies/react?version=18\">react-dom</a>");
         assertThat(html).contains("<a href=\"/repos/" + branch + "/deps/" + conflict + "\">react</a>");
         assertThat(page("/repos/" + branch + "/deps/" + conflict)).contains("conflicts").contains("18.2.0 (purl: 19.0.0)");
-        assertThat(page("/products/react?cycle=18")).contains("18.3.1");
+        assertThat(page("/dependencies/react?version=18")).contains("18.3.1");
         assertThat(missing).isPositive();
     }
 
     @Test
     void historyCountsRowsAndOrdersVersionsDeterministically() {
-        TestSupport.REPLIES.put("/v.json", TestSupport.Reply.ok("{\"bomFormat\":\"CycloneDX\",\"components\":["
-                + "{\"name\":\"c\",\"version\":\"2.0\",\"purl\":\"pkg:npm/c@2.0\"},"
-                + "{\"name\":\"c\",\"version\":\"1.0\",\"purl\":\"pkg:npm/c@1.0\"},"
-                + "{\"name\":\"odd\",\"version\":\"1, 5\",\"purl\":\"pkg:npm/odd@1, 5\"},"
-                + "{\"name\":\"bare\"}]}"));
-        String csv = "repo_name,repo_url,provider,branch,sbom_url\nV,https://github.com/acme/v,github,main," + TestSupport.base() + "/v.json\n";
-        imports.importCsv(csv, "test");
+        // stored straight to the DB like a snapshot from an earlier build: an unversioned row and an odd version string
+        db.sql("INSERT INTO repo_branch (repo_url, branch, repo_name, provider, sbom_url) VALUES ('https://github.com/acme/v', 'main', 'V', 'github', 'x')").update();
         long branch = branchId("https://github.com/acme/v", "main");
+        db.sql("INSERT INTO snapshot (branch_id, observed_at, sbom_url, fingerprint) VALUES (?, ?, 'x', 'first')")
+                .params(branch, java.sql.Timestamp.from(CLOCK.now)).update();
         long first = db.sql("SELECT id FROM snapshot WHERE branch_id = ?").param(branch).query(Long.class).single();
+        storeLegacy(first, "c", "2.0", "pkg:npm/c@2.0");
+        storeLegacy(first, "c", "1.0", "pkg:npm/c@1.0");
+        storeLegacy(first, "odd", "1, 5", "pkg:npm/odd@1, 5");
+        storeLegacy(first, "bare", null, null);
         // a later snapshot with the same packages plus one more, stored with rows in the opposite order
         CLOCK.now = CLOCK.now.plusSeconds(60);
         db.sql("INSERT INTO snapshot (branch_id, observed_at, sbom_url, fingerprint) VALUES (?, ?, 'x', 'manual')")

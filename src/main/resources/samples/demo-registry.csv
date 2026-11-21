@@ -1,5 +1,0 @@
-repo_name,repo_url,provider,branch,sbom_url
-DEMO Payments API,https://gitlab.com/eol-ledger-demo/payments-api,gitlab,main,classpath:samples/payments-api-main.cdx.json
-DEMO Payments API,https://gitlab.com/eol-ledger-demo/payments-api,gitlab,release/2.x,classpath:samples/payments-api-release-2x.cdx.json
-DEMO Storefront Web,https://github.com/eol-ledger-demo/storefront-web,github,main,classpath:samples/storefront-web-main.spdx.json
-DEMO Ledger Service,https://dev.azure.com/eol-ledger-demo/Platform/_git/ledger-service,azure-devops,develop,classpath:samples/ledger-service-develop.cdx.json

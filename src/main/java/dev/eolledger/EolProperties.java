@@ -15,9 +15,7 @@ import java.util.Map;
 public record EolProperties(
         @DefaultValue("") String zone,
         @DefaultValue Catalog catalog,
-        @DefaultValue Sbom sbom,
-        @DefaultValue("") List<String> mappings,
-        @DefaultValue("") String refreshCsvPath) {
+        @DefaultValue("") List<String> mappings) {
 
     public ZoneId zoneId() {
         return zone.isBlank() ? ZoneId.systemDefault() : ZoneId.of(zone);
@@ -43,13 +41,4 @@ public record EolProperties(
             @DefaultValue("33554432") long maxBytes) {
     }
 
-    public record Sbom(
-            @DefaultValue List<Host> hosts,
-            @DefaultValue("30s") Duration timeout,
-            @DefaultValue("10485760") long maxBytes) {
-    }
-
-    /** An allowlisted SBOM host. allowHttp is honoured only for loopback hosts (local dev/test). */
-    public record Host(String host, String token, boolean allowHttp) {
-    }
 }

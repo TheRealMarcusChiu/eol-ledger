@@ -1,2 +1,0 @@
-repo_name,repo_url,provider,branch,sbom_url
-DEMO Payments API,https://gitlab.com/eol-ledger-demo/payments-api,gitlab,main,classpath:samples/payments-api-main-v2.cdx.json

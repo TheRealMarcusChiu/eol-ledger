@@ -22,8 +22,7 @@
             <dt>SBOM</dt>
             <dd th:if="${b.sbomUrl() == T(dev.eolledger.ImportService).INLINE}">Inline JSON upload <span class="muted">(nothing fetched)</span></dd>
             <dd th:unless="${b.sbomUrl() == T(dev.eolledger.ImportService).INLINE}"><a th:if="${b.sbomLink()}" th:href="${b.sbomLink()}" th:text="${b.sbomUrl()}" rel="noopener noreferrer">sbom</a>
-                <span th:unless="${b.sbomLink()}"><code th:text="${b.sbomUrl()}">classpath:samples/x</code>
-                    <span class="muted" th:if="${b.sbomUrl().startsWith('classpath:')}">(bundled demo sample)</span></span></dd>
+                <code th:unless="${b.sbomLink()}" th:text="${b.sbomUrl()}">sbom</code></dd>
             <dt>Latest snapshot</dt>
             <dd th:text="${b.observedAt() != null} ? ${@view.time(b.observedAt())} : 'No snapshot yet'">time</dd>
         </dl>

@@ -47,7 +47,7 @@
             </tr>
             </thead>
             <tbody>
-            <tr th:each="r : ${rows}" th:with="href=@{/products/{p}(p=${r.cycle().product()},cycle=${r.cycle().name()})}"
+            <tr th:each="r : ${rows}" th:with="href=@{/dependencies/{p}(p=${r.cycle().product()},version=${r.cycle().name()})}"
                 th:attr="data-row=${r.cycle().key()},data-repos=${r.repos()},data-branches=${r.branches()},data-href=${href}"
                 th:hidden="${hiddenRows.contains(r.cycle().key())}">
                 <td data-column="dependency" th:attr="data-value=${r.cycle().productLabel()}" th:text="${r.cycle().productLabel()}">Python</td>

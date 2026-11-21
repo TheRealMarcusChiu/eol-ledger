@@ -188,7 +188,7 @@ class JsonImportTest extends WebTestBase {
     }
 
     @Test
-    void codeReposShowTheLatestSnapshotsAppIdPerBranchAndCsvReRegistrationClearsIt() throws Exception {
+    void codeReposShowTheLatestSnapshotsAppIdPerBranch() throws Exception {
         imports.importJson(array(entry("main", "2026-11-20T10:00:00Z", REACT), entry("release/legacy", "2026-11-20T10:00:00Z", REACT)), "test");
         CLOCK.now = CLOCK.now.plusSeconds(60);
         imports.importJson(array(entry("main", "2026-11-20T10:00:00Z", REACT).replace("DEMO-1001", "DEMO-2002")), "test");
@@ -200,14 +200,6 @@ class JsonImportTest extends WebTestBase {
         assertThat(appIdCell(html, main)).isEqualTo("DEMO-2002");
         assertThat(appIdCell(html, legacy)).isEqualTo("DEMO-1001");
 
-        // a CSV-fetched snapshot carries no App ID: blank, never the older JSON snapshot's value
-        TestSupport.REPLIES.put("/x.json", TestSupport.Reply.ok(cdx("pkg:npm/react@19.0.0")));
-        CLOCK.now = CLOCK.now.plusSeconds(60);
-        imports.importCsv("repo_name,repo_url,provider,branch,sbom_url\nDemo," + REPO + ",other,main," + TestSupport.base() + "/x.json\n", "upload");
-        assertThat(ledger.appId(ledger.branch(main).snapshotId())).isNull();
-        html = mvc.perform(get("/repos")).andReturn().getResponse().getContentAsString();
-        assertThat(appIdCell(html, main)).isEqualTo("—");
-        assertThat(appIdCell(html, legacy)).isEqualTo("DEMO-1001");
     }
 
     static String appIdCell(String html, long branchId) {
@@ -272,7 +264,6 @@ class JsonImportTest extends WebTestBase {
     @Test
     void referencedUrlsAreProvenanceAndNeverFetched() {
         String b = TestSupport.base();
-        TestSupport.REPLIES.put("/declared.cdx.json", TestSupport.Reply.ok(cdx("pkg:npm/react@19.0.0")));
         String e = entry("main", "2026-11-20T10:00:00Z", REACT.replace("\"depth\":1", "\"depth\":1,\"verification\":{\"source\":\"" + b + "/evidence.txt\"}"))
                 .replace("\"url\":null", "\"url\":\"https://127.0.0.1/declared.cdx.json\"");
 
@@ -285,123 +276,10 @@ class JsonImportTest extends WebTestBase {
     }
 
     @Test
-    void registryRefreshSkipsInlineBranchesAndStillRefreshesCsvBranches() {
-        seed();
-        imports.importJson(array(entry("main", "2026-11-20T10:00:00Z", REACT)), "test");
-        TestSupport.AUTH_HEADERS.clear();
-        TestSupport.REPLIES.put("/a-main.json", TestSupport.Reply.ok(cdx("pkg:npm/react@19.0.0")));
-        CLOCK.now = CLOCK.now.plusSeconds(60);
-
-        ImportService.Result r = imports.refreshRegistry("scheduled registry refresh");
-
-        assertThat(r.newSnapshots()).isEqualTo(1);
-        assertThat(r.message()).contains("1 inline JSON branch(es) skipped").contains("re-upload");
-        assertThat(TestSupport.AUTH_HEADERS).hasSize(3);
-        assertThat(ledger.timeline(branchId(REPO, "main"))).hasSize(1);
-        assertThat(db.sql("SELECT sbom_url FROM repo_branch WHERE id = ?").param(branchId(REPO, "main")).query(String.class).single()).isEqualTo(ImportService.INLINE);
-    }
-
-    @Test
-    void refreshWithOnlyInlineBranchesExplainsManualReupload() {
-        imports.importJson(array(entry("main", "2026-11-20T10:00:00Z", REACT)), "test");
-
-        ImportService.Result r = imports.refreshRegistry("scheduled registry refresh");
-
-        assertThat(r.newSnapshots()).isZero();
-        assertThat(r.message()).contains("1 inline JSON branch(es) skipped");
-        assertThat(count("snapshot")).isEqualTo(1);
-    }
-
-    @Test
-    void scheduledCsvRefreshDoesNotOverwriteAnInlineBranch() {
-        imports.importJson(array(entry("main", "2026-11-20T10:00:00Z", REACT)), "test");
-        TestSupport.REPLIES.put("/x.json", TestSupport.Reply.ok(cdx("pkg:npm/react@19.0.0")));
-        CLOCK.now = CLOCK.now.plusSeconds(60);
-
-        ImportService.Result r = imports.refreshCsv("repo_name,repo_url,provider,branch,sbom_url\nDemo," + REPO + ",other,main," + TestSupport.base() + "/x.json\n"
-                + "Other,https://github.com/acme/other,github,main," + TestSupport.base() + "/x.json\n", "scheduled CSV");
-
-        assertThat(r.newSnapshots()).isEqualTo(1);
-        assertThat(r.message()).contains("1 inline JSON branch(es) skipped");
-        assertThat(ledger.timeline(branchId(REPO, "main"))).hasSize(1);
-        assertThat(db.sql("SELECT sbom_url FROM repo_branch WHERE id = ?").param(branchId(REPO, "main")).query(String.class).single()).isEqualTo(ImportService.INLINE);
-    }
-
-    /**
-     * A refresh that starts while a JSON upload holds the import monitor must see the branch as inline once it runs,
-     * not act on the registration it read before waiting. Deterministic: the worker is proven BLOCKED on the monitor
-     * this thread owns before the upload happens.
-     */
-    ImportService.Result refreshRacingAJsonUpload(java.util.concurrent.Callable<ImportService.Result> refresh) throws Exception {
-        TestSupport.REPLIES.put("/x.json", TestSupport.Reply.ok(cdx("pkg:npm/react@19.0.0")));
-        imports.importCsv("repo_name,repo_url,provider,branch,sbom_url\nDemo," + REPO + ",other,main," + TestSupport.base() + "/x.json\n", "upload");
-        CLOCK.now = CLOCK.now.plusSeconds(60);
-        var result = new java.util.concurrent.CompletableFuture<ImportService.Result>();
-        var started = new java.util.concurrent.CountDownLatch(1);
-        var threads = java.lang.management.ManagementFactory.getThreadMXBean();
-        synchronized (imports) {
-            Thread worker = new Thread(() -> {
-                started.countDown();
-                try {
-                    result.complete(refresh.call());
-                } catch (Throwable t) {
-                    result.completeExceptionally(t);
-                }
-            });
-            worker.start();
-            assertThat(started.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
-            long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(10);
-            while (!(worker.getState() == Thread.State.BLOCKED && threads.getThreadInfo(worker.threadId()).getLockOwnerId() == Thread.currentThread().threadId())) {
-                assertThat(System.nanoTime()).as("refresh worker never blocked on the import monitor").isLessThan(deadline);
-                Thread.onSpinWait();
-            }
-            imports.importJson(array(entry("main", "2026-11-20T10:00:00Z", REACT)), "test");
-        }
-        return result.get(10, java.util.concurrent.TimeUnit.SECONDS);
-    }
-
-    void assertJsonInventorySurvived(ImportService.Result r) {
-        long id = branchId(REPO, "main");
-        assertThat(r.message()).contains("1 inline JSON branch(es) skipped");
-        assertThat(count("snapshot")).isEqualTo(2);
-        assertThat(db.sql("SELECT sbom_url FROM repo_branch WHERE id = ?").param(id).query(String.class).single()).isEqualTo(ImportService.INLINE);
-        Ledger.Branch b = ledger.branch(id);
-        assertThat(ledger.inline(b.snapshotId())).isNotNull();
-        assertThat(ledger.deps(b.snapshotId())).extracting(d -> d.name() + "@" + d.version()).containsExactly("react@18.2.0");
-    }
-
-    @Test
-    void registryRefreshWaitingOnAJsonUploadDoesNotOverwriteIt() throws Exception {
-        assertJsonInventorySurvived(refreshRacingAJsonUpload(() -> imports.refreshRegistry("scheduled registry refresh")));
-    }
-
-    @Test
-    void scheduledCsvRefreshWaitingOnAJsonUploadDoesNotOverwriteIt() throws Exception {
-        String csv = "repo_name,repo_url,provider,branch,sbom_url\nDemo," + REPO + ",other,main," + TestSupport.base() + "/x.json\n";
-        assertJsonInventorySurvived(refreshRacingAJsonUpload(() -> imports.refreshCsv(csv, "scheduled CSV")));
-    }
-
-    @Test
-    void explicitCsvUploadMayReRegisterAnInlineBranchAndJsonMayTakeOverACsvBranch() {
-        imports.importJson(array(entry("main", "2026-11-20T10:00:00Z", REACT)), "test");
-        TestSupport.REPLIES.put("/x.json", TestSupport.Reply.ok(cdx("pkg:npm/react@19.0.0")));
-        CLOCK.now = CLOCK.now.plusSeconds(60);
-        imports.importCsv("repo_name,repo_url,provider,branch,sbom_url\nDemo," + REPO + ",other,main," + TestSupport.base() + "/x.json\n", "upload");
-        long id = branchId(REPO, "main");
-        assertThat(ledger.branch(id).sbomUrl()).endsWith("/x.json");
-        CLOCK.now = CLOCK.now.plusSeconds(60);
-
-        imports.importJson(array(entry("main", "2026-11-20T10:00:00Z", REACT)), "test");
-
-        assertThat(ledger.timeline(id)).extracting(Ledger.Snap::sbomUrl).containsExactly(ImportService.INLINE, TestSupport.base() + "/x.json", ImportService.INLINE);
-        assertThat(count("snapshot_inventory")).isEqualTo(2);
-    }
-
-    @Test
     void uploadPageAcceptsJsonAndPagesShowInlineMetadataAndContext() throws Exception {
         seed();
         mvc.perform(get("/imports")).andExpect(status().isOk())
-                .andExpect(content().string(containsString("accept=\".csv,.json,text/csv,application/json\"")))
+                .andExpect(content().string(containsString("accept=\".json,application/json\"")))
                 .andExpect(content().string(containsString("demo-dependency-inventory.json")));
         String body = array(entry("main", "2026-11-20T10:00:00Z", GUAVA_BACKEND, GUAVA_WORKER, REACT));
 
@@ -421,9 +299,6 @@ class JsonImportTest extends WebTestBase {
         mvc.perform(get("/repos/" + id + "/history")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("DEMO-1001")))
                 .andExpect(content().string(containsString("Inline JSON upload")));
-        // CSV-registered branches keep the old table: no inline context column
-        mvc.perform(get("/repos/" + branchId("https://gitlab.com/acme/alpha", "main"))).andExpect(status().isOk())
-                .andExpect(content().string(not(containsString("Project context"))));
     }
 
     @Test
@@ -441,7 +316,7 @@ class JsonImportTest extends WebTestBase {
         byte[] body = mvc.perform(get("/imports/samples/demo-dependency-inventory.json")).andExpect(status().isOk())
                 .andExpect(header().string("Content-Disposition", containsString("attachment")))
                 .andReturn().getResponse().getContentAsByteArray();
-        assertThat(body).isEqualTo(ImportService.sampleCsv("demo-dependency-inventory.json").getBytes(StandardCharsets.UTF_8));
+        assertThat(body).isEqualTo(ImportService.sample("demo-dependency-inventory.json").getBytes(StandardCharsets.UTF_8));
         JsonNode sample = JSON.readTree(body);
         assertThat(sample).hasSize(4);
         List<String> urls = new ArrayList<>();

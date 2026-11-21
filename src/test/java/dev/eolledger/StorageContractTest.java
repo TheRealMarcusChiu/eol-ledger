@@ -20,16 +20,35 @@ abstract class StorageContractTest extends WebTestBase {
 
     @Autowired Ledger ledger;
 
-    static final String HEAD = "repo_name,repo_url,provider,branch,sbom_url\n";
-
-    static String row(String repoUrl, String branch, String path) {
-        return "Repo," + repoUrl + ",github," + branch + "," + TestSupport.base() + path + "\n";
+    /** A branch to upload; its packages are whatever was last {@link #serve(String, String[]) served} under path when it is imported. */
+    record Row(String name, String repoUrl, String provider, String branch, String path) {
     }
 
-    ImportService.Result importRows(String... rows) {
-        return imports.importCsv(HEAD + String.join("", rows), "contract");
+    final java.util.Map<String, String[]> inventories = new java.util.HashMap<>();
+
+    static Row row(String repoUrl, String branch, String path) {
+        return new Row("Repo", repoUrl, "github", branch, path);
     }
 
+    static String[] purls(String... purls) {
+        return purls;
+    }
+
+    ImportService.Result importRows(Row... rows) {
+        String[] entries = new String[rows.length];
+        for (int i = 0; i < rows.length; i++) {
+            Row r = rows[i];
+            entries[i] = jsonEntry(r.name(), r.repoUrl(), r.provider(), r.branch(), inventories.get(r.path()));
+        }
+        return imports.importJson(jsonInventory(entries), "contract");
+    }
+
+    /** Sets the packages a later {@link #importRows} uploads for this path. */
+    void serve(String path, String[] purls) {
+        inventories.put(path, purls);
+    }
+
+    /** Serves a body on the loopback test server (the endoflife.date catalogue). */
     void serve(String path, String body) {
         TestSupport.REPLIES.put(path, TestSupport.Reply.ok(body));
     }
@@ -40,15 +59,15 @@ abstract class StorageContractTest extends WebTestBase {
 
     @Test
     void generatedIdsAreDistinctAndStableAcrossUnchangedAndMetadataOnlyReimports() {
-        serve("/a.json", cdx("pkg:npm/react@18.2.0"));
-        serve("/b.json", cdx("pkg:npm/react@18.2.0"));
+        serve("/a.json", purls("pkg:npm/react@18.2.0"));
+        serve("/b.json", purls("pkg:npm/react@18.2.0"));
         importRows(row("https://github.com/acme/one", "main", "/a.json"), row("https://github.com/acme/two", "main", "/b.json"));
         long one = branchId("https://github.com/acme/one", "main");
         long two = branchId("https://github.com/acme/two", "main");
         long snap = db.sql("SELECT id FROM snapshot WHERE branch_id = ?").param(one).query(Long.class).single();
 
-        ImportService.Result r = imports.importCsv(HEAD + "Renamed,https://github.com/acme/one,gitlab,main," + TestSupport.base() + "/a.json\n"
-                + row("https://github.com/acme/two", "main", "/b.json"), "contract");
+        ImportService.Result r = importRows(new Row("Renamed", "https://github.com/acme/one", "gitlab", "main", "/a.json"),
+                row("https://github.com/acme/two", "main", "/b.json"));
 
         assertThat(one).isPositive().isNotEqualTo(two);
         assertThat(r.newSnapshots()).isZero();
@@ -62,7 +81,7 @@ abstract class StorageContractTest extends WebTestBase {
 
     @Test
     void identitiesDifferingOnlyInCaseStayDistinct() {
-        serve("/a.json", cdx("pkg:maven/Org.Acme/x@1.0", "pkg:maven/org.acme/x@1.0"));
+        serve("/a.json", purls("pkg:maven/Org.Acme/x@1.0", "pkg:maven/org.acme/x@1.0"));
         importRows(row("https://github.com/acme/Web", "main", "/a.json"), row("https://github.com/acme/web", "main", "/a.json"),
                 row("https://github.com/acme/web", "Main", "/a.json"));
         serve("/api/v1/products/full", """
@@ -86,7 +105,7 @@ abstract class StorageContractTest extends WebTestBase {
         String repoB = "https://github.com/acme/" + "p".repeat(975) + "b";
         String branch1 = "b".repeat(499) + "1";
         String branch2 = "b".repeat(499) + "2";
-        serve("/a.json", cdx("pkg:npm/react@18.2.0"));
+        serve("/a.json", purls("pkg:npm/react@18.2.0"));
         importRows(row(repoA, branch1, "/a.json"), row(repoA, branch2, "/a.json"), row(repoB, branch1, "/a.json"));
         long a1 = branchId(repoA, branch1);
         assertThat(importRows(row(repoA, branch1, "/a.json"), row(repoA, branch2, "/a.json"), row(repoB, branch1, "/a.json")).newSnapshots()).isZero();
@@ -110,15 +129,15 @@ abstract class StorageContractTest extends WebTestBase {
 
     @Test
     void updateThenRevertKeepsEveryStateInHistory() {
-        String csvRow = row("https://github.com/acme/web", "main", "/h.json");
-        serve("/h.json", cdx("pkg:npm/react@18.2.0"));
-        importRows(csvRow);
+        Row branchRow = row("https://github.com/acme/web", "main", "/h.json");
+        serve("/h.json", purls("pkg:npm/react@18.2.0"));
+        importRows(branchRow);
         CLOCK.now = CLOCK.now.plusSeconds(60);
-        serve("/h.json", cdx("pkg:npm/react@19.0.0"));
-        importRows(csvRow);
+        serve("/h.json", purls("pkg:npm/react@19.0.0"));
+        importRows(branchRow);
         CLOCK.now = CLOCK.now.plusSeconds(60);
-        serve("/h.json", cdx("pkg:npm/react@18.2.0"));
-        assertThat(importRows(csvRow).newSnapshots()).isEqualTo(1);
+        serve("/h.json", purls("pkg:npm/react@18.2.0"));
+        assertThat(importRows(branchRow).newSnapshots()).isEqualTo(1);
 
         List<Ledger.Snap> t = ledger.timeline(branchId("https://github.com/acme/web", "main"));
         assertThat(t).hasSize(3);
@@ -130,15 +149,20 @@ abstract class StorageContractTest extends WebTestBase {
 
     @Test
     void databaseFailureMidImportRollsBackEveryRowAndIsRecorded() {
-        serve("/a.json", cdx("pkg:npm/react@18.2.0"));
+        serve("/a.json", purls("pkg:npm/react@18.2.0"));
         importRows(row("https://github.com/acme/one", "main", "/a.json"));
-        serve("/a.json", cdx("pkg:npm/react@19.0.0"));
-        // a package name longer than the column: only the database can reject it, after row one was already written
-        serve("/bad.json", cdx("pkg:npm/" + "z".repeat(600) + "@1.0"));
+        serve("/a.json", purls("pkg:npm/react@19.0.0"));
+        serve("/b.json", purls("pkg:npm/react@19.0.0"));
         CLOCK.now = CLOCK.now.plusSeconds(60);
 
-        assertThatThrownBy(() -> importRows(row("https://github.com/acme/one", "main", "/a.json"), row("https://github.com/acme/two", "main", "/bad.json")))
-                .isInstanceOf(ImportService.ImportFailedException.class).hasMessageContaining("nothing was changed");
+        // the validated upload passes; only the database can fail it, after branch one's rows were already written
+        db.sql("ALTER TABLE snapshot_inventory RENAME TO snapshot_inventory_off").update();
+        try {
+            assertThatThrownBy(() -> importRows(row("https://github.com/acme/one", "main", "/a.json"), row("https://github.com/acme/two", "main", "/b.json")))
+                    .isInstanceOf(ImportService.ImportFailedException.class).hasMessageContaining("nothing was changed");
+        } finally {
+            db.sql("ALTER TABLE snapshot_inventory_off RENAME TO snapshot_inventory").update();
+        }
 
         assertThat(count("repo_branch")).isEqualTo(1);
         assertThat(count("snapshot")).isEqualTo(1);
@@ -148,17 +172,17 @@ abstract class StorageContractTest extends WebTestBase {
 
     @Test
     void endOfDayInNonUtcZoneUsesExactFractionalSecondsWithoutRoundingIntoNextDay() {
-        String csvRow = row("https://github.com/acme/web", "main", "/h.json");
+        Row branchRow = row("https://github.com/acme/web", "main", "/h.json");
         // Europe/Amsterdam (test eol.zone) is UTC+1 in November: 21 Nov ends at 23:00Z
         CLOCK.now = Instant.parse("2026-11-21T10:00:00.123456Z");
-        serve("/h.json", cdx("pkg:npm/react@18.2.0"));
-        importRows(csvRow);
+        serve("/h.json", purls("pkg:npm/react@18.2.0"));
+        importRows(branchRow);
         CLOCK.now = Instant.parse("2026-11-21T22:59:59.9999996Z"); // rounding to micros would land on 22 Nov
-        serve("/h.json", cdx("pkg:npm/react@19.0.0"));
-        importRows(csvRow);
+        serve("/h.json", purls("pkg:npm/react@19.0.0"));
+        importRows(branchRow);
         CLOCK.now = Instant.parse("2026-11-21T23:00:00Z");
-        serve("/h.json", cdx("pkg:npm/react@19.1.0"));
-        importRows(csvRow);
+        serve("/h.json", purls("pkg:npm/react@19.1.0"));
+        importRows(branchRow);
         long id = branchId("https://github.com/acme/web", "main");
 
         assertThat(ledger.timeline(id)).extracting(Ledger.Snap::observedAt).containsExactly(
@@ -216,7 +240,7 @@ abstract class StorageContractTest extends WebTestBase {
         long id = branchId("https://gitlab.com/acme/alpha", "main");
         long dep = db.sql("SELECT min(d.id) FROM dependency d JOIN snapshot s ON s.id = d.snapshot_id WHERE s.branch_id = ?").param(id).query(Long.class).single();
         for (String url : List.of("/", "/?start=&end=", "/repos", "/repos/" + id, "/repos/" + id + "/deps/" + dep, "/repos/" + id + "/history",
-                "/products/python", "/products/python?cycle=3.10", "/imports")) {
+                "/dependencies/python", "/dependencies/python?version=3.10", "/imports")) {
             mvc.perform(get(url)).andExpect(status().isOk());
         }
         assertThat(mvc.perform(get("/imports")).andReturn().getResponse().getContentAsString()).contains("2026-11-20");

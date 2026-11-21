@@ -8,9 +8,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -44,7 +42,7 @@ class AcceptanceRepairTest extends WebTestBase {
     void renderedPagesHaveNoInlineStyles() throws Exception {
         seed();
         long id = branchId("https://gitlab.com/acme/alpha", "main");
-        for (String url : List.of("/", "/?start=&end=", "/imports", "/repos", "/repos/" + id, "/repos/" + id + "/history", "/products/react?cycle=18")) {
+        for (String url : List.of("/", "/?start=&end=", "/imports", "/repos", "/repos/" + id, "/repos/" + id + "/history", "/dependencies/react?version=18")) {
             assertThat(page(url)).as(url).doesNotContain("style=");
         }
     }
@@ -61,8 +59,8 @@ class AcceptanceRepairTest extends WebTestBase {
         assertThat(table).contains("<td class=\"col-source\"><a href=\"https://gitlab.com/acme/alpha\"");
         assertThat(table).contains("<td class=\"col-sbom\"><a href=\"https://artifactory.example.com/alpha/main.cdx.json\"");
         // each row's first link is still the package link (to the cycle, or to the unknown-package detail)
-        String reactRow = table.substring(table.indexOf("data-href=\"/products/react?cycle=18\""));
-        assertThat(reactRow.indexOf("href=\"/products/react?cycle=18\">")).isLessThan(reactRow.indexOf("href=\"https://gitlab.com/acme/alpha\""));
+        String reactRow = table.substring(table.indexOf("data-href=\"/dependencies/react?version=18\""));
+        assertThat(reactRow.indexOf("href=\"/dependencies/react?version=18\">")).isLessThan(reactRow.indexOf("href=\"https://gitlab.com/acme/alpha\""));
     }
 
     @Test
@@ -78,16 +76,5 @@ class AcceptanceRepairTest extends WebTestBase {
         assertThat(table).contains("<td class=\"col-sbom\"><a href=\"https://artifactory.example.com/alpha/old.cdx.json\"")
                 .doesNotContain("new.cdx.json");
         assertThat(depsTable(page("/repos/" + id))).contains("new.cdx.json").doesNotContain("old.cdx.json");
-    }
-
-    @Test
-    void bundledSampleSbomIsShownAsTextNotALink() throws Exception {
-        mvc.perform(post("/imports/demo").param("name", "demo-registry.csv").with(csrf())).andExpect(status().isSeeOther());
-        long id = db.sql("SELECT id FROM repo_branch WHERE branch = 'develop'").query(Long.class).single();
-
-        String table = depsTable(page("/repos/" + id));
-
-        assertThat(table).contains("<td class=\"col-sbom\"><code>classpath:samples/ledger-service-develop.cdx.json</code>")
-                .doesNotContain("href=\"classpath:");
     }
 }

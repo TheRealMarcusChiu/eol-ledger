@@ -7,6 +7,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /** Minimal UI: long help sits in closed native disclosures, while controls, status and data stay outside them. */
@@ -32,7 +33,7 @@ class MinimalUiTest extends WebTestBase {
         long coreId = db.sql("SELECT d.id FROM dependency d JOIN snapshot s ON s.id = d.snapshot_id WHERE s.branch_id = ? AND d.name = 'core'")
                 .param(main).query(Long.class).single();
         for (String url : List.of("/", "/imports", "/repos", "/repos/" + main, "/repos/" + main + "/history",
-                "/repos/" + main + "/deps/" + coreId, "/products/react", "/products/react?cycle=18")) {
+                "/repos/" + main + "/deps/" + coreId, "/dependencies/react", "/dependencies/react?version=18")) {
             String html = page(url);
             assertThat(html).as(url).doesNotContainPattern("<details[^>]*\\sopen").doesNotContain("<details>");
             assertThat(html.split("<details", -1).length).as(url).isEqualTo(html.split("<summary>", -1).length);
@@ -52,16 +53,14 @@ class MinimalUiTest extends WebTestBase {
     @Test
     void importsActionsAndStatusAreVisibleAndFormatDocsArePreserved() throws Exception {
         String html = page("/imports");
-        assertThat(visible(html)).contains(">Import file</button>", ">Import demo registry</button>", "value=\"demo-registry.csv\"",
-                        ">Download demo JSON</a>", ">Refresh all now</button>", ">Sync catalogue now</button>",
-                        "href=\"/imports/samples/demo-dependency-inventory.json\"", "branches registered", "Last success", "Import history",
-                        "<summary>Format help</summary>")
+        assertThat(visible(html)).contains(">Import file</button>", ">Download demo JSON</a>", ">Sync catalogue now</button>",
+                        "href=\"/imports/samples/demo-dependency-inventory.json\"", "Last success", "Import history", "<summary>Format help</summary>")
                 .doesNotContain("repo_name,repo_url,provider,branch,sbom_url");
-        // removed from the UI only; the sample endpoints stay for compatibility
-        assertThat(html).doesNotContain("Import demo update", "Download demo update CSV", "Download demo CSV",
-                "demo-registry-update.csv", "href=\"/imports/samples/demo-registry.csv\"");
-        assertThat(html).contains("enctype=\"multipart/form-data\"", "name=\"_csrf\"", "aria-describedby=\"csv-h json-h\"", "id=\"csv-h\"", "id=\"json-h\"",
-                "repo_name,repo_url,provider,branch,sbom_url", "parentCoordinate", "never fetched");
+        // CSV import, the demo registry and the SBOM refresh were removed
+        assertThat(html).doesNotContain("Import demo registry", "demo-registry", "Refresh all now", "branches registered", "Demo data",
+                "Registry CSV", "text/csv");
+        assertThat(html).contains("enctype=\"multipart/form-data\"", "name=\"_csrf\"", "aria-describedby=\"json-h\"", "id=\"json-h\"",
+                "parentCoordinate", "never fetched");
         assertThat(html.split("demo-dependency-inventory.json\"", -1)).hasSize(2);
     }
 
@@ -71,7 +70,7 @@ class MinimalUiTest extends WebTestBase {
         long coreId = db.sql("SELECT d.id FROM dependency d JOIN snapshot s ON s.id = d.snapshot_id WHERE s.branch_id = ? AND d.name = 'core'")
                 .param(main).query(Long.class).single();
         for (String url : List.of("/", "/imports", "/repos", "/repos/" + main, "/repos/" + main + "/history",
-                "/repos/" + main + "/deps/" + coreId, "/products/react", "/products/react?cycle=18")) {
+                "/repos/" + main + "/deps/" + coreId, "/dependencies/react", "/dependencies/react?version=18")) {
             String html = page(url);
             assertThat(html).as(url).contains(">EoL Dependencies</a>", ">Code repos</a>")
                     .doesNotContain(">Cycles</a>", "Repositories", "repositories", ">Release cycles</", "EoL Packages");
@@ -83,18 +82,27 @@ class MinimalUiTest extends WebTestBase {
             assertThat(page(url)).as(url).contains("<a href=\"/repos\">Code repos</a>");
         }
         assertThat(page("/repos/" + main)).contains("<dt>Code repo</dt>");
-        assertThat(page("/products/react")).contains("<a href=\"/\">EoL Dependencies</a> /", "class=\"num\">Code repos</th>");
-        assertThat(page("/products/react?cycle=18")).contains("<a href=\"/\">EoL Dependencies</a> /", "<dt>Code repos</dt>", " code repos,",
+        assertThat(page("/dependencies/react")).contains("<a href=\"/\">EoL Dependencies</a> /", "class=\"num\">Code repos</th>");
+        assertThat(page("/dependencies/react?version=18")).contains("<a href=\"/\">EoL Dependencies</a> /", "<dt>Code repos</dt>", " code repos,",
                 ">Code repo</th>");
         // the product page's own table is still a list of actual release cycles
-        assertThat(page("/products/react")).contains("aria-label=\"Release cycles\"", ">Cycle</th>");
+        assertThat(page("/dependencies/react")).contains("aria-label=\"Release cycles\"", ">Cycle</th>");
+    }
+
+    @Test
+    void oldProductLinksRedirectPermanentlyToDependencyPages() throws Exception {
+        mvc.perform(get("/products/react").param("cycle", "18")).andExpect(status().isMovedPermanently())
+                .andExpect(header().string("Location", "/dependencies/react?version=18"));
+        mvc.perform(get("/products/react")).andExpect(status().isMovedPermanently())
+                .andExpect(header().string("Location", "/dependencies/react"));
+        assertThat(page("/dependencies/react?version=18")).contains("<h1>React 18</h1>");
     }
 
     @Test
     void detailPagesKeepTheirNavigationActionsVisible() throws Exception {
         long main = branchId("https://gitlab.com/acme/alpha", "main");
         assertThat(visible(page("/repos/" + main))).contains(">View history</a>", "aria-label=\"Dependencies\"", "Source control");
-        assertThat(visible(page("/products/react?cycle=18"))).contains(">Show all versions</a>", "Installed versions", "aria-label=\"Affected code repo branches\"");
+        assertThat(visible(page("/dependencies/react?version=18"))).contains(">Show all versions</a>", "Installed versions", "aria-label=\"Affected code repo branches\"");
         assertThat(visible(page("/repos/" + main + "/history"))).contains("As of the end of", ">Show snapshot</button>", "today's endoflife.date data",
                 "aria-label=\"Snapshot timeline\"");
     }

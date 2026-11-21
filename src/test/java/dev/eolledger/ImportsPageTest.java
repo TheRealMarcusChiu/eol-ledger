@@ -19,8 +19,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class ImportsPageTest extends IntegrationTest {
 
-    MockMultipartFile csv(String body) {
-        return new MockMultipartFile("file", "registry.csv", "text/csv", body.getBytes(StandardCharsets.UTF_8));
+    MockMultipartFile json(String body) {
+        return new MockMultipartFile("file", "inventory.json", "application/json", body.getBytes(StandardCharsets.UTF_8));
     }
 
     int count(String table) {
@@ -28,70 +28,73 @@ class ImportsPageTest extends IntegrationTest {
     }
 
     @Test
-    void pageDocumentsHeaderAndHasCsrfProtectedForms() throws Exception {
+    void pageDocumentsTheJsonFormatAndHasCsrfProtectedForms() throws Exception {
         mvc.perform(get("/imports")).andExpect(status().isOk())
-                .andExpect(content().string(containsString("repo_name,repo_url,provider,branch,sbom_url")))
+                .andExpect(content().string(containsString("Dependency-inventory JSON")))
                 .andExpect(content().string(containsString("name=\"_csrf\"")))
                 .andExpect(content().string(containsString("enctype=\"multipart/form-data\"")))
-                .andExpect(content().string(not(containsString("test-secret-token"))));
+                .andExpect(content().string(not(containsString("repo_name,repo_url,provider,branch,sbom_url"))))
+                .andExpect(content().string(not(containsString("Demo data"))))
+                .andExpect(content().string(not(containsString("Import demo registry"))))
+                .andExpect(content().string(not(containsString("Refresh all now"))));
     }
 
     @Test
-    void sampleCsvIsDownloadableAndUploadable() throws Exception {
-        byte[] body = mvc.perform(get("/imports/samples/demo-registry.csv")).andExpect(status().isOk())
+    void demoJsonIsDownloadableFromTheUploadSectionAndUploadable() throws Exception {
+        String html = mvc.perform(get("/imports")).andReturn().getResponse().getContentAsString();
+        String upload = html.substring(html.indexOf("aria-labelledby=\"upload-h\""), html.indexOf("</section>", html.indexOf("aria-labelledby=\"upload-h\"")));
+        assertThat(upload).contains("href=\"/imports/samples/demo-dependency-inventory.json\"", ">Download demo JSON</a>", ">Import file</button>");
+
+        byte[] body = mvc.perform(get("/imports/samples/demo-dependency-inventory.json")).andExpect(status().isOk())
                 .andExpect(header().string("Content-Disposition", containsString("attachment")))
                 .andReturn().getResponse().getContentAsByteArray();
-        String text = new String(body, StandardCharsets.UTF_8);
-        assertThat(text).startsWith(RegistryCsv.HEADER).contains("DEMO", "gitlab", "github", "azure-devops", "release/2.x");
-
-        mvc.perform(multipart("/imports").file(csv(text)).with(csrf())).andExpect(status().isSeeOther()).andExpect(redirectedUrl("/imports"));
+        mvc.perform(multipart("/imports").file(json(new String(body, StandardCharsets.UTF_8))).with(csrf()))
+                .andExpect(status().isSeeOther()).andExpect(redirectedUrl("/imports"));
         assertThat(count("repo_branch")).isEqualTo(4);
         assertThat(count("snapshot")).isEqualTo(4);
     }
 
     @Test
     void actionRowsWrapSoNarrowScreensDoNotOverflow() throws Exception {
-        // the demo-data row holds two download links and two forms side by side; at 400px they must wrap
         String css = mvc.perform(get("/app.css")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertThat(css).containsPattern("\\.actions \\{[^}]*flex-wrap: wrap");
     }
 
     @Test
-    void unknownSampleNameIsNotFound() throws Exception {
+    void unknownOrRemovedSampleNameIsNotFound() throws Exception {
         mvc.perform(get("/imports/samples/application.properties")).andExpect(status().isNotFound());
+        mvc.perform(get("/imports/samples/demo-registry.csv")).andExpect(status().isNotFound());
     }
 
     @Test
-    void uploadWithoutCsrfTokenIsRejected() throws Exception {
-        mvc.perform(multipart("/imports").file(csv(ImportService.sampleCsv("demo-registry.csv")))).andExpect(status().isForbidden());
+    void removedCsvDemoAndRefreshEndpointsAreGone() throws Exception {
+        mvc.perform(post("/imports/demo").param("name", "demo-registry.csv").with(csrf())).andExpect(status().is4xxClientError());
+        mvc.perform(post("/imports/refresh").with(csrf())).andExpect(status().is4xxClientError());
         assertThat(count("repo_branch")).isZero();
     }
 
     @Test
-    void invalidUploadShowsAllErrorsAndKeepsExistingData() throws Exception {
-        mvc.perform(multipart("/imports").file(csv(ImportService.sampleCsv("demo-registry.csv"))).with(csrf()));
-        String bad = RegistryCsv.HEADER + "\nX,https://github.com/a/b,github,main,https://evil.example.net/x.json\nY,ftp://x,github,main,classpath:samples/x.json\n";
+    void uploadWithoutCsrfTokenIsRejected() throws Exception {
+        mvc.perform(multipart("/imports").file(json(ImportService.sample("demo-dependency-inventory.json")))).andExpect(status().isForbidden());
+        assertThat(count("repo_branch")).isZero();
+    }
 
-        mvc.perform(multipart("/imports").file(csv(bad)).with(csrf())).andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("not in the SBOM host allowlist")))
-                .andExpect(content().string(containsString("line 3: repo_url")))
+    @Test
+    void csvUploadIsRejectedAndKeepsExistingData() throws Exception {
+        mvc.perform(multipart("/imports").file(json(ImportService.sample("demo-dependency-inventory.json"))).with(csrf()));
+        MockMultipartFile csv = new MockMultipartFile("file", "registry.csv", "text/csv",
+                "repo_name,repo_url,provider,branch,sbom_url\nX,https://github.com/a/b,github,main,https://example.com/x.json\n".getBytes(StandardCharsets.UTF_8));
+
+        mvc.perform(multipart("/imports").file(csv).with(csrf())).andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("not valid JSON")))
                 .andExpect(content().string(containsString("Nothing was changed")));
         assertThat(count("repo_branch")).isEqualTo(4);
     }
 
     @Test
     void emptyUploadIsHelpful400() throws Exception {
-        mvc.perform(multipart("/imports").file(csv("")).with(csrf())).andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("Choose a CSV file")));
-    }
-
-    @Test
-    void demoRegistryCanBeLoadedThenUpdatedToShowHistory() throws Exception {
-        mvc.perform(post("/imports/demo").param("name", "demo-registry.csv").with(csrf())).andExpect(status().isSeeOther());
-        CLOCK.now = CLOCK.now.plusSeconds(3600);
-        mvc.perform(post("/imports/demo").param("name", "demo-registry-update.csv").with(csrf())).andExpect(status().isSeeOther());
-        assertThat(count("snapshot")).isEqualTo(5);
-        assertThat(count("repo_branch")).isEqualTo(4);
+        mvc.perform(multipart("/imports").file(json("")).with(csrf())).andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("Choose a dependency-inventory JSON file")));
     }
 
     @Test
@@ -107,13 +110,6 @@ class ImportsPageTest extends IntegrationTest {
     void failedCatalogueSyncIsShownOnImportsPage() throws Exception {
         mvc.perform(post("/catalog/sync").with(csrf())).andExpect(status().isSeeOther());
         mvc.perform(get("/imports")).andExpect(content().string(containsString("catalogue fetch failed")));
-    }
-
-    @Test
-    void registryRefreshButtonRefetches() throws Exception {
-        mvc.perform(post("/imports/demo").param("name", "demo-registry.csv").with(csrf()));
-        mvc.perform(post("/imports/refresh").with(csrf())).andExpect(status().isSeeOther());
-        assertThat(db.sql("SELECT message FROM import_run ORDER BY id DESC LIMIT 1").query(String.class).single()).contains("4 unchanged");
     }
 
     @Test

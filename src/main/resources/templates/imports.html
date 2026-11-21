@@ -4,7 +4,7 @@
 <body>
 <header th:replace="~{fragments :: nav('imports')}"></header>
 <main id="main">
-    <div class="page-head" data-eyebrow="intake · csv, json and the catalogue">
+    <div class="page-head" data-eyebrow="intake · json and the catalogue">
         <h1>Imports</h1>
     </div>
 
@@ -16,71 +16,36 @@
     </div>
 
     <section class="panel" aria-labelledby="upload-h">
-        <h2 id="upload-h">Upload CSV or JSON</h2>
+        <h2 id="upload-h">Upload JSON</h2>
         <form method="post" th:action="@{/imports}" enctype="multipart/form-data" class="filters filters-bare">
             <div class="field">
-                <label for="file">Registry CSV or dependency JSON file</label>
-                <input id="file" name="file" type="file" accept=".csv,.json,text/csv,application/json" required aria-describedby="csv-h json-h">
+                <label for="file">Dependency-inventory JSON file</label>
+                <input id="file" name="file" type="file" accept=".json,application/json" required aria-describedby="json-h">
             </div>
-            <div class="actions"><button type="submit">Import file</button></div>
+            <div class="actions">
+                <button type="submit">Import file</button>
+                <a class="button-quiet" th:href="@{/imports/samples/demo-dependency-inventory.json}" download>Download demo JSON</a>
+            </div>
         </form>
         <details class="help">
             <summary>Format help</summary>
-            <p id="csv-h"><strong>Registry CSV</strong> (fetches each branch's SBOM). The first line must be exactly <code th:text="${header}">header</code>.
-                One row per code repo branch; <code>provider</code> is one of
-                <span th:text="${#strings.listJoin(providers, ', ')}">github</span>.
-                Listed rows are added or updated; code repos not in the file are left untouched (nothing is deleted).
-                Every row and every SBOM is checked before anything is saved; if one fails, the whole file is rejected.</p>
-            <p>SBOMs (CycloneDX JSON or SPDX 2.x JSON) are fetched over HTTPS from allowlisted hosts only:
-                <span th:if="${hosts.isEmpty()}">none configured yet (set <code>eol.sbom.hosts</code>)</span>
-                <code th:each="h, s : ${hosts}" th:text="${h} + (${s.last} ? '' : ',')">host</code>.
-                Tokens come from server configuration, never from the CSV.</p>
             <p id="json-h"><strong>Dependency-inventory JSON</strong> (a <code>.json</code> file, nothing is fetched): a root array with one object per
                 code repo branch: required <code>name</code>, <code>url</code> and <code>branch</code> (no default branch is assumed);
-                optional <code>appId</code>, <code>provider</code>, <code>sbom</code> (<code>url</code> may be null, <code>generatedAt</code>),
+                optional <code>appId</code>, <code>provider</code> (one of <span th:text="${#strings.listJoin(providers, ', ')}">github</span>),
+                <code>sbom</code> (<code>url</code> may be null, <code>generatedAt</code>),
                 <code>projects</code> (<code>path</code>, <code>ecosystem</code>, <code>packageManager</code>, <code>resolution</code>);
                 and a required <code>dependencies</code> array (<code>[]</code> for none) with one row per resolved graph edge:
                 <code>name</code>, <code>version</code>, optional <code>purl</code> (its version must equal <code>version</code>),
                 <code>scope</code>, <code>dependencyType</code>, <code>depth</code>, <code>parentCoordinate</code>, <code>projectPath</code> and more.
                 Every row is kept with its snapshot; each distinct package + version is listed once for EoL matching.
+                Listed branches are added or updated; branches not in the file are left untouched (nothing is deleted).
+                Every entry is checked before anything is saved; if one fails, the whole file is rejected.
                 A branch gets a new snapshot when anything except <code>sbom.generatedAt</code> changed. URLs and evidence paths in the file are
-                recorded as provenance and never fetched; refreshes skip these branches, so re-upload the JSON to update them.</p>
+                recorded as provenance and never fetched; re-upload the JSON to update a branch.</p>
             <p>The demo JSON holds two fictional DEMO code repos (<code>example.invalid</code> placeholders, not remotely hosted),
                 each on <code>main</code> and <code>release/legacy</code>, resolved with Maven, Gradle, NuGet, pip, pip3, uv, npm and Yarn;
-                every row comes from a native dependency-tree run.</p>
-        </details>
-    </section>
-
-    <section class="panel" aria-labelledby="demo-h">
-        <h2 id="demo-h">Demo data</h2>
-        <div class="actions">
-            <form method="post" th:action="@{/imports/demo}" class="inline">
-                <input type="hidden" name="name" value="demo-registry.csv">
-                <button type="submit">Import demo registry</button>
-            </form>
-            <a class="button-quiet" th:href="@{/imports/samples/demo-dependency-inventory.json}" download>Download demo JSON</a>
-        </div>
-        <details class="help">
-            <summary>About the demo</summary>
-            <p>The demo registry describes four <strong>fictional DEMO</strong> code repo branches (GitLab, GitHub, Azure DevOps)
-                backed by SBOMs bundled with the app. The demo JSON is the resolved dependency inventory described under Format help.
-                EoL dates still come only from the real endoflife.date catalogue.</p>
-        </details>
-    </section>
-
-    <section class="panel" aria-labelledby="refresh-h">
-        <h2 id="refresh-h">Refresh</h2>
-        <div class="actions">
-            <form method="post" th:action="@{/imports/refresh}"><button type="submit">Refresh all now</button></form>
-            <p class="small"><span th:text="${registered}">0</span> branches registered.
-                Schedule: <code th:text="${refreshCron == '-'} ? 'disabled' : ${refreshCron}">cron</code>
-                <th:block th:if="${refreshCsv != null and !refreshCsv.isBlank()}">from configured CSV file</th:block><th:block
-                    th:unless="${refreshCsv != null and !refreshCsv.isBlank()}">from the stored registry</th:block>.</p>
-        </div>
-        <details class="help">
-            <summary>Help</summary>
-            <p>Refreshing re-fetches every stored SBOM URL; a branch only gets a new snapshot when its packages or SBOM location changed.
-                Branches uploaded as inline JSON are skipped (the result says how many); re-upload their JSON to update them.</p>
+                every row comes from a native dependency-tree run. Upload it here to try the app; EoL dates still come only from the
+                real endoflife.date catalogue.</p>
         </details>
     </section>
 

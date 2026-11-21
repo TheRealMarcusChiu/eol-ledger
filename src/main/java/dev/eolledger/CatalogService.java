@@ -121,7 +121,7 @@ public class CatalogService {
         if (uri.getRawUserInfo() != null || !(scheme.equals("https") || (scheme.equals("http") && loopback))) {
             throw new Http.FetchException("eol.catalog.base-url must be HTTPS (HTTP only for loopback test servers) without credentials");
         }
-        byte[] body = Http.get(uri, null, props.catalog().timeout(), props.catalog().maxBytes());
+        byte[] body = Http.get(uri, props.catalog().timeout(), props.catalog().maxBytes());
         try {
             return JSON.readTree(body);
         } catch (IOException e) {

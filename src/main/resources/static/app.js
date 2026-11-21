@@ -131,9 +131,9 @@ function initColumns(table, settings) {
     });
     table.style.width = total + 'px';
     if (empty) empty.colSpan = shown.length;
-    // The row link lives in the version column; without it the row itself takes focus and Enter.
+    // The focusable row link lives in the first (dependency) column; without it the row itself takes focus and Enter.
     table.querySelectorAll('tbody tr[data-href]').forEach(function (row) {
-      if (prefs.version.visible) row.removeAttribute('tabindex'); else row.tabIndex = 0;
+      if (prefs.dependency.visible) row.removeAttribute('tabindex'); else row.tabIndex = 0;
     });
   }
 
@@ -881,7 +881,7 @@ function initMarquee() {
 
   function clipFor(target) {
     var td = target && target.closest && target.closest('main tbody td');
-    return td ? td.querySelector(':scope > .cell-clip') : null;
+    return td ? td.querySelector('.cell-clip') : null;
   }
 
   document.addEventListener('mouseover', function (e) {
@@ -892,6 +892,47 @@ function initMarquee() {
   document.addEventListener('focusin', function (e) {
     var clip = clipFor(e.target);
     if (clip) start(clip); else stop();
+  });
+}
+
+// ---- Whole-row links: every cell of a linked row is a real <a>, so the browser shows the row's URL on hover ----
+
+/** True when an element's href resolves to the same URL as the row's data-href. */
+function sameTarget(a, href) {
+  try { return new URL(a.getAttribute('href'), document.baseURI).href === new URL(href, document.baseURI).href; } catch (e) { return false; }
+}
+
+/**
+ * For each tr[data-href]: links in its cells that go where the row goes become plain text, then every cell without
+ * its own interactive content is wrapped in <a class="cell-link" href="row">. Only the first cell's link is in the tab
+ * order and the accessibility tree; the rest are mouse targets for the same URL. Cells with another link (a repo URL,
+ * a Details page) keep that link and are left alone.
+ */
+function linkRows(table) {
+  table.querySelectorAll('tbody tr[data-href]').forEach(function (tr) {
+    var href = tr.getAttribute('data-href');
+    var first = true;
+    Array.prototype.forEach.call(tr.cells, function (td) {
+      if (td.classList.contains('empty')) return;
+      td.querySelectorAll('a[href]').forEach(function (a) {
+        if (!sameTarget(a, href)) return;
+        var span = document.createElement('span');
+        while (a.firstChild) span.appendChild(a.firstChild);
+        a.replaceWith(span);
+      });
+      if (td.querySelector('a, button, input, select, textarea, details, noscript')) { first = false; return; }
+      var link = document.createElement('a');
+      link.className = 'cell-link';
+      link.href = href;
+      if (!first) {
+        link.tabIndex = -1;
+        link.setAttribute('aria-hidden', 'true');
+      }
+      first = false;
+      while (td.firstChild) link.appendChild(td.firstChild);
+      td.appendChild(link);
+      td.classList.add('has-cell-link');
+    });
   });
 }
 
@@ -911,6 +952,7 @@ if (document.querySelectorAll) {
   }
   // After the header controls: their value lists and filters read the cells' original text.
   document.querySelectorAll('main table').forEach(clipCells);
+  document.querySelectorAll('main table').forEach(linkRows);
   initMarquee();
   // Every other table: measure its natural column widths (now one-line), then make them draggable.
   var refits = [];
@@ -922,6 +964,4 @@ if (document.querySelectorAll) {
   if (refits.length && document.fonts && document.fonts.ready) {
     document.fonts.ready.then(function () { refits.forEach(function (f) { f(); }); });
   }
-  // Linked rows open on Enter too (each row's links stay ordinary links).
-  document.querySelectorAll('#code-repos-table tbody tr[data-href]').forEach(function (row) { row.tabIndex = 0; });
 }

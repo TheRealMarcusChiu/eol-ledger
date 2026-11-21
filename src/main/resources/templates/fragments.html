@@ -23,7 +23,7 @@
 <!--/* What a JSON-uploaded snapshot declared about itself; nothing here was fetched. */-->
 <dl th:fragment="inlineFacts(inline)" class="facts">
     <dt>Inventory source</dt>
-    <dd>Inline JSON upload <span class="muted">(refresh skips it; re-upload to update)</span></dd>
+    <dd>Inline JSON upload <span class="muted">(re-upload to update)</span></dd>
     <dt>App ID</dt>
     <dd th:text="${inline.appId() ?: 'Not stated'}">APP-1</dd>
     <dt>Projects / modules</dt>
@@ -64,7 +64,7 @@
         <tbody>
         <tr th:each="d : ${deps}"
             th:with="detail=@{/repos/{b}/deps/{d}(b=${branchId},d=${d.id()})},
-                     href=${d.cycle() != null} ? @{/products/{p}(p=${d.cycle().product()},cycle=${d.cycle().name()})} : ${detail}"
+                     href=${d.cycle() != null} ? @{/dependencies/{p}(p=${d.cycle().product()},version=${d.cycle().name()})} : ${detail}"
             th:attr="data-href=${href}">
             <td><a th:href="${href}" th:text="${d.name()}">pkg</a></td>
             <td th:text="${d.displayVersion()}">1.0</td>

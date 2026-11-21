@@ -11,14 +11,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class HistoryTest extends WebTestBase {
 
-    static final String CSV_HEAD = "repo_name,repo_url,provider,branch,sbom_url\n";
     long id;
     long otherId;
 
     void observe(String instant, String reactVersion) {
         CLOCK.now = Instant.parse(instant);
-        TestSupport.REPLIES.put("/h.json", TestSupport.Reply.ok(cdx("pkg:npm/react@" + reactVersion, "pkg:npm/left-pad@1.3.0")));
-        imports.importCsv(CSV_HEAD + "Hist,https://github.com/acme/hist,github,feature/x," + TestSupport.base() + "/h.json\n", "test");
+        imports.importJson(jsonInventory(jsonEntry("Hist", "https://github.com/acme/hist", "github", "feature/x",
+                "pkg:npm/react@" + reactVersion, "pkg:npm/left-pad@1.3.0")), "test");
     }
 
     @BeforeEach

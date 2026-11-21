@@ -22,7 +22,6 @@ import org.springframework.web.servlet.view.RedirectView;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Locale;
 import java.util.function.Supplier;
 
 @Controller
@@ -36,33 +35,26 @@ public class ImportController {
     private final EolProperties props;
     private final JdbcClient db;
     private final String catalogCron;
-    private final String refreshCron;
     private final DbTime time;
 
     public ImportController(ImportService imports, CatalogService catalog, EolProperties props, JdbcClient db, DbTime time,
-                            @Value("${eol.jobs.catalog-sync.cron:-}") String catalogCron,
-                            @Value("${eol.jobs.repo-refresh.cron:-}") String refreshCron) {
+                            @Value("${eol.jobs.catalog-sync.cron:-}") String catalogCron) {
         this.imports = imports;
         this.catalog = catalog;
         this.props = props;
         this.db = db;
         this.time = time;
         this.catalogCron = catalogCron;
-        this.refreshCron = refreshCron;
     }
 
     @GetMapping("/imports")
     String page(Model model) {
-        model.addAttribute("header", RegistryCsv.HEADER);
-        model.addAttribute("providers", RegistryCsv.PROVIDERS);
-        model.addAttribute("hosts", props.sbom().hosts().stream().map(EolProperties.Host::host).toList());
+        model.addAttribute("providers", InventoryJson.PROVIDERS);
         model.addAttribute("status", catalog.status());
         model.addAttribute("catalogBase", props.catalog().baseUrl());
         model.addAttribute("catalogMode", props.catalog().products().stream().anyMatch(s -> !s.isBlank())
                 ? "configured products: " + String.join(", ", props.catalog().products()) : "whole catalogue (one request to /products/full)");
         model.addAttribute("catalogCron", catalogCron);
-        model.addAttribute("refreshCron", refreshCron);
-        model.addAttribute("refreshCsv", props.refreshCsvPath());
         model.addAttribute("registered", db.sql("SELECT count(*) FROM repo_branch").query(Integer.class).single());
         model.addAttribute("runs", db.sql("SELECT ran_at, source, ok, rows_total, new_snapshots, message FROM import_run ORDER BY id DESC LIMIT 25")
                 .query((rs, i) -> new Run(time.read(rs, "ran_at"), rs.getString(2), rs.getBoolean(3),
@@ -72,23 +64,10 @@ public class ImportController {
 
     @PostMapping("/imports")
     Object upload(@RequestParam(required = false) MultipartFile file, Model model, HttpServletResponse response, RedirectAttributes flash) throws IOException {
-        if (file == null || file.isEmpty()) return fail(List.of("Choose a CSV file or JSON file to upload."), model, response);
+        if (file == null || file.isEmpty()) return fail(List.of("Choose a dependency-inventory JSON file to upload."), model, response);
         String text = new String(file.getBytes(), StandardCharsets.UTF_8);
         String source = "upload " + safeName(file.getOriginalFilename());
-        // a registry CSV can never start with '[' (its first line is the fixed header)
-        boolean json = safeName(file.getOriginalFilename()).toLowerCase(Locale.ROOT).endsWith(".json") || text.replaceFirst("^﻿", "").stripLeading().startsWith("[");
-        return run(() -> json ? imports.importJson(text, source) : imports.importCsv(text, source), model, response, flash);
-    }
-
-    @PostMapping("/imports/demo")
-    Object demo(@RequestParam String name, Model model, HttpServletResponse response, RedirectAttributes flash) {
-        if (!name.matches("demo-registry(-update)?\\.csv")) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        return run(() -> imports.importCsv(ImportService.sampleCsv(name), "bundled " + name), model, response, flash);
-    }
-
-    @PostMapping("/imports/refresh")
-    Object refresh(Model model, HttpServletResponse response, RedirectAttributes flash) {
-        return run(() -> imports.refreshRegistry("manual registry refresh"), model, response, flash);
+        return run(() -> imports.importJson(text, source), model, response, flash);
     }
 
     @PostMapping("/catalog/sync")
@@ -100,19 +79,17 @@ public class ImportController {
 
     @GetMapping("/imports/samples/{name}")
     ResponseEntity<String> sample(@PathVariable String name) {
-        if (!name.matches(ImportService.SAMPLES)) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        if (!ImportService.SAMPLE.equals(name)) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         return ResponseEntity.ok()
-                .contentType(name.endsWith(".json") ? MediaType.APPLICATION_JSON : new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .contentType(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(name).build().toString())
-                .body(ImportService.sampleCsv(name));
+                .body(ImportService.sample(name));
     }
 
     private Object run(Supplier<ImportService.Result> action, Model model, HttpServletResponse response, RedirectAttributes flash) {
         try {
             flash.addFlashAttribute("message", action.get().message());
             return seeOther();
-        } catch (RegistryCsv.InvalidCsvException e) {
-            return fail(e.errors(), model, response);
         } catch (ImportService.ImportFailedException e) {
             return fail(e.errors(), model, response);
         }

@@ -24,7 +24,7 @@ class DetailPagesTest extends WebTestBase {
     void cycleDetailShowsEolSourceInstalledVersionsAndBranchRows() throws Exception {
         long main = branchId("https://gitlab.com/acme/alpha", "main");
         long rel = branchId("https://gitlab.com/acme/alpha", "release/1.x");
-        String html = page("/products/react?cycle=18");
+        String html = page("/dependencies/react?version=18");
         assertThat(html).contains("2025-01-01", "https://endoflife.date/react", "18.2.0", "18.3.0", "release/1.x")
                 .contains("href=\"/repos/" + main + "\"", "href=\"/repos/" + rel + "\"")
                 .contains("Installed version").contains("Show all versions");
@@ -32,16 +32,16 @@ class DetailPagesTest extends WebTestBase {
 
     @Test
     void productPageListsAllCyclesWithLatestPatchAndLinksBack() throws Exception {
-        String html = page("/products/python");
-        assertThat(html).contains("href=\"/products/python?cycle=3.10\"", "href=\"/products/python?cycle=2.7\"")
+        String html = page("/dependencies/python");
+        assertThat(html).contains("href=\"/dependencies/python?version=3.10\"", "href=\"/dependencies/python?version=2.7\"")
                 .contains("Not published");
-        assertThat(page("/products/react")).contains("18.3.1");
+        assertThat(page("/dependencies/react")).contains("18.3.1");
     }
 
     @Test
     void unknownProductOrCycleIs404() throws Exception {
-        mvc.perform(get("/products/nope")).andExpect(status().isNotFound());
-        mvc.perform(get("/products/react?cycle=99")).andExpect(status().isNotFound());
+        mvc.perform(get("/dependencies/nope")).andExpect(status().isNotFound());
+        mvc.perform(get("/dependencies/react?version=99")).andExpect(status().isNotFound());
         mvc.perform(get("/repos/999999")).andExpect(status().isNotFound());
     }
 
@@ -77,7 +77,7 @@ class DetailPagesTest extends WebTestBase {
         long main = branchId("https://gitlab.com/acme/alpha", "main");
         String html = page("/repos/" + main);
         assertThat(html).contains("https://gitlab.com/acme/alpha", "main", "pkg:npm/react@18.2.0", "npm")
-                .contains("href=\"/products/react?cycle=18\"")
+                .contains("href=\"/dependencies/react?version=18\"")
                 .contains("href=\"https://gitlab.com/acme/alpha\"")
                 .contains("is an endoflife.date identifier of react");
         // the unmatched generic "core" package gets its own detail page, not a dead row

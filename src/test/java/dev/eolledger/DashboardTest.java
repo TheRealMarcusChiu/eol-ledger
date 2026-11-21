@@ -170,7 +170,7 @@ class DashboardTest extends WebTestBase {
 
     @Test
     void rowsHaveRealLinksToCycleDetail() throws Exception {
-        assertThat(page("/?start=&end=")).contains("href=\"/products/python?cycle=3.10\"");
+        assertThat(page("/?start=&end=")).contains("href=\"/dependencies/python?version=3.10\"");
     }
 
     @Test

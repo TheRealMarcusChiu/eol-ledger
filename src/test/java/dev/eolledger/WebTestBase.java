@@ -22,30 +22,34 @@ abstract class WebTestBase extends IntegrationTest {
               "releases":[{"name":"4.2","releaseDate":"2023-04-03","isEol":false,"eolFrom":"2027-04-30","latest":{"name":"4.2.25","date":"2026-10-01"}}]}
             ]}""";
 
-    static String cdx(String... purls) {
-        StringBuilder sb = new StringBuilder("{\"bomFormat\":\"CycloneDX\",\"components\":[");
+    /** One dependency-inventory JSON entry whose packages are the given purls (name = last path segment, version = after '@'). */
+    static String jsonEntry(String name, String url, String provider, String branch, String... purls) {
+        StringBuilder sb = new StringBuilder("{\"name\":\"").append(name).append("\",\"url\":\"").append(url)
+                .append("\",\"provider\":\"").append(provider).append("\",\"branch\":\"").append(branch).append("\",\"dependencies\":[");
         for (int i = 0; i < purls.length; i++) {
             String p = purls[i];
-            String name = p.substring(p.lastIndexOf('/') + 1, p.indexOf('@'));
+            String pkg = p.substring(p.lastIndexOf('/') + 1, p.indexOf('@'));
             String version = p.substring(p.indexOf('@') + 1);
-            sb.append(i == 0 ? "" : ",").append("{\"name\":\"").append(name).append("\",\"version\":\"").append(version)
+            sb.append(i == 0 ? "" : ",").append("{\"name\":\"").append(pkg).append("\",\"version\":\"").append(version)
                     .append("\",\"purl\":\"").append(p).append("\"}");
         }
         return sb.append("]}").toString();
     }
 
+    /** A dependency-inventory JSON root array of entries. */
+    static String jsonInventory(String... entries) {
+        return "[" + String.join(",", entries) + "]";
+    }
+
     void seed() {
         TestSupport.REPLIES.put("/api/v1/products/full", TestSupport.Reply.ok(CATALOGUE));
         catalog.sync();
-        TestSupport.REPLIES.put("/a-main.json", TestSupport.Reply.ok(cdx("pkg:npm/react@18.2.0", "pkg:generic/python@3.10.5", "pkg:pypi/django@4.2.1",
-                "pkg:maven/com.example/core@1.0.0")));
-        TestSupport.REPLIES.put("/a-rel.json", TestSupport.Reply.ok(cdx("pkg:npm/react@18.3.0", "pkg:generic/python@2.7.18")));
-        TestSupport.REPLIES.put("/b-main.json", TestSupport.Reply.ok(cdx("pkg:pypi/django@4.2.3", "pkg:generic/python@3.1.4")));
-        String b = TestSupport.base();
-        imports.importCsv("repo_name,repo_url,provider,branch,sbom_url\n"
-                + "Alpha,https://gitlab.com/acme/alpha,gitlab,main," + b + "/a-main.json\n"
-                + "Alpha,https://gitlab.com/acme/alpha,gitlab,release/1.x," + b + "/a-rel.json\n"
-                + "Beta,https://dev.azure.com/acme/P/_git/beta,azure-devops,main," + b + "/b-main.json\n", "test");
+        imports.importJson(jsonInventory(
+                jsonEntry("Alpha", "https://gitlab.com/acme/alpha", "gitlab", "main",
+                        "pkg:npm/react@18.2.0", "pkg:generic/python@3.10.5", "pkg:pypi/django@4.2.1", "pkg:maven/com.example/core@1.0.0"),
+                jsonEntry("Alpha", "https://gitlab.com/acme/alpha", "gitlab", "release/1.x", "pkg:npm/react@18.3.0", "pkg:generic/python@2.7.18"),
+                jsonEntry("Beta", "https://dev.azure.com/acme/P/_git/beta", "azure-devops", "main", "pkg:pypi/django@4.2.3", "pkg:generic/python@3.1.4")),
+                "test");
     }
 
     long branchId(String repoUrl, String branch) {
