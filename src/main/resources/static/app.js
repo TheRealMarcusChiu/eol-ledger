@@ -219,7 +219,9 @@ function columnOrder(text, keys) {
 }
 
 function headerControl(target) {
-  return target.closest('a, input, select, textarea, label, summary, [role="dialog"], [data-column-resize], button:not(.th-sort)');
+  var cell = target.closest('th');
+  var control = target.closest('a, input, select, textarea, label, summary, [role="dialog"], [data-column-resize], button:not(.th-sort)');
+  return cell && control && cell.contains(control) ? control : null;
 }
 
 function headerSort(cell, sort) {

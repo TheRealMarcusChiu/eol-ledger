@@ -390,7 +390,9 @@ test('full header sorts once for padding or native button, never other controls'
   const cell = { addEventListener: (name, fn) => handlers.push(fn) };
   let toggles = 0;
   ctx.headerSort(cell, () => toggles++);
-  for (const excluded of [false, false, true, true, true, true]) handlers[0]({ target: { closest: () => excluded ? {} : null } });
+  cell.contains = control => control === cell.control;
+  cell.control = {};
+  for (const excluded of [false, false, true, true, true, true]) handlers[0]({ target: { closest: selector => selector === 'th' ? cell : excluded ? cell.control : null } });
   assert.strictEqual(toggles, 2);
   assert.strictEqual(handlers.length, 1);
 });
@@ -437,6 +439,45 @@ function columnFixture(saved = new Map()) {
   const pointer = (target, x, y = 0) => ({ target, button: 0, pointerId: 1, clientX: x, clientY: y, preventDefault() {} });
   return { ctx, table, head, body, cols, heads, saved, win, doc, pointer, created };
 }
+
+test('outer popup dialog allows header padding and sort button sorting and pointer reorder', () => {
+  for (const button of [false, true]) {
+    const f = columnFixture(), outerDialog = {};
+    f.heads.forEach(cell => {
+      cell.contains = control => control === cell || control === cell.button;
+      cell.closest = selector => selector === 'th' ? cell : outerDialog;
+      cell.button.closest = selector => selector === 'th' ? cell : outerDialog;
+    });
+    const cell = f.heads[0], target = button ? cell.button : cell;
+    let sorts = 0;
+    f.ctx.headerSort(cell, () => sorts++);
+    cell.emit('click', { target });
+    assert.strictEqual(sorts, 1, 'outer dialog must not block sorting');
+    f.head.emit('pointerdown', f.pointer(target, 0));
+    assert.strictEqual(cell.captured, true, 'outer dialog must not block drag start');
+    f.head.emit('pointermove', f.pointer(target, 20));
+    assert.ok(cell.classList.contains('column-dragging'));
+    f.head.emit('pointerup', f.pointer(target, 20));
+    assert.deepStrictEqual(f.head.cells.map(n => n.key), ['version', 'date', 'name'], 'outer dialog must not block drop target');
+  }
+});
+
+test('inner filter dialog padding and controls still block header sorting and drag start', () => {
+  for (const kind of ['dialog padding', 'filter button', 'filter SVG', 'input', 'select', 'textarea', 'link', 'label', 'summary', 'resize']) {
+    const f = columnFixture(), cell = f.heads[0], control = {};
+    cell.contains = node => node === control;
+    const target = { closest: selector => selector === 'th' ? cell : control };
+    let sorts = 0;
+    f.ctx.headerSort(cell, () => sorts++);
+    cell.emit('click', { target });
+    assert.strictEqual(sorts, 0, kind);
+    f.head.emit('pointerdown', f.pointer(target, 0));
+    assert.ok(!cell.captured, kind);
+    f.head.emit('pointermove', f.pointer(target, 20));
+    f.head.emit('pointerup', f.pointer(target, 20));
+    assert.deepStrictEqual(f.head.cells.map(n => n.key), ['name', 'version', 'date'], kind);
+  }
+});
 
 test('drag moves original header, body and col nodes together without changing values or widths; reset restores', () => {
   const f = columnFixture();
