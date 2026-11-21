@@ -452,7 +452,9 @@ th[data-filter-active="true"] .th-filter { background: var(--gold); color: var(-
 .col-setting label { display: inline-flex; align-items: center; gap: .5rem; }
 .col-setting input[type="number"] { width: 6rem; min-height: 2rem; padding: .3rem .5rem; }
 #dependencies-table.cols-sized { table-layout: fixed; min-width: 0; }
-#dependencies-table.cols-sized th, #dependencies-table.cols-sized td, #dependencies-table.cols-sized .eol { white-space: normal; overflow-wrap: anywhere; }
+#dependencies-table.cols-sized td, #dependencies-table.cols-sized .eol { white-space: normal; overflow-wrap: anywhere; }
+/* Headers never wrap: the column name, its sort arrow and its filter button stay on one line (app.js widens a column to fit). */
+th, th .th-sort { white-space: nowrap; }
 .col-resize { position: absolute; top: 25%; right: 0; bottom: 25%; width: .6rem; cursor: col-resize; touch-action: none; border-right: 1px solid var(--line); }
 .col-resize:hover, .col-resize:focus-visible { border-right-color: var(--gold); }
 

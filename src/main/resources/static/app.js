@@ -57,20 +57,38 @@ function initColumns(table, settings) {
   var prefs = tablePrefs(tableStorage('getItem'));
   var list = settings.querySelector('.col-settings');
   var empty = table.querySelector('td.empty');
-  var col = {}, th = {}, toggle = {}, width = {}, handle = {};
+  var col = {}, th = {}, toggle = {}, width = {}, handle = {}, drawn = {};
+
+  /** Narrowest width that keeps a header on one line: its name, sort arrow and filter button plus the cell's padding. */
+  function headerMin(key) {
+    var cell = th[key];
+    var first = cell.querySelector('.th-sort'), last = cell.querySelector('.th-filter');
+    if (cell.hidden || !first || !last || !document.createRange) return MIN_WIDTH;
+    var range = document.createRange();
+    range.setStartBefore(first);
+    range.setEndAfter(last);
+    var cs = window.getComputedStyle(cell);
+    var w = range.getBoundingClientRect().width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 2;
+    return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.ceil(w)));
+  }
 
   function apply() {
     var shown = keys.filter(function (k) { return prefs[k].visible; });
     var total = 0;
     keys.forEach(function (key) {
+      table.querySelectorAll('[data-column="' + key + '"]').forEach(function (el) { el.hidden = !prefs[key].visible; });
+    });
+    keys.forEach(function (key) {
       var p = prefs[key];
-      table.querySelectorAll('[data-column="' + key + '"]').forEach(function (el) { el.hidden = !p.visible; });
-      col[key].style.width = th[key].style.width = p.width + 'px';
+      // The stored width is the user's choice; the header's own one-line width is the floor it is drawn at.
+      var w = p.visible ? Math.max(p.width, headerMin(key)) : p.width;
+      drawn[key] = w;
+      col[key].style.width = th[key].style.width = w + 'px';
       toggle[key].checked = p.visible;
       toggle[key].disabled = p.visible && shown.length === 1; // at least one column stays visible
-      width[key].value = p.width;
-      handle[key].setAttribute('aria-valuenow', p.width);
-      if (p.visible) total += p.width;
+      width[key].value = w;
+      handle[key].setAttribute('aria-valuenow', w);
+      if (p.visible) total += w;
     });
     table.style.width = total + 'px';
     if (empty) empty.colSpan = shown.length;
@@ -105,13 +123,13 @@ function initColumns(table, settings) {
       var step = e.key === 'ArrowLeft' ? -10 : e.key === 'ArrowRight' ? 10 : 0;
       if (!step) return;
       e.preventDefault();
-      resize(key, prefs[key].width + (e.shiftKey ? step * 5 : step));
+      resize(key, drawn[key] + (e.shiftKey ? step * 5 : step));
       save();
     });
     h.addEventListener('pointerdown', function (e) {
       e.preventDefault();
       h.setPointerCapture(e.pointerId);
-      var startX = e.clientX, startW = prefs[key].width;
+      var startX = e.clientX, startW = drawn[key];
       function move(ev) { resize(key, startW + ev.clientX - startX); }
       function up() {
         h.removeEventListener('pointermove', move);
@@ -158,6 +176,7 @@ function initColumns(table, settings) {
   table.classList.add('cols-sized');
   apply();
   settings.hidden = false;
+  return { refit: apply };
 }
 
 // ---- Header sort and filters for EVERY table: page-local state, nothing stored. Pure helpers first (tested in Node). ----
@@ -693,12 +712,17 @@ function tableNoun(t) {
 // Wire-up: the dashboard keeps its column settings; every table on every page gets the same header sort and filters.
 if (document.querySelectorAll) {
   var dependenciesTable = document.getElementById('dependencies-table');
-  if (dependenciesTable) initColumns(dependenciesTable, document.getElementById('table-settings'));
+  var dependencyColumns = dependenciesTable ? initColumns(dependenciesTable, document.getElementById('table-settings')) : null;
   document.querySelectorAll('main table').forEach(function (t) {
     initTable(t, t === dependenciesTable
       ? { noun: 'dependency versions', defaultSort: { key: 'eol', dir: 'asc' }, legacy: true }
       : { noun: tableNoun(t) });
   });
+  if (dependencyColumns) {
+    // Header sort/filter buttons now exist: widen any column whose header would wrap; again once the web fonts have loaded.
+    dependencyColumns.refit();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(dependencyColumns.refit);
+  }
   // Linked rows open on Enter too (each row's links stay ordinary links).
   document.querySelectorAll('#code-repos-table tbody tr[data-href]').forEach(function (row) { row.tabIndex = 0; });
 }
