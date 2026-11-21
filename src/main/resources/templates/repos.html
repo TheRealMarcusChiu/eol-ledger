@@ -30,7 +30,7 @@
                     <noscript><a th:href="${href}">Details</a></noscript></td>
                 <td data-column="provider" th:text="${b.provider()}">gitlab</td>
                 <td data-column="packages" class="num" th:text="${b.depCount()}">5</td>
-                <td data-column="snapshot" class="date small" th:attr="data-value=${b.observedAt() != null} ? ${@view.time(b.observedAt())} : ''" th:text="${b.observedAt() != null} ? ${@view.time(b.observedAt())} : 'No snapshot yet'">time</td>
+                <td data-column="snapshot" class="date small" th:with="seen=${@view.time(b.observedAt())}" th:data-value="${seen}" th:text="${b.observedAt() != null} ? ${seen} : 'No snapshot yet'">time</td>
             </tr>
             <tr th:if="${branches.isEmpty()}">
                 <td colspan="6" class="empty">No code repos yet. <a th:href="@{/imports}">Upload a dependency-inventory JSON</a>.</td>

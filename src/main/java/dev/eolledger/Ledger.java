@@ -1,10 +1,14 @@
 package dev.eolledger;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Clock;
@@ -19,6 +23,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -28,7 +33,7 @@ import java.util.TreeSet;
 /**
  * Read model for the pages. Matching runs at read time against the current catalogue, so EoL data
  * shown for historical snapshots is always today's upstream data.
- * shortcut: loads the catalogue and latest inventories per request; fine for hundreds of branches, add caching if it grows to many thousands.
+ * shortcut: loads the catalogue and latest inventories (one query each) per request; fine for thousands of branches, add caching beyond that.
  */
 @Service
 public class Ledger {
@@ -115,6 +120,10 @@ public class Ledger {
     public record DashRow(Cycle cycle, int repos, int branches, Eol eol) {
     }
 
+    /** Dashboard rows plus the latest-snapshot dependencies that matched no product or no release cycle. */
+    public record Dashboard(List<DashRow> rows, int unmatched) {
+    }
+
     public record Affected(Branch branch, Dep dep) {
     }
 
@@ -197,11 +206,17 @@ public class Ledger {
                 .optional().orElse(null);
     }
 
-    /** Only http(s) URLs become links; anything else is shown as text. */
+    /** Only well-formed http(s) URLs with a host and no credentials become links; anything else is shown as text. */
     public static String safeLink(String url) {
         if (url == null) return null;
-        String u = url.trim().toLowerCase(java.util.Locale.ROOT);
-        return (u.startsWith("https://") || u.startsWith("http://")) && !url.contains("@") ? url : null;
+        URI u;
+        try {
+            u = new URI(url.trim());
+        } catch (URISyntaxException e) {
+            return null;
+        }
+        String scheme = u.getScheme() == null ? "" : u.getScheme().toLowerCase(Locale.ROOT);
+        return (scheme.equals("https") || scheme.equals("http")) && u.getHost() != null && u.getRawUserInfo() == null ? url : null;
     }
 
     public boolean catalogEmpty() {
@@ -210,10 +225,12 @@ public class Ledger {
 
     // ---- branches & dependencies ----------------------------------------------------------
 
+    private static final String LATEST_SNAPSHOT = "SELECT s2.id FROM snapshot s2 WHERE s2.branch_id = b.id ORDER BY s2.observed_at DESC, s2.id DESC LIMIT 1";
+    private static final String LATEST_SNAPSHOTS = "SELECT (" + LATEST_SNAPSHOT + ") FROM repo_branch b";
+
     private static final String BRANCH_SQL = """
             SELECT b.*, s.id AS snap_id, s.observed_at, (SELECT count(*) FROM dependency d WHERE d.snapshot_id = s.id) AS deps
-            FROM repo_branch b LEFT JOIN snapshot s ON s.id = (SELECT s2.id FROM snapshot s2 WHERE s2.branch_id = b.id ORDER BY s2.observed_at DESC, s2.id DESC LIMIT 1)
-            """;
+            FROM repo_branch b LEFT JOIN snapshot s ON s.id = (""" + LATEST_SNAPSHOT + ")\n";
 
     public List<Branch> branches() {
         return db.sql(BRANCH_SQL + " ORDER BY lower(b.repo_name), b.repo_url, b.branch").query((rs, i) -> branch(rs)).list();
@@ -237,20 +254,40 @@ public class Ledger {
     private List<Dep> deps(long snapshotId, Catalog cat) {
         LocalDate today = today();
         return db.sql("SELECT id, name, version, purl FROM dependency WHERE snapshot_id = ? ORDER BY lower(name), version, id").param(snapshotId)
-                .query((rs, i) -> {
-                    String purl = rs.getString("purl");
-                    Matcher.Match m = cat.matcher().match(rs.getString("name"), rs.getString("version"), purl);
-                    Cycle c = cat.cycle(m);
-                    return new Dep(rs.getLong("id"), rs.getString("name"), rs.getString("version"), purl, ecosystem(purl), m, c,
-                            m.product() == null ? new Eol("unknown", "Not mapped to an upstream product") : Eol.of(c, today));
-                }).list();
+                .query((rs, i) -> dep(rs, cat, today)).list();
     }
 
+    private static Dep dep(ResultSet rs, Catalog cat, LocalDate today) throws SQLException {
+        String purl = rs.getString("purl");
+        Matcher.Match m = cat.matcher().match(rs.getString("name"), rs.getString("version"), purl);
+        Cycle c = cat.cycle(m);
+        return new Dep(rs.getLong("id"), rs.getString("name"), rs.getString("version"), purl, ecosystem(purl), m, c,
+                m.product() == null ? new Eol("unknown", "Not mapped to an upstream product") : Eol.of(c, today));
+    }
+
+    /** One dependency row of any snapshot of the branch, matched on its own. */
     public Dep dep(long branchId, long depId) {
-        Long snap = db.sql("SELECT d.snapshot_id FROM dependency d JOIN snapshot s ON s.id = d.snapshot_id WHERE d.id = ? AND s.branch_id = ?")
-                .params(depId, branchId).query(Long.class).optional().orElse(null);
-        if (snap == null) return null;
-        return deps(snap).stream().filter(d -> d.id() == depId).findFirst().orElse(null);
+        Catalog cat = catalog();
+        LocalDate today = today();
+        return db.sql("SELECT d.id, d.name, d.version, d.purl FROM dependency d JOIN snapshot s ON s.id = d.snapshot_id WHERE d.id = ? AND s.branch_id = ?")
+                .params(depId, branchId).query((rs, i) -> dep(rs, cat, today)).optional().orElse(null);
+    }
+
+    /** Every branch's latest-snapshot dependencies, loaded with one query (not one per branch). */
+    private List<Affected> latestDeps(Catalog cat) {
+        LocalDate today = today();
+        Map<Long, List<Dep>> bySnapshot = new HashMap<>();
+        db.sql("SELECT d.snapshot_id, d.id, d.name, d.version, d.purl FROM dependency d WHERE d.snapshot_id IN (" + LATEST_SNAPSHOTS + ")"
+                        + " ORDER BY lower(d.name), d.version, d.id")
+                .query(rs -> {
+                    bySnapshot.computeIfAbsent(rs.getLong("snapshot_id"), k -> new ArrayList<>()).add(dep(rs, cat, today));
+                });
+        List<Affected> out = new ArrayList<>();
+        for (Branch b : branches()) {
+            if (b.snapshotId() == null) continue;
+            for (Dep d : bySnapshot.getOrDefault(b.snapshotId(), List.of())) out.add(new Affected(b, d));
+        }
+        return out;
     }
 
     /** The JSON-upload provenance of a snapshot, or null for SBOM-fetched snapshots. */
@@ -289,28 +326,47 @@ public class Ledger {
 
     /** App ID declared by this snapshot's JSON upload; null for CSV/SBOM snapshots, no snapshot, or none stated. Never falls back to older snapshots. */
     public String appId(Long snapshotId) {
-        Inline i = snapshotId == null ? null : inline(snapshotId);
-        return i == null || i.appId() == null || i.appId().isBlank() ? null : i.appId();
+        if (snapshotId == null) return null;
+        String payload = db.sql("SELECT payload FROM snapshot_inventory WHERE snapshot_id = ?").param(snapshotId).query(String.class).optional().orElse(null);
+        if (payload == null) return null;
+        // stream only the top-level fields: payload keys are sorted, so appId comes before the (large) dependencies array
+        try (JsonParser p = InventoryJson.JSON.createParser(payload)) {
+            if (p.nextToken() != JsonToken.START_OBJECT) return null;
+            while (p.nextToken() == JsonToken.FIELD_NAME) {
+                String field = p.currentName();
+                JsonToken value = p.nextToken();
+                if (field.equals("appId")) {
+                    String id = value == JsonToken.VALUE_STRING ? p.getText() : null;
+                    return id == null || id.isBlank() ? null : id;
+                }
+                p.skipChildren();
+            }
+            return null;
+        } catch (IOException ex) {
+            throw new IllegalStateException("stored inventory payload of snapshot " + snapshotId + " is not JSON", ex);
+        }
     }
 
     static String ecosystem(String purl) {
         if (purl == null || !purl.startsWith("pkg:") || purl.indexOf('/') < 0) return null;
-        return purl.substring(4, purl.indexOf('/')).toLowerCase();
+        return purl.substring(4, purl.indexOf('/')).toLowerCase(Locale.ROOT);
     }
 
     // ---- dashboard ------------------------------------------------------------------------
 
-    public List<DashRow> dashboard(LocalDate start, LocalDate end, boolean desc, boolean showUnused) {
+    public Dashboard dashboard(LocalDate start, LocalDate end, boolean desc, boolean showUnused) {
         Catalog cat = catalog();
         Map<String, Set<String>> repos = new HashMap<>();
         Map<String, Set<Long>> branchIds = new HashMap<>();
-        for (Branch b : branches()) {
-            if (b.snapshotId() == null) continue;
-            for (Dep d : deps(b.snapshotId(), cat)) {
-                if (d.cycle() == null) continue;
-                repos.computeIfAbsent(d.cycle().key(), k -> new HashSet<>()).add(b.repoUrl());
-                branchIds.computeIfAbsent(d.cycle().key(), k -> new HashSet<>()).add(b.id());
+        int unmatched = 0;
+        for (Affected a : latestDeps(cat)) {
+            Cycle c = a.dep().cycle();
+            if (c == null) {
+                unmatched++;
+                continue;
             }
+            repos.computeIfAbsent(c.key(), k -> new HashSet<>()).add(a.branch().repoUrl());
+            branchIds.computeIfAbsent(c.key(), k -> new HashSet<>()).add(a.branch().id());
         }
         LocalDate today = today();
         List<DashRow> rows = new ArrayList<>();
@@ -325,7 +381,7 @@ public class Ledger {
         Comparator<LocalDate> dates = desc ? Comparator.reverseOrder() : Comparator.naturalOrder();
         rows.sort(Comparator.comparing((DashRow d) -> d.cycle().eolFrom(), Comparator.nullsLast(dates))
                 .thenComparing(d -> d.cycle().product()).thenComparing(d -> d.cycle().name()));
-        return rows;
+        return new Dashboard(rows, unmatched);
     }
 
     /** Both bounds blank = all time (unknown dates included); any bound excludes cycles without a published date. */
@@ -335,25 +391,35 @@ public class Ledger {
         return (start == null || !eol.isBefore(start)) && (end == null || !eol.isAfter(end));
     }
 
-    /** Dependencies on the latest snapshots that matched a product but no release cycle. */
-    public int unmatchedCycleCount() {
-        Catalog cat = catalog();
-        int n = 0;
-        for (Branch b : branches()) {
-            if (b.snapshotId() == null) continue;
-            for (Dep d : deps(b.snapshotId(), cat)) if (d.match().product() == null || d.cycle() == null) n++;
-        }
-        return n;
-    }
-
     // ---- product & cycle ------------------------------------------------------------------
 
     public List<Cycle> productCycles(String product) {
         List<Cycle> list = new ArrayList<>(catalog().cycles().getOrDefault(product, Map.of()).values());
         list.sort(Comparator.comparing(Cycle::releaseDate, Comparator.nullsFirst(Comparator.<LocalDate>naturalOrder())).reversed()
-                .thenComparing(Cycle::name, Comparator.reverseOrder()));
+                .thenComparing(Cycle::name, NATURAL.reversed()));
         return list;
     }
+
+    /** Text order with digit runs compared as numbers, so cycle 10 sorts after 9. */
+    static final Comparator<String> NATURAL = (a, b) -> {
+        int i = 0, j = 0;
+        while (i < a.length() && j < b.length()) {
+            char x = a.charAt(i), y = b.charAt(j);
+            if (Character.isDigit(x) && Character.isDigit(y)) {
+                int si = i, sj = j;
+                while (i < a.length() && Character.isDigit(a.charAt(i))) i++;
+                while (j < b.length() && Character.isDigit(b.charAt(j))) j++;
+                String na = a.substring(si, i).replaceFirst("^0+(?=\\d)", ""), nb = b.substring(sj, j).replaceFirst("^0+(?=\\d)", "");
+                int c = na.length() != nb.length() ? Integer.compare(na.length(), nb.length()) : na.compareTo(nb);
+                if (c != 0) return c;
+            } else {
+                if (x != y) return Character.compare(x, y);
+                i++;
+                j++;
+            }
+        }
+        return Integer.compare(a.length() - i, b.length() - j);
+    };
 
     public Map<String, Integer> repoCountsByCycle(String product) {
         Map<String, Integer> out = new TreeMap<>();
@@ -367,15 +433,10 @@ public class Ledger {
 
     /** Latest-snapshot dependencies matched to the product (and cycle, when given). */
     public List<Affected> affected(String product, String cycle) {
-        Catalog cat = catalog();
         List<Affected> out = new ArrayList<>();
-        for (Branch b : branches()) {
-            if (b.snapshotId() == null) continue;
-            for (Dep d : deps(b.snapshotId(), cat)) {
-                if (d.cycle() != null && d.cycle().product().equals(product) && (cycle == null || d.cycle().name().equals(cycle))) {
-                    out.add(new Affected(b, d));
-                }
-            }
+        for (Affected a : latestDeps(catalog())) {
+            Cycle c = a.dep().cycle();
+            if (c != null && c.product().equals(product) && (cycle == null || c.name().equals(cycle))) out.add(a);
         }
         return out;
     }
@@ -397,7 +458,7 @@ public class Ledger {
         db.sql("SELECT d.snapshot_id, d.name, d.version, d.purl FROM dependency d JOIN snapshot s ON s.id = d.snapshot_id WHERE s.branch_id = ? ORDER BY d.id")
                 .param(branchId).query(rs -> {
                     String n = Matcher.normalizePurl(rs.getString("purl"));
-                    String key = n != null ? n : rs.getString("name").toLowerCase();
+                    String key = n != null ? n : rs.getString("name").trim(); // the import's identity: names are case-sensitive
                     String version = rs.getString("version") != null ? rs.getString("version") : Matcher.purlVersion(rs.getString("purl"));
                     inventories.computeIfAbsent(rs.getLong("snapshot_id"), k -> new TreeMap<>())
                             .computeIfAbsent(key, k -> new TreeSet<>()).add(version == null ? "(no version)" : version);

@@ -112,6 +112,18 @@ class MatcherTest {
     }
 
     @Test
+    void explicitPurlMappingOverridesTheCatalogueIdentifier() {
+        Matcher m = new Matcher(Map.of("pkg:npm/react", Set.of("react")), Map.of("react", List.of("18"), "preact", List.of("10")),
+                Map.of("pkg:npm/react", "preact", "react", "preact"));
+        assertThat(m.match("react", "10.1.0", "pkg:npm/react@10.1.0").product()).isEqualTo("preact");
+        assertThat(m.match("react", "10.1.0", "pkg:npm/react@10.1.0").evidence()).startsWith("explicit mapping pkg:npm/react");
+        // a package-name mapping never overrides an upstream purl identifier
+        Matcher byName = new Matcher(Map.of("pkg:npm/react", Set.of("react")), Map.of("react", List.of("18"), "preact", List.of("10")),
+                Map.of("react", "preact"));
+        assertThat(byName.match("react", "18.2.0", "pkg:npm/react@18.2.0").product()).isEqualTo("react");
+    }
+
+    @Test
     void ambiguousPurlNeedsExplicitMapping() {
         Matcher.Match m = matcher.match("shared", "1", "pkg:npm/shared@1");
         assertThat(m.product()).isNull();

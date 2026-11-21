@@ -13,9 +13,9 @@ import java.util.regex.Pattern;
 
 /**
  * Maps an SBOM package to an endoflife.date product and release cycle.
- * Precedence: exact normalized purl listed by exactly one product, then explicit mapping
- * (normalized purl or exact package name), then — only for packages without a purl — a package
- * name equal to a product name. Anything else stays unmatched.
+ * Precedence: explicit purl mapping (the operator's choice beats upstream), then exact normalized purl
+ * listed by exactly one product, then explicit mapping by package name, then — only for packages
+ * without a purl — a package name equal to a product name. Anything else stays unmatched.
  */
 public final class Matcher {
 
@@ -47,12 +47,12 @@ public final class Matcher {
         String product = null;
         String evidence;
         Set<String> listed = norm == null ? Set.of() : productsByPurl.getOrDefault(norm, Set.of());
-        if (listed.size() == 1) {
-            product = listed.iterator().next();
-            evidence = "purl " + norm + " is an endoflife.date identifier of " + product;
-        } else if (norm != null && mappings.containsKey(norm)) {
+        if (norm != null && mappings.containsKey(norm)) {
             product = mappings.get(norm);
             evidence = "explicit mapping " + norm + " = " + product;
+        } else if (listed.size() == 1) {
+            product = listed.iterator().next();
+            evidence = "purl " + norm + " is an endoflife.date identifier of " + product;
         } else if (name != null && mappings.containsKey(name.toLowerCase(Locale.ROOT))) {
             product = mappings.get(name.toLowerCase(Locale.ROOT));
             evidence = "explicit mapping by package name " + name + " = " + product;

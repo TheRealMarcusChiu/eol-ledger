@@ -275,6 +275,8 @@ cell opens the branch page.
 
 ## Matching rules and limits
 
+Order: explicit purl mapping, then catalogue purl, then name mapping, then name fallback.
+
 1. **purl**: the dependency's purl, normalized to `pkg:type/namespace/name`, listed as an
    identifier by exactly one endoflife.date product. Normalization is deliberately conservative:
    version, qualifiers and subpath are dropped; each segment is percent-decoded (an encoded `/` stays
@@ -287,8 +289,11 @@ cell opens the branch page.
 2. **Explicit mapping**: `eol.mappings=<purl or exact package name>=<product>`, comma separated.
    Purl keys are normalized the same way; package-name keys are case-insensitive. For example
    `eol.mappings=pkg:maven/com.acme/acme-boot-bom=spring-boot,my-base-image=ubuntu`.
-   Use this for packages upstream does not list, or for purls listed by several products
-   (those stay unmatched until mapped).
+   Use this for packages upstream does not list, for purls listed by several products
+   (those stay unmatched until mapped), or to correct upstream: a **purl** mapping wins over the
+   catalogue's own identifier. A package-name mapping applies only when no single product lists the
+   purl. An entry without `=`, with an empty side, or with a malformed purl key stops startup with
+   an error naming the entry.
 3. **Name fallback**: only for packages *without* a purl whose name equals a product name exactly.
 
 Nothing else matches. A generic name like `core` is never matched by name when the package has a

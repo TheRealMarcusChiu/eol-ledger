@@ -10,6 +10,7 @@ import org.springframework.core.env.SystemEnvironmentPropertySource;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class EolPropertiesTest {
 
@@ -51,5 +52,15 @@ class EolPropertiesTest {
     void mappingsBindFromACommaList() {
         EolProperties p = bind(Map.of("eol.mappings", "pkg:maven/com.acme/acme-bom=spring-boot,my-image=ubuntu"));
         assertThat(p.mappingTable()).containsEntry("pkg:maven/com.acme/acme-bom", "spring-boot").containsEntry("my-image", "ubuntu");
+    }
+
+    @Test
+    void malformedMappingsFailInsteadOfBeingIgnored() {
+        assertThatThrownBy(() -> bind(Map.of("eol.mappings", "pkg:maven=spring-boot")))
+                .rootCause().hasMessageContaining("malformed purl");
+        assertThatThrownBy(() -> bind(Map.of("eol.mappings", "my-image")))
+                .rootCause().hasMessageContaining("<purl or package name>=<product>");
+        assertThatThrownBy(() -> bind(Map.of("eol.mappings", "my-image=")))
+                .rootCause().hasMessageContaining("<purl or package name>=<product>");
     }
 }

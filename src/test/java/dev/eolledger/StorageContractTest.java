@@ -57,6 +57,7 @@ abstract class StorageContractTest extends WebTestBase {
         return db.sql("SELECT count(*) FROM " + table).query(Integer.class).single();
     }
 
+    /** The fingerprint covers the whole entry (README "Snapshots"), so a rename is a new snapshot but never a new branch id. */
     @Test
     void generatedIdsAreDistinctAndStableAcrossUnchangedAndMetadataOnlyReimports() {
         serve("/a.json", purls("pkg:npm/react@18.2.0"));
@@ -70,13 +71,17 @@ abstract class StorageContractTest extends WebTestBase {
                 row("https://github.com/acme/two", "main", "/b.json"));
 
         assertThat(one).isPositive().isNotEqualTo(two);
-        assertThat(r.newSnapshots()).isZero();
+        assertThat(r.newSnapshots()).isEqualTo(1);
         assertThat(branchId("https://github.com/acme/one", "main")).isEqualTo(one);
-        assertThat(db.sql("SELECT id FROM snapshot WHERE branch_id = ?").param(one).query(Long.class).single()).isEqualTo(snap);
+        assertThat(db.sql("SELECT id FROM snapshot WHERE branch_id = ? ORDER BY id").param(one).query(Long.class).list()).hasSize(2).first().isEqualTo(snap);
         assertThat(db.sql("SELECT repo_name FROM repo_branch WHERE id = ?").param(one).query(String.class).single()).isEqualTo("Renamed");
         assertThat(count("repo_branch")).isEqualTo(2);
-        assertThat(count("snapshot")).isEqualTo(2);
-        assertThat(count("dependency")).isEqualTo(2);
+        assertThat(count("snapshot")).isEqualTo(3);
+        assertThat(count("dependency")).isEqualTo(3);
+
+        assertThat(importRows(new Row("Renamed", "https://github.com/acme/one", "gitlab", "main", "/a.json"),
+                row("https://github.com/acme/two", "main", "/b.json")).newSnapshots()).isZero();
+        assertThat(count("snapshot")).isEqualTo(3);
     }
 
     @Test

@@ -63,11 +63,12 @@ public class PagesController {
             model.addAttribute("rows", java.util.List.of());
             return "dashboard";
         }
-        List<Ledger.DashRow> rows = ledger.dashboard(null, null, desc, unused);
+        Ledger.Dashboard dash = ledger.dashboard(null, null, desc, unused);
+        List<Ledger.DashRow> rows = dash.rows();
         model.addAttribute("rows", rows);
         model.addAttribute("hiddenRows", rows.stream().filter(r -> !Ledger.inRange(r.cycle().eolFrom(), from, to))
                 .map(r -> r.cycle().key()).collect(Collectors.toSet()));
-        model.addAttribute("unmatched", ledger.unmatchedCycleCount());
+        model.addAttribute("unmatched", dash.unmatched());
         return "dashboard";
     }
 

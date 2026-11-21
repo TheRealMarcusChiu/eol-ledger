@@ -21,15 +21,33 @@ public record EolProperties(
         return zone.isBlank() ? ZoneId.systemDefault() : ZoneId.of(zone);
     }
 
+    public EolProperties {
+        mappingTable(mappings); // a mistyped mapping fails startup instead of silently matching nothing
+    }
+
     /** "identity=product" entries: a purl (normalized like SBOM purls) or an exact, case-insensitive package name. */
     public Map<String, String> mappingTable() {
+        return mappingTable(mappings);
+    }
+
+    private static Map<String, String> mappingTable(List<String> mappings) {
         Map<String, String> m = new HashMap<>();
         for (String entry : mappings) {
+            if (entry.isBlank()) continue;
             int i = entry.lastIndexOf('=');
-            if (i <= 0) continue;
-            String key = entry.substring(0, i).trim();
-            key = key.regionMatches(true, 0, "pkg:", 0, 4) ? Matcher.normalizePurl(key) : key.toLowerCase(Locale.ROOT);
-            if (key != null) m.put(key, entry.substring(i + 1).trim());
+            String product = i < 0 ? "" : entry.substring(i + 1).trim();
+            String key = i < 0 ? "" : entry.substring(0, i).trim();
+            if (key.isEmpty() || product.isEmpty()) {
+                throw new IllegalArgumentException("eol.mappings entry \"" + entry.trim() + "\" must have the form <purl or package name>=<product>");
+            }
+            if (key.regionMatches(true, 0, "pkg:", 0, 4)) {
+                String norm = Matcher.normalizePurl(key);
+                if (norm == null) throw new IllegalArgumentException("eol.mappings entry \"" + entry.trim() + "\" has a malformed purl");
+                key = norm;
+            } else {
+                key = key.toLowerCase(Locale.ROOT);
+            }
+            m.put(key, product);
         }
         return m;
     }
