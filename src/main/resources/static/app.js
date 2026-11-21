@@ -310,8 +310,10 @@ function initColumnOrder(table) {
   window.addEventListener('blur', clear);
   var pop = table.closest('[popover]');
   if (pop) pop.addEventListener('toggle', clear);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && drag) { suppressClick = true; clear(); }
+  });
   head.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { clear(); return; }
     if (!e.altKey || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || !e.target.matches('.th-sort')) return;
     e.preventDefault();
     var cell = e.target.closest('th');

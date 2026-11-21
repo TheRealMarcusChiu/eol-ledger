@@ -397,9 +397,9 @@ test('full header sorts once for padding or native button, never other controls'
 
 function columnFixture(saved = new Map()) {
   function node(key) {
-    const events = {};
+    const events = {}, classes = new Set();
     return { key, hidden: false, style: {}, events, attrs: {},
-      classList: { add() {}, remove() {}, toggle() {} },
+      classList: { add(...names) { names.forEach(n => classes.add(n)); }, remove(...names) { names.forEach(n => classes.delete(n)); }, toggle(n, on) { if (on) classes.add(n); else classes.delete(n); }, contains(n) { return classes.has(n); } },
       addEventListener(name, fn) { (events[name] ||= []).push(fn); },
       emit(name, e = {}) { for (const fn of events[name] || []) fn(e); },
       getAttribute(name) { return name === 'data-column' || name === 'data-label' ? key : this.attrs[name] || null; },
@@ -429,11 +429,13 @@ function columnFixture(saved = new Map()) {
   const win = node('window');
   win.localStorage = { getItem: k => saved.get(k), setItem: (k, v) => saved.set(k, v), removeItem: k => saved.delete(k) };
   const created = [];
-  const doc = { addEventListener() {}, elementFromPoint: () => heads[2], createElement() { const n = node(''); created.push(n); return n; } };
+  const docEvents = node('document');
+  const doc = { events: docEvents.events, addEventListener: docEvents.addEventListener, emit: docEvents.emit,
+    elementFromPoint: () => heads[2], createElement() { const n = node(''); created.push(n); return n; } };
   const ctx = load(win, doc);
   ctx.initColumnOrder(table);
   const pointer = (target, x, y = 0) => ({ target, button: 0, pointerId: 1, clientX: x, clientY: y, preventDefault() {} });
-  return { ctx, table, head, body, cols, heads, saved, win, pointer, created };
+  return { ctx, table, head, body, cols, heads, saved, win, doc, pointer, created };
 }
 
 test('drag moves original header, body and col nodes together without changing values or widths; reset restores', () => {
@@ -478,12 +480,38 @@ test('accessible positions are accurate on initial and persisted layouts', () =>
   }
 });
 
+for (const distance of [2, 20]) {
+  test(`document Escape cancels a ${distance}px pending drag outside the header and recovers clicks`, () => {
+    const f = columnFixture();
+    f.head.emit('pointerdown', f.pointer(f.heads[0], 0));
+    f.head.emit('pointermove', f.pointer(f.heads[0], distance));
+    f.doc.emit('keydown', { key: 'Escape', target: f.doc });
+    assert.strictEqual(f.heads[0].captured, false, 'Escape releases pointer capture');
+    assert.ok(f.heads.every(h => !h.classList.contains('column-dragging') && !h.classList.contains('column-target')), 'Escape clears drag markers');
+    f.head.emit('pointerup', f.pointer(f.heads[0], distance));
+    assert.deepStrictEqual(f.head.cells.map(n => n.key), ['name', 'version', 'date']);
+    const stopped = detail => {
+      let blocked = false;
+      f.head.emit('click', { detail, preventDefault() {}, stopImmediatePropagation() { blocked = true; } });
+      return blocked;
+    };
+    assert.strictEqual(stopped(0), false, 'keyboard sort is allowed');
+    assert.strictEqual(stopped(1), true, 'trailing pointer click is suppressed');
+    f.head.emit('pointerdown', f.pointer(f.heads[0], 0));
+    f.head.emit('pointermove', f.pointer(f.heads[0], 2));
+    f.head.emit('pointerup', f.pointer(f.heads[0], 2));
+    assert.strictEqual(stopped(1), false, 'fresh small gesture remains click-to-sort');
+    f.doc.emit('keydown', { key: 'Escape', target: f.doc });
+    assert.strictEqual(stopped(1), false, 'idle Escape cannot suppress a click');
+  });
+}
+
 test('cancelled drags do not suppress keyboard sort clicks', () => {
   for (const cancellation of ['Escape', 'scroll', 'pointercancel', 'lostpointercapture']) {
     const f = columnFixture();
     f.head.emit('pointerdown', f.pointer(f.heads[0], 0));
     f.head.emit('pointermove', f.pointer(f.heads[0], 20));
-    if (cancellation === 'Escape') f.head.emit('keydown', { key: 'Escape' });
+    if (cancellation === 'Escape') f.doc.emit('keydown', { key: 'Escape' });
     else if (cancellation === 'scroll') f.win.emit('scroll');
     else f.head.emit(cancellation);
     let stopped = false, sorts = 0;
