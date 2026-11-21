@@ -1,4 +1,5 @@
-// A mouse click on a body cell's value text (.cell-run) is for selecting it, so it does not navigate; touch taps still do.
+// A plain mouse click on a body cell's value text (.cell-run) is for selecting it, so it does not navigate; touch/pen taps,
+// keyboard Enter and modified clicks (Ctrl/Meta/Shift/Alt: new tab, window, download) keep the link's native behaviour.
 var pointerType = 'mouse';
 document.addEventListener('pointerdown', function (e) { pointerType = e.pointerType; }, true);
 
@@ -6,7 +7,8 @@ document.addEventListener('pointerdown', function (e) { pointerType = e.pointerT
 document.addEventListener('click', function (e) {
   // A drag that selected text and ended beside the value clicks the cell link around it: that is a selection too.
   var selected = window.getSelection && String(window.getSelection());
-  if (e.detail > 0 && pointerType !== 'touch' && e.target.closest && !e.target.closest('a:not(.cell-link)')
+  if (e.detail > 0 && pointerType === 'mouse' && !(e.ctrlKey || e.metaKey || e.shiftKey || e.altKey)
+      && e.target.closest && !e.target.closest('a:not(.cell-link)')
       && (e.target.closest('tbody .cell-run') || (selected && e.target.closest('tbody a.cell-link')))) {
     if (e.target.closest('a.cell-link')) e.preventDefault();
     return;
