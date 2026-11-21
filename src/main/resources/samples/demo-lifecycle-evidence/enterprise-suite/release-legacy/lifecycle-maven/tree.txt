@@ -1,0 +1,3 @@
+com.example.enterprise:lifecycle-maven:jar:1.0.0
+\- org.springframework:spring-core:jar:5.3.39:compile
+   \- org.springframework:spring-jcl:jar:5.3.39:compile

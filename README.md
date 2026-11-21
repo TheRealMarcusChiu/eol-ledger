@@ -167,13 +167,17 @@ A `.json` upload on the Imports page carries each branch's resolved dependencies
 ```
 
 The Imports page offers `demo-dependency-inventory.json` for download: the **real resolved demo**
-inventory (`src/main/resources/samples/`, byte-identical to the demo deliverable's
-`demo-code-repo-dependency.json`). It describes two fictional DEMO repositories, `enterprise-suite`
+inventory (`src/main/resources/samples/`). It describes two fictional DEMO repositories, `enterprise-suite`
 (`DEMO-1001`: Maven, Gradle, NuGet) and `web-platform` (`DEMO-1002`: pip, pip3, uv, npm, Yarn), each
 on `main` and `release/legacy`. Every row comes from a native resolver run: a dependency tree or
 resolution graph, not a flat list. Its `example.invalid` URLs are placeholders, not remotely hosted.
-The git bundles, sources, lock files and raw evidence that its `localRepository`, `evidence`, `tree`
-and `source` paths name ship in the separate demo archive, not in the app.
+The original modules' rows are unchanged from the demo deliverable's `demo-code-repo-dependency.json`;
+the git bundles, sources, lock files and raw evidence that their `localRepository`, `evidence`, `tree`
+and `source` paths name ship in the separate demo archive, not in the app. Each branch also has one
+appended module, `lifecycle-maven` (Spring `spring-core` 7.0.11 on `main`, 5.3.39 on `release/legacy`)
+or `lifecycle-uv` (Django 5.2.19 / 3.2.25), so a catalogue sync links some packages to endoflife.date
+release cycles; its manifest and native tree output ship in the app under
+`src/main/resources/samples/demo-lifecycle-evidence/`, the path its `tree` and `source` fields name.
 
 | Field | Rules |
 |---|---|
@@ -229,8 +233,9 @@ current catalogue**, not from the catalogue as it was on that day, and the page 
 
 **Download demo JSON** (in the upload section) gives a resolver-derived inventory of two **fictional
 DEMO** code repos (`example.invalid` placeholders, not remotely hosted), each on `main` and
-`release/legacy`. Upload it with **Import file** to try the app. EoL dates still come only from a real
-catalogue sync; the app ships no EoL dates.
+`release/legacy`. Upload it with **Import file** to try the app. Every branch includes Spring Framework
+(`spring-core`) or Django, whose purls endoflife.date lists, so after a sync each branch shows matched
+release cycles. EoL dates still come only from a real catalogue sync; the app ships no EoL dates.
 
 ## Dashboard semantics
 
