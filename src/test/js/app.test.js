@@ -15,11 +15,13 @@ function load(window, document) {
 
 const plain = (o) => JSON.parse(JSON.stringify(o));
 const DEFAULTS = {
-  dependency: { visible: true, width: 220 }, version: { visible: true, width: 120 }, eol: { visible: true, width: 130 },
+  dependency: { visible: true, width: 220 }, version: { visible: true, width: 120 },
+  context: { visible: true, width: 240 }, purl: { visible: true, width: 280 }, cycle: { visible: true, width: 200 }, eol: { visible: true, width: 130 },
   status: { visible: true, width: 210 }, repos: { visible: true, width: 120 }, branches: { visible: true, width: 120 },
+  evidence: { visible: true, width: 280 }, source: { visible: true, width: 260 }, sbom: { visible: true, width: 260 },
 };
 
-test('missing or malformed storage falls back to all six visible at default widths', () => {
+test('missing or malformed storage falls back to all shared columns visible at default widths', () => {
   const { tablePrefs } = load();
   for (const text of [null, '', 'not json', 'null', '[]', '42', '"x"', '{}', '{"columns":null}', '{"columns":[1,2]}', '{"columns":{"dependency":"x"}}']) {
     assert.deepStrictEqual(plain(tablePrefs(text)), DEFAULTS, String(text));
@@ -36,6 +38,24 @@ test('valid prefs round-trip; widths are clamped to 80..1000 and rounded', () =>
   assert.deepStrictEqual(p.eol, { visible: true, width: 201 });
   assert.deepStrictEqual(p.status, { visible: true, width: 300 });
   assert.deepStrictEqual(p.repos, DEFAULTS.repos);
+});
+
+test('old six-column dashboard preferences survive and new columns default visible', () => {
+  const { tablePrefs } = load();
+  const columns = {};
+  for (const key of ['dependency', 'version', 'eol', 'status', 'repos', 'branches']) columns[key] = { visible: false, width: 333 };
+  const p = plain(tablePrefs(JSON.stringify({ columns })));
+  for (const key of Object.keys(columns)) assert.deepStrictEqual(p[key], columns[key]);
+  for (const key of ['context', 'purl', 'cycle', 'evidence', 'source', 'sbom']) assert.deepStrictEqual(p[key], DEFAULTS[key]);
+});
+
+test('branch table preferences use a separate stable key and reset does not remove dashboard preferences', () => {
+  const saved = new Map([['eol-ledger.dependencies-table.v1', 'dashboard'], ['other', 'unrelated']]);
+  const ctx = load({ localStorage: { getItem: k => saved.get(k), setItem: (k,v) => saved.set(k,v), removeItem: k => saved.delete(k) } });
+  ctx.tableStorage('setItem', 'branch', ctx.BRANCH_TABLE_KEY);
+  assert.strictEqual(ctx.tableStorage('getItem', null, ctx.BRANCH_TABLE_KEY), 'branch');
+  ctx.tableStorage('removeItem', null, ctx.BRANCH_TABLE_KEY);
+  assert.deepStrictEqual([...saved], [['eol-ledger.dependencies-table.v1', 'dashboard'], ['other', 'unrelated']]);
 });
 
 test('wrong types and non-finite widths use the default for that field only', () => {

@@ -27,11 +27,12 @@ document.addEventListener('keydown', function (e) {
   window.location.assign(e.target.dataset.href);
 });
 
-// Dashboard column visibility and widths, kept in this browser only.
+// Dependency table column visibility and widths, kept independently in this browser only.
 var TABLE_KEY = 'eol-ledger.dependencies-table.v1';
 var MIN_WIDTH = 80;
 var MAX_WIDTH = 1000;
-var TABLE_COLUMNS = { dependency: 220, version: 120, eol: 130, status: 210, repos: 120, branches: 120 };
+var TABLE_COLUMNS = { dependency: 220, version: 120, context: 240, purl: 280, cycle: 200, eol: 130, status: 210, repos: 120, branches: 120, evidence: 280, source: 260, sbom: 260 };
+var BRANCH_TABLE_KEY = 'eol-ledger.branch-dependencies-table.v1';
 
 function clampWidth(n, fallback) {
   return typeof n === 'number' && isFinite(n) ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(n))) : fallback;
@@ -61,8 +62,8 @@ function tablePrefs(text) {
 }
 
 /** localStorage call on our own key; blocked or failing storage just means no persistence. */
-function tableStorage(method, value) {
-  try { return window.localStorage[method](TABLE_KEY, value); } catch (e) { return null; }
+function tableStorage(method, value, key) {
+  try { return window.localStorage[method](key || TABLE_KEY, value); } catch (e) { return null; }
 }
 
 /** Narrowest width that keeps a header on one line: its name, sort arrow and filter button plus the cell's padding. */
@@ -117,9 +118,10 @@ function resizeHandle(label, key, get, set, done, reset) {
 
 function initColumns(table, settings) {
   var keys = Object.keys(TABLE_COLUMNS);
-  var prefs = tablePrefs(tableStorage('getItem'));
+  var storageKey = table.dataset.dependencyTable === 'dashboard' ? TABLE_KEY : BRANCH_TABLE_KEY;
+  var prefs = tablePrefs(tableStorage('getItem', null, storageKey));
   var list = settings.querySelector('.col-settings');
-  var empty = table.querySelector('td.empty');
+
   var col = {}, th = {}, toggle = {}, width = {}, handle = {}, drawn = {};
 
   function headerMin(key) { return headerFloor(th[key]); }
@@ -143,14 +145,14 @@ function initColumns(table, settings) {
       if (p.visible) total += w;
     });
     table.style.width = total + 'px';
-    if (empty) empty.colSpan = shown.length;
+    table.querySelectorAll('td.empty').forEach(function (empty) { empty.colSpan = shown.length; });
     // The focusable row link lives in the first (dependency) column; without it the row itself takes focus and Enter.
     table.querySelectorAll('tbody tr[data-href]').forEach(function (row) {
       if (prefs.dependency.visible) row.removeAttribute('tabindex'); else row.tabIndex = 0;
     });
   }
 
-  function save() { tableStorage('setItem', JSON.stringify({ columns: prefs })); }
+  function save() { tableStorage('setItem', JSON.stringify({ columns: prefs }), storageKey); }
 
   function resize(key, w) {
     prefs[key].width = clampWidth(w, prefs[key].width);
@@ -162,37 +164,10 @@ function initColumns(table, settings) {
     th[key] = table.querySelector('th[data-column="' + key + '"]');
     var label = th[key].textContent.trim();
 
-    var h = handle[key] = document.createElement('span');
-    h.className = 'col-resize';
-    h.tabIndex = 0;
-    h.setAttribute('role', 'separator');
-    h.setAttribute('aria-orientation', 'vertical');
-    h.setAttribute('aria-label', 'Resize ' + label + ' column');
-    h.setAttribute('aria-valuemin', MIN_WIDTH);
-    h.setAttribute('aria-valuemax', MAX_WIDTH);
-    h.setAttribute('data-column-resize', key);
-    h.addEventListener('keydown', function (e) {
-      var step = e.key === 'ArrowLeft' ? -10 : e.key === 'ArrowRight' ? 10 : 0;
-      if (!step) return;
-      e.preventDefault();
-      resize(key, drawn[key] + (e.shiftKey ? step * 5 : step));
-      save();
-    });
-    h.addEventListener('pointerdown', function (e) {
-      e.preventDefault();
-      h.setPointerCapture(e.pointerId);
-      var startX = e.clientX, startW = drawn[key];
-      function move(ev) { resize(key, startW + ev.clientX - startX); }
-      function up() {
-        h.removeEventListener('pointermove', move);
-        h.removeEventListener('pointerup', up);
-        h.removeEventListener('pointercancel', up);
-        save();
-      }
-      h.addEventListener('pointermove', move);
-      h.addEventListener('pointerup', up);
-      h.addEventListener('pointercancel', up);
-    });
+    var h = handle[key] = resizeHandle(label, key,
+      function () { return drawn[key]; },
+      function (w) { resize(key, w); }, save,
+      function () { resize(key, TABLE_COLUMNS[key]); save(); });
     th[key].appendChild(h);
 
     var row = document.createElement('div');
@@ -220,7 +195,7 @@ function initColumns(table, settings) {
   });
 
   settings.querySelector('[data-columns-reset]').addEventListener('click', function () {
-    tableStorage('removeItem');
+    tableStorage('removeItem', null, storageKey);
     prefs = tablePrefs(null);
     apply();
   });
@@ -235,7 +210,7 @@ function initColumns(table, settings) {
 // A column's key is its th[data-column] (else its position), its type th[data-type]: text | version | number | date | datetime.
 // A cell's value is its td[data-value] when present (e.g. a blank EoL date shown as "Not published"), else its visible text.
 
-var COLUMN_TYPES = { dependency: 'text', version: 'version', eol: 'date', status: 'text', repos: 'number', branches: 'number' };
+var COLUMN_TYPES = { dependency: 'text', version: 'version', context: 'text', purl: 'text', cycle: 'text', eol: 'date', status: 'text', repos: 'number', branches: 'number', evidence: 'text', source: 'text', sbom: 'text' };
 var TEXT_OPS = { 'contains': 'Contains', 'not-contains': 'Does not contain', 'exact': 'Is exactly', 'not-exact': 'Is not exactly',
   'starts-with': 'Starts with', 'ends-with': 'Ends with', 'fuzzy': 'Fuzzy match', 'is-blank': 'Is blank', 'not-blank': 'Is not blank' };
 var natural = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
@@ -1327,18 +1302,20 @@ function initSettings(topbar, appearance) {
 if (document.querySelectorAll) {
   var topbar = document.querySelector('.topbar');
   if (topbar && window.EolAppearance) initSettings(topbar, window.EolAppearance);
-  var dependenciesTable = document.getElementById('dependencies-table');
-  var dependencyColumns = dependenciesTable ? initColumns(dependenciesTable, document.getElementById('table-settings')) : null;
+  var dependencyColumns = [];
+  document.querySelectorAll('table[data-dependency-table]').forEach(function (t) {
+    dependencyColumns.push(initColumns(t, t.closest('.table-wrap').previousElementSibling));
+  });
   document.querySelectorAll('main table').forEach(function (t) {
-    initTable(t, t === dependenciesTable
-      ? { noun: 'dependency versions', defaultSort: { key: 'eol', dir: 'asc' }, legacy: true }
+    initTable(t, t.hasAttribute('data-dependency-table')
+      ? { noun: 'dependencies', defaultSort: { key: 'eol', dir: 'asc' }, legacy: t.dataset.dependencyTable === 'dashboard' }
       : { noun: tableNoun(t) });
   });
-  if (dependencyColumns) {
+  dependencyColumns.forEach(function (columns) {
     // Header sort/filter buttons now exist: widen any column whose header would wrap; again once the web fonts have loaded.
-    dependencyColumns.refit();
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(dependencyColumns.refit);
-  }
+    columns.refit();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(columns.refit);
+  });
   // After the header controls: their value lists and filters read the cells' original text.
   document.querySelectorAll('main table').forEach(clipCells);
   document.querySelectorAll('main table').forEach(linkRows);
@@ -1347,7 +1324,7 @@ if (document.querySelectorAll) {
   // Every other table: measure its natural column widths (now one-line), then make them draggable.
   var refits = [];
   document.querySelectorAll('main table').forEach(function (t) {
-    if (t === dependenciesTable) return;
+    if (t.hasAttribute('data-dependency-table')) return;
     var pop = t.closest('[popover]');
     if (pop && !t.offsetWidth) {
       // A table in a closed popover has no size yet: measure it the first time the popover opens.

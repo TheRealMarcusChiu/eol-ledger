@@ -55,9 +55,9 @@ class AcceptanceRepairTest extends WebTestBase {
 
         String table = depsTable(page("/repos/" + id));
 
-        assertThat(table).contains("<th scope=\"col\">Source control</th>", "<th scope=\"col\">SBOM</th>");
-        assertThat(table).contains("<td class=\"col-source\"><a href=\"https://gitlab.com/acme/alpha\"");
-        assertThat(table).contains("<td class=\"col-sbom\"><a href=\"https://artifactory.example.com/alpha/main.cdx.json\"");
+        assertThat(table).contains("<th scope=\"col\" data-column=\"source\">Source control</th>", "<th scope=\"col\" data-column=\"sbom\">SBOM</th>");
+        assertThat(table).contains("<td data-column=\"source\" class=\"col-source\"><a href=\"https://gitlab.com/acme/alpha\"");
+        assertThat(table).contains("<td data-column=\"sbom\" class=\"col-sbom\"><a href=\"https://artifactory.example.com/alpha/main.cdx.json\"");
         // each row's first link is still the package link (to the cycle, or to the unknown-package detail)
         String reactRow = table.substring(table.indexOf("data-href=\"/dependencies/react?version=18\""));
         assertThat(reactRow.indexOf("href=\"/dependencies/react?version=18\">")).isLessThan(reactRow.indexOf("href=\"https://gitlab.com/acme/alpha\""));
@@ -73,7 +73,7 @@ class AcceptanceRepairTest extends WebTestBase {
 
         String table = depsTable(page("/repos/" + id + "/history?snapshot=" + first));
 
-        assertThat(table).contains("<td class=\"col-sbom\"><a href=\"https://artifactory.example.com/alpha/old.cdx.json\"")
+        assertThat(table).contains("<td data-column=\"sbom\" class=\"col-sbom\"><a href=\"https://artifactory.example.com/alpha/old.cdx.json\"")
                 .doesNotContain("new.cdx.json");
         assertThat(depsTable(page("/repos/" + id))).contains("new.cdx.json").doesNotContain("old.cdx.json");
     }

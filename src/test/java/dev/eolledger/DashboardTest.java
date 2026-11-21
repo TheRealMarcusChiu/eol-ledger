@@ -28,7 +28,7 @@ class DashboardTest extends WebTestBase {
                 .doesNotContain("data-row=\"react 19\"", "data-row=\"python 3.9\"");
         assertThat(shown(html)).isEqualTo(rows(html)).hasSize(5);
         // blank initial state: no bounds, no today, empty row hidden
-        assertThat(html).contains("<table id=\"dependencies-table\" data-sort=\"asc\" data-legacy=\"false\">", "<tr data-empty hidden=\"hidden\">")
+        assertThat(html).contains("<table id=\"dependencies-table\" data-sort=\"asc\" data-legacy=\"false\" data-dependency-table=\"dashboard\">", "<tr data-empty hidden=\"hidden\">")
                 .doesNotContain(" value=\"2026-11-20\"");
         assertThat(rows(html)).isEqualTo(rows(page("/?start=&end=")));
     }
@@ -59,7 +59,7 @@ class DashboardTest extends WebTestBase {
         String html = page("/");
         int row = html.indexOf("data-row=\"python 2.7\"");
         String tr = html.substring(row, html.indexOf("</tr>", row));
-        assertThat(tr).contains("data-column=\"dependency\" data-value=\"Python\"", "data-column=\"version\" data-value=\"2.7\"",
+        assertThat(tr).contains("data-column=\"dependency\" data-value=\"python\"", "data-column=\"version\" data-value=\"2.7.18\"",
                 "data-column=\"eol\" class=\"date\" data-value=\"\">Not published<", "data-column=\"repos\" class=\"num\" data-value=\"1\"");
         int r310 = html.indexOf("data-row=\"python 3.10\"");
         assertThat(html.substring(r310, html.indexOf("</tr>", r310))).contains("data-value=\"2026-11-20\">2026-11-20<");
@@ -69,12 +69,12 @@ class DashboardTest extends WebTestBase {
     void dependencyTableHasTheColumnContractAndProgressiveSettings() throws Exception {
         String html = page("/");
         String table = html.substring(html.indexOf("<table id=\"dependencies-table\""), html.indexOf("</table>"));
-        for (String key : java.util.List.of("dependency", "version", "eol", "status", "repos", "branches")) {
+        for (String key : java.util.List.of("dependency", "version", "context", "purl", "cycle", "eol", "status", "repos", "branches", "evidence", "source", "sbom")) {
             assertThat(table).as(key).contains("<col data-column=\"" + key + "\">", "<th scope=\"col\"", "data-column=\"" + key + "\">");
             // one header cell plus one cell per row (5 used versions)
             assertThat(table.split("data-column=\"" + key + "\"", -1)).as(key).hasSize(1 + 1 + 1 + 5);
         }
-        assertThat(table).contains(">Dependency Name</th>", ">Version</th>", ">EoL date</th>", ">Status</th>", ">Code repos</th>", ">Branches</th>")
+        assertThat(table).contains(">Dependency Name</th>", ">Installed version</th>", ">EoL date</th>", ">Status</th>", ">Code repos</th>", ">Branches</th>")
                 .doesNotContain(">Product</th>", ">Cycle</th>");
         assertThat(html).contains("role=\"region\" aria-label=\"EoL Dependencies\"", "<details id=\"table-settings\" class=\"help\" hidden>",
                 "<summary>Table settings</summary>", "<button type=\"button\" data-columns-reset>Reset columns</button>");
@@ -86,7 +86,7 @@ class DashboardTest extends WebTestBase {
     @Test
     void emptyTableRowSpansAllColumns() throws Exception {
         String html = page("/?start=2000-01-01&end=2000-01-02");
-        assertThat(html).contains("<tr data-empty>\n                <td colspan=\"6\" class=\"empty\">No dependency versions match.</td>");
+        assertThat(html).contains("<tr data-empty>\n                <td colspan=\"12\" class=\"empty\">No dependency versions match.</td>");
         assertThat(shown(html)).isEmpty();
         assertThat(rows(html)).hasSize(5);
     }

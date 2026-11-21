@@ -128,7 +128,7 @@ public class PagesController {
         Ledger.Branch b = requireBranch(id);
         model.addAttribute("b", b);
         model.addAttribute("zone", ledger.zone());
-        model.addAttribute("deps", b.snapshotId() == null ? List.of() : ledger.deps(b.snapshotId()));
+        model.addAttribute("deps", b.snapshotId() == null ? List.of() : dependencyRows(b.snapshotId()));
         model.addAttribute("inline", b.snapshotId() == null ? null : ledger.inline(b.snapshotId()));
         return "branch";
     }
@@ -173,10 +173,17 @@ public class PagesController {
             selected = ledger.asOf(id, day);
         }
         model.addAttribute("selected", selected);
-        model.addAttribute("deps", selected == null ? List.of() : ledger.deps(selected.id()));
+        model.addAttribute("deps", selected == null ? List.of() : dependencyRows(selected.id()));
         model.addAttribute("inline", selected == null ? null : ledger.inline(selected.id()));
         model.addAttribute("first", timeline.isEmpty() ? null : timeline.get(0));
         return "history";
+    }
+
+    private List<Ledger.Dep> dependencyRows(long snapshotId) {
+        return ledger.deps(snapshotId).stream().sorted(java.util.Comparator.comparing(
+                (Ledger.Dep d) -> d.cycle() == null ? null : d.cycle().eolFrom(),
+                java.util.Comparator.nullsLast(java.util.Comparator.<LocalDate>naturalOrder()))
+                .thenComparing(Ledger.Dep::name, Ledger.NATURAL).thenComparingLong(Ledger.Dep::id)).toList();
     }
 
     Ledger.Branch requireBranch(long id) {

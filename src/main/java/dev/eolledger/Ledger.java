@@ -117,7 +117,23 @@ public class Ledger {
         }
     }
 
-    public record DashRow(Cycle cycle, int repos, int branches, Eol eol) {
+    public record Evidence(Branch branch, Dep dep, String context, String sbom) { }
+    public record Source(String url) {
+        public String link() { return safeLink(url); }
+        public String text() { return ImportService.INLINE.equals(url) ? "Inline JSON upload" : url; }
+    }
+
+    public record DashRow(Cycle cycle, int repos, int branches, Eol eol, List<Evidence> inventory) {
+        private String values(java.util.function.Function<Evidence, String> value) {
+            return String.join("; ", inventory.stream().map(value).filter(s -> s != null && !s.isBlank()).distinct().sorted().toList());
+        }
+        public String names() { return inventory.isEmpty() ? cycle.productLabel() : values(e -> e.dep().name()); }
+        public String versions() { return values(e -> e.dep().displayVersion()); }
+        public String contexts() { return values(Evidence::context); }
+        public String purls() { return values(e -> e.dep().ecosystem() == null ? e.dep().purl() : e.dep().ecosystem() + " / " + e.dep().purl()); }
+        public String matching() { return values(e -> e.dep().match().evidence()); }
+        public List<Source> sources() { return inventory.stream().map(e -> e.branch().repoUrl()).distinct().sorted().map(Source::new).toList(); }
+        public List<Source> sboms() { return inventory.stream().map(Evidence::sbom).filter(Objects::nonNull).distinct().sorted().map(Source::new).toList(); }
     }
 
     /** Dashboard rows plus the latest-snapshot dependencies that matched no product or no release cycle. */
@@ -297,7 +313,10 @@ public class Ledger {
     /** The JSON-upload provenance of a snapshot, or null for SBOM-fetched snapshots. */
     public Inline inline(long snapshotId) {
         String payload = db.sql("SELECT payload FROM snapshot_inventory WHERE snapshot_id = ?").param(snapshotId).query(String.class).optional().orElse(null);
-        if (payload == null) return null;
+        return payload == null ? null : parseInline(snapshotId, payload);
+    }
+
+    private Inline parseInline(long snapshotId, String payload) {
         JsonNode e;
         try {
             e = InventoryJson.JSON.readTree(payload);
@@ -362,6 +381,16 @@ public class Ledger {
         Catalog cat = catalog();
         Map<String, Set<String>> repos = new HashMap<>();
         Map<String, Set<Long>> branchIds = new HashMap<>();
+        Map<Long, Inline> provenance = new HashMap<>();
+        Map<Long, String> sboms = new HashMap<>();
+        db.sql("SELECT s.id, s.sbom_url, i.payload FROM snapshot s LEFT JOIN snapshot_inventory i ON i.snapshot_id = s.id WHERE s.id IN (" + LATEST_SNAPSHOTS + ")")
+                .query(rs -> {
+                    long id = rs.getLong("id");
+                    String payload = rs.getString("payload");
+                    if (payload != null) provenance.put(id, parseInline(id, payload));
+                    sboms.put(id, rs.getString("sbom_url"));
+                });
+        Map<String, List<Evidence>> inventory = new HashMap<>();
         int unmatched = 0;
         for (Affected a : latestDeps(cat)) {
             Cycle c = a.dep().cycle();
@@ -371,6 +400,10 @@ public class Ledger {
             }
             repos.computeIfAbsent(c.key(), k -> new HashSet<>()).add(a.branch().repoUrl());
             branchIds.computeIfAbsent(c.key(), k -> new HashSet<>()).add(a.branch().id());
+            Inline inline = provenance.get(a.branch().snapshotId());
+            inventory.computeIfAbsent(c.key(), k -> new ArrayList<>()).add(new Evidence(a.branch(), a.dep(),
+                    inline == null ? "" : inline.context(a.dep()), inline != null && inline.declaredSbomUrl() != null
+                    ? inline.declaredSbomUrl() : sboms.get(a.branch().snapshotId())));
         }
         LocalDate today = today();
         List<DashRow> rows = new ArrayList<>();
@@ -379,7 +412,7 @@ public class Ledger {
                 int r = repos.getOrDefault(c.key(), Set.of()).size();
                 if (r == 0 && !showUnused) continue;
                 if (!inRange(c.eolFrom(), start, end)) continue;
-                rows.add(new DashRow(c, r, branchIds.getOrDefault(c.key(), Set.of()).size(), Eol.of(c, today)));
+                rows.add(new DashRow(c, r, branchIds.getOrDefault(c.key(), Set.of()).size(), Eol.of(c, today), inventory.getOrDefault(c.key(), List.of())));
             }
         }
         Comparator<LocalDate> dates = desc ? Comparator.reverseOrder() : Comparator.naturalOrder();

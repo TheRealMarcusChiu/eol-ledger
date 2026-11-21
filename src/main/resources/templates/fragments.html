@@ -47,51 +47,71 @@
     </th:block>
 </dl>
 
-<!--/* repoUrl/sbomUrl are shown as text; repoLink/sbomLink are their safe http(s) links or null. History passes the snapshot's own SBOM.
-       The project-context column appears only when the page sets ${inline} (a JSON-uploaded snapshot). */-->
-<div th:fragment="depsTable(deps, branchId, repoUrl, repoLink, sbomUrl, sbomLink)" class="table-wrap" tabindex="0" role="region" aria-label="Dependencies">
-    <table>
-        <thead>
-        <tr>
-            <th scope="col">Package</th>
-            <th scope="col" data-type="version">Installed version</th>
-            <th scope="col" th:if="${inline != null}">Project context</th>
-            <th scope="col">Ecosystem / purl</th>
-            <th scope="col">Upstream cycle</th>
-            <th scope="col" data-type="date">EoL date</th>
-            <th scope="col">Status</th>
-            <th scope="col">Matching evidence</th>
-            <th scope="col">Source control</th>
-            <th scope="col">SBOM</th>
-        </tr>
-        </thead>
-        <tbody>
+<!--/* One column schema and enhancement contract for lifecycle aggregates and complete snapshot inventories. */-->
+<th:block th:fragment="dependencyTable(body, dashboard)">
+    <details id="table-settings" class="help" hidden>
+        <summary>Table settings</summary>
+        <div class="col-settings"></div>
+        <button type="button" data-columns-reset>Reset columns</button>
+    </details>
+    <div class="table-wrap" tabindex="0" role="region" th:attr="aria-label=${dashboard ? 'EoL Dependencies' : 'Dependencies'}">
+    <table th:id="${dashboard ? 'dependencies-table' : 'latest-dependencies-table'}"
+           th:attr="data-start=${dashboard ? start : null},data-end=${dashboard ? end : null},data-sort=${dashboard ? sort : null},data-legacy=${dashboard ? legacy : false},data-dependency-table=${dashboard ? 'dashboard' : 'branch'}">
+        <colgroup>
+            <col data-column="dependency"><col data-column="version"><col data-column="context"><col data-column="purl">
+            <col data-column="cycle"><col data-column="eol"><col data-column="status"><col data-column="repos">
+            <col data-column="branches"><col data-column="evidence"><col data-column="source"><col data-column="sbom">
+        </colgroup>
+        <thead><tr>
+            <th scope="col" data-column="dependency">Dependency Name</th>
+            <th scope="col" data-type="version" data-column="version">Installed version</th>
+            <th scope="col" data-column="context">Project context</th>
+            <th scope="col" data-column="purl">Ecosystem / purl</th>
+            <th scope="col" data-column="cycle">Upstream cycle</th>
+            <th scope="col" data-type="date" data-column="eol">EoL date</th>
+            <th scope="col" data-column="status">Status</th>
+            <th scope="col" data-type="number" class="num" data-column="repos">Code repos</th>
+            <th scope="col" data-type="number" class="num" data-column="branches">Branches</th>
+            <th scope="col" data-column="evidence">Matching evidence</th>
+            <th scope="col" data-column="source">Source control</th>
+            <th scope="col" data-column="sbom">SBOM</th>
+        </tr></thead>
+        <tbody th:replace="${body}"></tbody>
+    </table>
+    </div>
+</th:block>
+
+<!--/* History passes the selected snapshot's SBOM and inline provenance, never the latest snapshot's. */-->
+<th:block th:fragment="depsTable(deps, branchId, repoUrl, repoLink, sbomUrl, sbomLink)">
+    <th:block th:replace="~{fragments :: dependencyTable(~{fragments :: inventoryRows}, false)}"></th:block>
+</th:block>
+<tbody th:fragment="inventoryRows">
         <tr th:each="d : ${deps}"
             th:with="detail=@{/repos/{b}/deps/{d}(b=${branchId},d=${d.id()})},
                      href=${d.cycle() != null} ? @{/dependencies/{p}(p=${d.cycle().product()},version=${d.cycle().name()})} : ${detail}"
             th:attr="data-href=${href}">
-            <td><a th:href="${href}" th:text="${d.name()}">pkg</a></td>
-            <td th:text="${d.displayVersion()}">1.0</td>
-            <td class="small" th:if="${inline != null}" th:text="${inline.context(d)}">api: compile, direct</td>
-            <td><span th:text="${d.ecosystem() ?: 'n/a'}">npm</span><br><code class="small muted" th:if="${d.purl()}" th:text="${d.purl()}">purl</code></td>
-            <td>
+            <td data-column="dependency"><a th:href="${href}" th:text="${d.name()}">pkg</a></td>
+            <td data-column="version" th:text="${d.displayVersion()}">1.0</td>
+            <td data-column="context" class="small" th:text="${inline != null ? inline.context(d) : ''}">api: compile, direct</td>
+            <td data-column="purl"><span th:text="${d.ecosystem() ?: 'n/a'}">npm</span><br><code class="small muted" th:if="${d.purl()}" th:text="${d.purl()}">purl</code></td>
+            <td data-column="cycle">
                 <span th:if="${d.cycle() != null}" th:text="${d.cycle().productLabel() + ' ' + d.cycle().name()}">React 18</span>
                 <span th:if="${d.cycle() == null and d.match().product() != null}" class="muted" th:text="${d.match().product() + ', cycle unknown'}">react</span>
                 <span th:if="${d.match().product() == null}" class="muted">No upstream mapping</span>
             </td>
-            <td class="date" data-value="" th:attrappend="data-value=${d.cycle()?.eolFrom()}" th:text="${d.cycle() == null} ? '' : (${d.cycle().eolFrom()} ?: 'Not published')">date</td>
-            <td th:insert="~{fragments :: eol(${d.eol()})}"></td>
-            <td class="small"><span th:text="${d.match().evidence()}">evidence</span>
+            <td data-column="eol" class="date" data-value="" th:attrappend="data-value=${d.cycle()?.eolFrom()}" th:text="${d.cycle() == null} ? '' : (${d.cycle().eolFrom()} ?: 'Not published')">date</td>
+            <td data-column="status" th:insert="~{fragments :: eol(${d.eol()})}"></td>
+            <td data-column="repos" class="num" data-value="1">1</td>
+            <td data-column="branches" class="num" data-value="1">1</td>
+            <td data-column="evidence" class="small"><span th:text="${d.match().evidence()}">evidence</span>
                 <a th:href="${detail}" th:if="${d.cycle() != null}">Details</a></td>
-            <td class="col-source"><a th:if="${repoLink}" th:href="${repoLink}" th:text="${repoUrl}" rel="noopener noreferrer">repo</a><span th:unless="${repoLink}" th:text="${repoUrl}">repo</span></td>
-            <td class="col-sbom"><a th:if="${sbomLink}" th:href="${sbomLink}" th:text="${sbomUrl}" rel="noopener noreferrer">sbom</a><span
+            <td data-column="source" class="col-source"><a th:if="${repoLink}" th:href="${repoLink}" th:text="${repoUrl}" rel="noopener noreferrer">repo</a><span th:unless="${repoLink}" th:text="${repoUrl}">repo</span></td>
+            <td data-column="sbom" class="col-sbom"><a th:if="${sbomLink}" th:href="${sbomLink}" th:text="${sbomUrl}" rel="noopener noreferrer">sbom</a><span
                     th:if="${sbomUrl == T(dev.eolledger.ImportService).INLINE}">Inline JSON upload</span><code
                     th:unless="${sbomLink != null or sbomUrl == T(dev.eolledger.ImportService).INLINE}" th:text="${sbomUrl}">classpath:samples/x.json</code></td>
         </tr>
-        <tr th:if="${deps.isEmpty()}"><td th:attr="colspan=${inline != null} ? 10 : 9" class="empty">No packages in this snapshot.</td></tr>
-        </tbody>
-    </table>
-</div>
+        <tr th:if="${deps.isEmpty()}"><td colspan="12" class="empty">No packages in this snapshot.</td></tr>
+</tbody>
 
 <footer th:fragment="footer" class="footer">
     Data: <a href="https://endoflife.date">endoflife.date</a>

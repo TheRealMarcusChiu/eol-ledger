@@ -26,47 +26,38 @@
         <a th:href="@{/}">Show all</a>
     </div>
 
-    <!--/* Column show/hide, widths and the header sort/filter controls are built by app.js; no-JS users get the plain full table. */-->
-    <details id="table-settings" class="help" hidden th:unless="${error}">
-        <summary>Table settings</summary>
-        <div class="col-settings"></div>
-        <button type="button" data-columns-reset>Reset columns</button>
-    </details>
-
-    <div class="table-wrap" th:unless="${error}" tabindex="0" role="region" aria-label="EoL Dependencies">
-        <!--/* data-start/end/sort: a legacy ?start=&end=&sort= link's validated values, the header filters' initial state. */-->
-        <table id="dependencies-table" th:attr="data-start=${start},data-end=${end},data-sort=${sort},data-legacy=${legacy}">
-            <colgroup>
-                <col data-column="dependency"><col data-column="version"><col data-column="eol">
-                <col data-column="status"><col data-column="repos"><col data-column="branches">
-            </colgroup>
-            <thead>
-            <tr>
-                <th scope="col" data-column="dependency">Dependency Name</th>
-                <th scope="col" data-type="version" data-column="version">Version</th>
-                <th scope="col" data-type="date" data-column="eol">EoL date</th>
-                <th scope="col" data-column="status">Status</th>
-                <th scope="col" data-type="number" class="num" data-column="repos">Code repos</th>
-                <th scope="col" data-type="number" class="num" data-column="branches">Branches</th>
-            </tr>
-            </thead>
-            <tbody>
+    <th:block th:unless="${error}">
+    <th:block th:replace="~{fragments :: dependencyTable(~{dashboard :: dashboardRows}, true)}">
+            <tbody th:fragment="dashboardRows">
             <tr th:each="r : ${rows}" th:with="href=@{/dependencies/{p}(p=${r.cycle().product()},version=${r.cycle().name()})}"
                 th:attr="data-row=${r.cycle().key()},data-repos=${r.repos()},data-branches=${r.branches()},data-href=${href}"
                 th:hidden="${hiddenRows.contains(r.cycle().key())}">
-                <td data-column="dependency" th:attr="data-value=${r.cycle().productLabel()}" th:text="${r.cycle().productLabel()}">Python</td>
-                <td data-column="version" th:attr="data-value=${r.cycle().label() ?: r.cycle().name()}"><a th:href="${href}" th:text="${r.cycle().label() ?: r.cycle().name()}">3.10</a></td>
+                <td data-column="dependency" th:attr="data-value=${r.names()}"><a th:href="${href}" th:text="${r.names()}">Python</a></td>
+                <td data-column="version" th:attr="data-value=${r.versions()}" th:text="${r.inventory().isEmpty() ? 'Not installed' : r.versions()}">3.10.5</td>
+                <td data-column="context" th:text="${r.contexts()}"></td>
+                <td data-column="purl" th:text="${r.purls()}"></td>
+                <td data-column="cycle" th:text="${r.cycle().productLabel() + ' ' + (r.cycle().label() ?: r.cycle().name())}"></td>
                 <td data-column="eol" class="date" data-value="" th:attrappend="data-value=${r.cycle().eolFrom()}" th:text="${r.cycle().eolFrom() ?: 'Not published'}">2026-10-31</td>
                 <td data-column="status" th:attr="data-value=${r.eol().text()}" th:insert="~{fragments :: eol(${r.eol()})}"></td>
                 <td data-column="repos" class="num" th:attr="data-value=${r.repos()}" th:text="${r.repos()}">1</td>
                 <td data-column="branches" class="num" th:attr="data-value=${r.branches()}" th:text="${r.branches()}">1</td>
+                <td data-column="evidence" class="small"><span th:text="${r.matching()}"></span>
+                    <a th:each="e : ${r.inventory()}" th:href="@{/repos/{b}/deps/{d}(b=${e.branch().id()},d=${e.dep().id()})}" th:text="${e.branch().repoName() + ' / ' + e.branch().branch() + ': Details'}">Details</a></td>
+                <td data-column="source" class="col-source"><th:block th:each="url : ${r.sources()}">
+                    <a th:if="${url.link() != null}" th:href="${url.link()}" th:text="${url.text()}" rel="noopener noreferrer"></a>
+                    <span th:unless="${url.link() != null}" th:text="${url.text()}"></span><br>
+                </th:block></td>
+                <td data-column="sbom" class="col-sbom"><th:block th:each="url : ${r.sboms()}">
+                    <a th:if="${url.link() != null}" th:href="${url.link()}" th:text="${url.text()}" rel="noopener noreferrer"></a>
+                    <span th:unless="${url.link() != null}" th:text="${url.text()}"></span><br>
+                </th:block></td>
             </tr>
             <tr data-empty th:hidden="${rows.size() > hiddenRows.size()}">
-                <td colspan="6" class="empty">No dependency versions match.</td>
+                <td colspan="12" class="empty">No dependency versions match.</td>
             </tr>
             </tbody>
-        </table>
-    </div>
+    </th:block>
+    </th:block>
     <p class="hint" th:if="${unmatched != null and unmatched > 0}">
         <span th:text="${unmatched}">3</span> installed packages have no release cycle;
         see each <a th:href="@{/repos}">code repo branch</a> for why.
