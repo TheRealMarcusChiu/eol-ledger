@@ -477,7 +477,7 @@ form.inline { display: inline; }
   margin: 0 0 .7rem;
   min-height: 2.5rem;
 }
-.filter-bar p {
+.filter-bar p, .pager p, .pager label {
   margin: 0;
   color: var(--muted);
   font: 400 .68rem/1.5 var(--mono);
@@ -486,6 +486,10 @@ form.inline { display: inline; }
 }
 .filter-bar p strong { color: var(--ink); font-weight: 500; }
 .filter-bar [data-filters-clear-all][hidden] { display: none; }
+/* Pages under each table (app.js): rows per page, Previous, "Page 2 of 5", Next. */
+.pager { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin: .7rem 0 1.4rem; }
+.pager label { display: inline-flex; align-items: center; gap: .5rem; margin-right: auto; }
+.pager button:disabled { opacity: .4; cursor: default; pointer-events: none; }
 
 .table-wrap {
   overflow-x: auto;

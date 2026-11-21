@@ -387,6 +387,16 @@ function cellValue(td) {
   return td && td.hasAttribute('data-value') ? td.getAttribute('data-value') : cellText(td);
 }
 
+var PAGE_SIZES = [20, 50, 100];
+
+/** Rows start..end of n matching rows on a page: size 20, 50 or 100 (else 20), page clamped to 1..pages; 0 rows is one empty page. */
+function pageRange(n, page, size) {
+  if (PAGE_SIZES.indexOf(size) < 0) size = PAGE_SIZES[0];
+  var pages = Math.max(1, Math.ceil(n / size));
+  var p = Math.min(pages, Math.max(1, Math.floor(page) || 1));
+  return { page: p, pages: pages, start: (p - 1) * size, end: Math.min(n, p * size) };
+}
+
 var tableSeq = 0;
 
 /**
@@ -399,10 +409,53 @@ function initTable(table, opts) {
   var tbody = table.tBodies[0];
   if (!head || !tbody) return;
   var trs = Array.prototype.filter.call(tbody.rows, function (tr) { return !tr.hasAttribute('data-empty') && !tr.querySelector('td.empty'); });
-  if (!trs.length) return; // nothing to sort or filter; the page's own empty message stays
   var uid = 't' + (++tableSeq);
   var noun = opts.noun || 'rows';
   var defaultSort = opts.defaultSort || null;
+
+  // Pages below the table: render() lists every match in display order; draw() shows only the current page of it.
+  var matching = trs.map(function (tr, i) { return i; }), page = 1, size = PAGE_SIZES[0];
+  var pager = document.createElement('nav');
+  pager.className = 'pager';
+  pager.setAttribute('aria-label', 'Pages of ' + noun);
+  var sizeSelect = document.createElement('select');
+  sizeSelect.setAttribute('data-page-size', '');
+  PAGE_SIZES.forEach(function (n) { sizeSelect.add(new Option(String(n), String(n))); });
+  var sizeLabel = document.createElement('label');
+  sizeLabel.append('Rows per page ', sizeSelect);
+  var prev = document.createElement('button'), next = document.createElement('button');
+  prev.type = next.type = 'button';
+  prev.className = next.className = 'button-quiet';
+  prev.setAttribute('data-page-prev', '');
+  next.setAttribute('data-page-next', '');
+  prev.textContent = 'Previous';
+  next.textContent = 'Next';
+  var where = document.createElement('p');
+  where.setAttribute('data-page-status', '');
+  where.setAttribute('aria-live', 'polite');
+  pager.append(sizeLabel, prev, where, next);
+  (table.closest('.table-wrap') || table).after(pager);
+
+  function draw() {
+    var p = pageRange(matching.length, page, size);
+    page = p.page;
+    trs.forEach(function (tr) { tr.hidden = true; }); // hidden rows are display: none, so never tabbable
+    matching.slice(p.start, p.end).forEach(function (i) { trs[i].hidden = false; });
+    where.textContent = 'Page ' + p.page + ' of ' + p.pages;
+    prev.disabled = p.page <= 1;
+    next.disabled = p.page >= p.pages;
+  }
+
+  function turn(by, button, other) {
+    page += by;
+    draw();
+    if (button.disabled) other.focus(); // a disabled button drops focus to the page
+  }
+  prev.addEventListener('click', function () { turn(-1, prev, next); });
+  next.addEventListener('click', function () { turn(1, next, prev); });
+  sizeSelect.addEventListener('change', function () { size = Number(sizeSelect.value); page = 1; draw(); });
+  draw();
+  if (!trs.length) return; // nothing to sort or filter; the page's own empty message stays
 
   var cols = Array.prototype.map.call(head.cells, function (cell, i) {
     return { th: cell, index: i, key: cell.getAttribute('data-column') || 'c' + i, type: cell.getAttribute('data-type') || 'text' };
@@ -454,10 +507,13 @@ function initTable(table, opts) {
 
   function render() {
     var shown = visibleRows(data, filters, types);
-    var n = 0;
-    trs.forEach(function (tr, i) { tr.hidden = !shown[i]; if (shown[i]) n++; });
     var order = sort ? sortOrder(data.map(function (r) { return r[sort.key]; }), types[sort.key], sort.dir) : data.map(function (r, i) { return i; });
     order.forEach(function (i) { tbody.insertBefore(trs[i], emptyRow); });
+    // Every filter or sort change starts again on page 1 of the whole table's matches.
+    matching = order.filter(function (i) { return shown[i]; });
+    page = 1;
+    draw();
+    var n = matching.length;
     emptyRow.hidden = n > 0;
     var active = keys.filter(function (k) { return filterPredicate(filters[k], types[k]); });
     keys.forEach(function (k) {

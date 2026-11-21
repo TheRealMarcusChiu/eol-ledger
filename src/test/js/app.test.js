@@ -229,6 +229,48 @@ test('menu box stays inside the viewport: flips above a trigger near the bottom,
   }
 });
 
+// ---- pagination ----
+
+test('page range: 20/50/100 per page, last partial page, an empty table is one empty page', () => {
+  const { pageRange } = load();
+  const r = (n, page, size) => plain(pageRange(n, page, size));
+  assert.deepStrictEqual(r(0, 1, 20), { page: 1, pages: 1, start: 0, end: 0 });
+  assert.deepStrictEqual(r(1, 1, 20), { page: 1, pages: 1, start: 0, end: 1 });
+  assert.deepStrictEqual(r(20, 1, 20), { page: 1, pages: 1, start: 0, end: 20 });
+  assert.deepStrictEqual(r(21, 1, 20), { page: 1, pages: 2, start: 0, end: 20 });
+  assert.deepStrictEqual(r(21, 2, 20), { page: 2, pages: 2, start: 20, end: 21 });
+  assert.deepStrictEqual(r(50, 3, 20), { page: 3, pages: 3, start: 40, end: 50 });
+  assert.deepStrictEqual(r(50, 1, 50), { page: 1, pages: 1, start: 0, end: 50 });
+  assert.deepStrictEqual(r(100, 1, 100), { page: 1, pages: 1, start: 0, end: 100 });
+  assert.deepStrictEqual(r(101, 2, 100), { page: 2, pages: 2, start: 100, end: 101 });
+  assert.deepStrictEqual(r(101, 3, 50), { page: 3, pages: 3, start: 100, end: 101 });
+});
+
+test('page range: out-of-range pages clamp, sizes other than 20/50/100 fall back to 20', () => {
+  const { pageRange } = load();
+  const r = (n, page, size) => plain(pageRange(n, page, size));
+  assert.deepStrictEqual(r(21, 5, 20), { page: 2, pages: 2, start: 20, end: 21 }, 'past the end after results shrink');
+  assert.deepStrictEqual(r(21, 0, 20), r(21, 1, 20));
+  assert.deepStrictEqual(r(21, -3, 20), r(21, 1, 20));
+  assert.deepStrictEqual(r(21, NaN, 20), r(21, 1, 20));
+  assert.deepStrictEqual(r(0, 4, 100), { page: 1, pages: 1, start: 0, end: 0 });
+  for (const bad of [0, -20, 10, 25, 1e9, NaN, '50', undefined]) assert.deepStrictEqual(r(45, 1, bad), r(45, 1, 20), String(bad));
+});
+
+test('a page holds the filtered and sorted rows of the whole table, not of the previous page', () => {
+  const ctx = load();
+  // 101 rows: versions 1..101 in reverse source order; keep only odd versions (51 matches), sort ascending, 20 a page.
+  const rows = Array.from({ length: 101 }, (_, i) => ({ version: String(101 - i) }));
+  const filters = { version: Object.assign(ctx.emptyFilter(), { selected: rows.map((r) => r.version).filter((v) => v % 2) }) };
+  const shown = Array.from(ctx.visibleRows(rows, filters, { version: 'number' }));
+  const matching = Array.from(ctx.sortOrder(rows.map((r) => r.version), 'number', 'asc')).filter((i) => shown[i]);
+  assert.strictEqual(matching.length, 51);
+  const page = (p) => { const g = ctx.pageRange(matching.length, p, 20); return matching.slice(g.start, g.end).map((i) => rows[i].version); };
+  assert.deepStrictEqual(page(1).slice(-1).concat(page(2).slice(0, 1)), ['39', '41'], 'page 1 ends and page 2 starts in sorted order');
+  assert.deepStrictEqual(page(3), ['81', '83', '85', '87', '89', '91', '93', '95', '97', '99', '101']);
+  assert.deepStrictEqual([].concat(page(1), page(2), page(3)), matching.map((i) => rows[i].version), 'pages partition every match once');
+});
+
 test('storage uses only its own key', () => {
   const calls = [];
   const store = { getItem: (k) => { calls.push(['get', k]); return null; }, setItem: (k, v) => calls.push(['set', k, v]), removeItem: (k) => calls.push(['remove', k]) };
