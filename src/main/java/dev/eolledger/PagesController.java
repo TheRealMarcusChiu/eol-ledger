@@ -11,7 +11,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -26,17 +28,22 @@ public class PagesController {
         this.catalog = catalog;
     }
 
-    /** Default view: all tracked versions with no date bounds (past, future and unknown EoL dates), used ones only. */
+    /**
+     * Default view: all tracked versions with no date bounds (past, future and unknown EoL dates), used ones only.
+     * Legacy start/end/sort links still work: every row is rendered, out-of-range ones carry {@code hidden}, and app.js
+     * takes the same bounds as its initial header filter, so clearing it restores the full list without a reload.
+     */
     @GetMapping("/")
     String dashboard(@RequestParam(required = false) String start, @RequestParam(required = false) String end,
                      @RequestParam(defaultValue = "asc") String sort, @RequestParam(defaultValue = "false") boolean unused,
                      Model model, HttpServletResponse response) {
         String startText = start == null ? "" : start.trim();
         String endText = end == null ? "" : end.trim();
+        boolean desc = "desc".equals(sort);
         model.addAttribute("start", startText);
         model.addAttribute("end", endText);
-        model.addAttribute("sort", "desc".equals(sort) ? "desc" : "asc");
-        model.addAttribute("unused", unused);
+        model.addAttribute("sort", desc ? "desc" : "asc");
+        model.addAttribute("legacy", !startText.isEmpty() || !endText.isEmpty() || desc || unused);
         model.addAttribute("status", catalog.status());
         model.addAttribute("catalogEmpty", ledger.catalogEmpty());
         LocalDate from;
@@ -53,7 +60,10 @@ public class PagesController {
             model.addAttribute("rows", java.util.List.of());
             return "dashboard";
         }
-        model.addAttribute("rows", ledger.dashboard(from, to, "desc".equals(sort), unused));
+        List<Ledger.DashRow> rows = ledger.dashboard(null, null, desc, unused);
+        model.addAttribute("rows", rows);
+        model.addAttribute("hiddenRows", rows.stream().filter(r -> !Ledger.inRange(r.cycle().eolFrom(), from, to))
+                .map(r -> r.cycle().key()).collect(Collectors.toSet()));
         model.addAttribute("unmatched", ledger.unmatchedCycleCount());
         return "dashboard";
     }
@@ -87,6 +97,9 @@ public class PagesController {
     String repos(Model model) {
         List<Ledger.Branch> branches = ledger.branches();
         model.addAttribute("branches", branches);
+        Map<Long, String> appIds = new HashMap<>();
+        for (Ledger.Branch b : branches) appIds.put(b.id(), ledger.appId(b.snapshotId()));
+        model.addAttribute("appIds", appIds);
         model.addAttribute("repoCount", branches.stream().map(Ledger.Branch::repoUrl).distinct().count());
         model.addAttribute("zone", ledger.zone());
         return "repos";

@@ -187,6 +187,35 @@ class JsonImportTest extends WebTestBase {
                 .replace("Apache Maven 3.9.9", "Apache Maven 3.9.10")), "test").newSnapshots()).isEqualTo(1);
     }
 
+    @Test
+    void codeReposShowTheLatestSnapshotsAppIdPerBranchAndCsvReRegistrationClearsIt() throws Exception {
+        imports.importJson(array(entry("main", "2026-11-20T10:00:00Z", REACT), entry("release/legacy", "2026-11-20T10:00:00Z", REACT)), "test");
+        CLOCK.now = CLOCK.now.plusSeconds(60);
+        imports.importJson(array(entry("main", "2026-11-20T10:00:00Z", REACT).replace("DEMO-1001", "DEMO-2002")), "test");
+        long main = branchId(REPO, "main"), legacy = branchId(REPO, "release/legacy");
+        assertThat(ledger.appId(ledger.branch(main).snapshotId())).isEqualTo("DEMO-2002");
+        assertThat(ledger.appId(ledger.branch(legacy).snapshotId())).isEqualTo("DEMO-1001");
+        assertThat(ledger.appId(null)).isNull();
+        String html = mvc.perform(get("/repos")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(appIdCell(html, main)).isEqualTo("DEMO-2002");
+        assertThat(appIdCell(html, legacy)).isEqualTo("DEMO-1001");
+
+        // a CSV-fetched snapshot carries no App ID: blank, never the older JSON snapshot's value
+        TestSupport.REPLIES.put("/x.json", TestSupport.Reply.ok(cdx("pkg:npm/react@19.0.0")));
+        CLOCK.now = CLOCK.now.plusSeconds(60);
+        imports.importCsv("repo_name,repo_url,provider,branch,sbom_url\nDemo," + REPO + ",other,main," + TestSupport.base() + "/x.json\n", "upload");
+        assertThat(ledger.appId(ledger.branch(main).snapshotId())).isNull();
+        html = mvc.perform(get("/repos")).andReturn().getResponse().getContentAsString();
+        assertThat(appIdCell(html, main)).isEqualTo("—");
+        assertThat(appIdCell(html, legacy)).isEqualTo("DEMO-1001");
+    }
+
+    static String appIdCell(String html, long branchId) {
+        int row = html.indexOf("data-href=\"/repos/" + branchId + "\"");
+        int cell = html.indexOf("data-column=\"appid\">", row) + "data-column=\"appid\">".length();
+        return html.substring(cell, html.indexOf("</td>", cell));
+    }
+
     @ParameterizedTest(name = "{0}")
     @CsvSource(delimiter = '|', value = {
             "root is not an array|{}|root must be a JSON array",

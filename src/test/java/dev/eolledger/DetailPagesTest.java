@@ -3,6 +3,8 @@ package dev.eolledger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -48,6 +50,26 @@ class DetailPagesTest extends WebTestBase {
         String html = page("/repos");
         assertThat(html).contains("release/1.x", "https://dev.azure.com/acme/P/_git/beta", "azure-devops");
         assertThat(html).contains("href=\"/repos/" + branchId("https://gitlab.com/acme/alpha", "release/1.x") + "\"");
+    }
+
+    @Test
+    void codeReposTableHasSixColumnsUrlOnlyLinksAndANoJsBranchFallback() throws Exception {
+        db.sql("UPDATE repo_branch SET repo_url = 'javascript:alert(1)' WHERE branch = 'main' AND repo_url LIKE '%beta'").update();
+        String html = page("/repos");
+        String table = html.substring(html.indexOf("<table id=\"code-repos-table\">"), html.indexOf("</table>"));
+        assertThat(table).contains(">App ID</th>", ">Code repo</th>", ">Branch</th>", ">Provider</th>", ">Packages</th>", ">Latest snapshot</th>");
+        int rows = db.sql("SELECT count(*) FROM repo_branch").query(Integer.class).single();
+        for (String key : List.of("appid", "repo", "branch", "provider", "packages", "snapshot")) {
+            assertThat(table.split("data-column=\"" + key + "\"", -1)).as(key).hasSize(rows + 1);
+        }
+        long rel = branchId("https://gitlab.com/acme/alpha", "release/1.x");
+        int row = table.indexOf("data-href=\"/repos/" + rel + "\"");
+        String tr = table.substring(row, table.indexOf("</tr>", row));
+        // CSV branches have no App ID; the repo cell is only the URL as an external link; the branch is text plus a no-JS link
+        assertThat(tr).contains("data-column=\"appid\">—</td>",
+                "<td data-column=\"repo\" class=\"col-source\"><a href=\"https://gitlab.com/acme/alpha\" rel=\"noopener noreferrer\">https://gitlab.com/acme/alpha</a></td>",
+                "<td data-column=\"branch\"><span>release/1.x</span>", "<noscript><a href=\"/repos/" + rel + "\">Details</a></noscript>");
+        assertThat(table).doesNotContain("href=\"javascript:", ">alpha<").contains("<span>javascript:alert(1)</span>");
     }
 
     @Test

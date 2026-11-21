@@ -287,6 +287,12 @@ public class Ledger {
                 e.path("demo").asBoolean() || java.net.URI.create(url).getHost().endsWith(".invalid"), e.path("localRepository").textValue(), projects, joined);
     }
 
+    /** App ID declared by this snapshot's JSON upload; null for CSV/SBOM snapshots, no snapshot, or none stated. Never falls back to older snapshots. */
+    public String appId(Long snapshotId) {
+        Inline i = snapshotId == null ? null : inline(snapshotId);
+        return i == null || i.appId() == null || i.appId().isBlank() ? null : i.appId();
+    }
+
     static String ecosystem(String purl) {
         if (purl == null || !purl.startsWith("pkg:") || purl.indexOf('/') < 0) return null;
         return purl.substring(4, purl.indexOf('/')).toLowerCase();

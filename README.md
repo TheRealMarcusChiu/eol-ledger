@@ -18,8 +18,8 @@ Data is stored in `./data/eol-ledger.mv.db` (relative to the working directory).
 Health: `GET /actuator/health`.
 
 First steps:
-1. **Update EoL data** on the EoL Dependencies page (same action as **Imports & sync → Sync catalogue now**;
-   one HTTPS request to endoflife.date, about 3 MB). The result and last success are shown on Imports & sync.
+1. **Imports & sync → Sync catalogue now** (one HTTPS request to endoflife.date, about 3 MB). The result
+   and last success are shown on Imports & sync.
 2. **Import demo registry** (or upload your own CSV).
 3. Open **EoL Dependencies**.
 
@@ -306,22 +306,49 @@ current catalogue**, not from the catalogue as it was on that day, and the page 
 
 ## Dashboard semantics
 
-* With no query string, every tracked dependency version (release cycle used by at least one branch)
-  is listed with no date cutoff: EoL dates in the past, in the future and not published. **Include
-  unused dependencies** adds catalogue cycles no branch uses. **Reset filters** returns to the default view.
-* Dates are inclusive. Start only = from start onwards. End only = up to and including end. Both blank
-  (the default, same as `?start=&end=`) = all time.
+* Every tracked dependency version (release cycle used by at least one branch) is listed with no date
+  cutoff: EoL dates in the past, in the future and not published, earliest EoL date first (unknown last).
+  There is no filter form above the table.
+* **Header sort and filters** (need JavaScript; page-local, nothing stored, so a reload starts blank):
+  click a header name to sort ascending, again for descending. Versions and text sort naturally (3.9
+  before 3.10), counts as numbers, dates as ISO dates; blank/unknown values stay last both ways. Each
+  header's ▾ menu filters that column in one of three modes, applied as you type:
+  *Values* (checkbox list of every distinct value including blank/"Not published"; its search box with
+  contains / exact / fuzzy only narrows the list; select all / select none act on every value),
+  *Text* (contains, does not contain, is exactly, is not exactly, starts with, ends with, fuzzy, is blank,
+  is not blank; literal and case-insensitive; fuzzy tolerates a missing letter or swapped pair per word,
+  e.g. `pyhton` finds Python) or *Range* (inclusive From/To, either blank = open; typed by column:
+  YYYY-MM-DD dates, numbers, natural text/versions; any bound excludes blank values; an invalid or
+  reversed range is shown as an error and the last valid one stays applied). Columns combine with AND,
+  checked values with OR; unchecking every value shows 0 rows. **Clear filter** in a menu clears that
+  column only; **Clear all filters** clears every filter and restores the EoL date ascending sort. Neither
+  touches column widths or visibility. The count above the table names the filtered columns, including
+  hidden ones. Escape or a click outside closes a menu.
+* Old links still work: `?start=&end=` (inclusive YYYY-MM-DD, malformed or reversed = 400 page) and
+  `?sort=desc` become the initial EoL date filter and sort. All rows are still sent; rows outside the
+  range carry `hidden`, so without JavaScript the old link still shows the filtered view, and with it
+  clearing the filter restores every row in place. `?unused=true` also lists catalogue cycles no branch
+  uses; on such a link **Clear all filters** reloads the plain default page.
 * Columns: Dependency Name (endoflife.date product), Version (its release cycle), EoL date, Status,
   Code repos, Branches. **Table settings** (needs JavaScript) shows or hides any column (at least one
   stays visible) and sets widths of 80–1000 px; headers also have drag/arrow-key resize handles. These
   settings live only in this browser's localStorage under `eol-ledger.dependencies-table.v1`;
   **Reset columns** removes that key. Without JavaScript all columns show at automatic widths.
-  The pure settings logic has a Node test: `node --test src/test/js/app.test.js`.
-* Cycles without a published EoL date appear only when both dates are blank and are labelled
-  "No EoL date announced" or "Ended (date not published)". They never pass a date filter.
+  The pure settings, sort and filter logic has Node tests: `node --test src/test/js/app.test.js`.
+* Cycles without a published EoL date are labelled "No EoL date announced" or "Ended (date not
+  published)". They never pass a date range; Values and the blank operators can select them.
 * **Code repos** counts distinct repository URLs. A repo with two branches on the same cycle counts
   once. **Branches** counts branches.
-* Malformed or reversed dates return a 400 page that explains the problem.
+
+## Code repos page
+
+One row per branch: App ID, Code repo, Branch, Provider, Packages, Latest snapshot. **App ID** is the
+`appId` of the branch's latest snapshot when that snapshot came from a JSON upload; CSV/SBOM snapshots
+show `—` (a CSV re-registration after a JSON upload clears it; older snapshots and other branches are
+never used). **Code repo** is the repository URL, a link only for `http(s)` URLs without credentials,
+otherwise plain text. Clicking or pressing Enter on a row opens the branch page (Ctrl/⌘ for a new
+tab); the repo link itself goes to the external site. Without JavaScript a *Details* link in the Branch
+cell opens the branch page.
 
 ## Matching rules and limits
 
@@ -365,8 +392,8 @@ commercial support dates are not shown.
 EoL data comes from the endoflife.date API v1 (`/products/full`, or `/products/<name>`), which is
 generated from [github.com/endoflife-date/endoflife.date](https://github.com/endoflife-date/endoflife.date)
 (MIT licence). That project's README points to this API ([docs](https://endoflife.date/docs/api/v1/))
-as the way to consume its data, so the app does not clone or parse the repository itself. The
-**Update EoL data** button on the EoL Dependencies page runs the same sync as the Imports & sync page. Each product's cycles and identifiers are replaced in one transaction only after
+as the way to consume its data, so the app does not clone or parse the repository itself. The sync
+runs from **Imports & sync → Sync catalogue now** (`POST /catalog/sync`) or on `eol.jobs.catalog-sync.cron` when set. Each product's cycles and identifiers are replaced in one transaction only after
 that product parsed completely. A failed request or a malformed product keeps the previous data.
 Products missing from a later response are kept, not deleted. The sync status (last attempt, last
 success, errors) is shown on the Imports & sync page.

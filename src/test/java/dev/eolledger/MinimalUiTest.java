@@ -42,12 +42,11 @@ class MinimalUiTest extends WebTestBase {
     }
 
     @Test
-    void dashboardControlsAreVisibleAndHelpKeepsItsLinks() throws Exception {
+    void dashboardHasNoTopControlsOnlyTheTable() throws Exception {
         String html = page("/");
-        assertThat(visible(html)).contains("id=\"start\" name=\"start\"", "id=\"end\" name=\"end\"", "id=\"sort\" name=\"sort\"",
-                "id=\"unused\" name=\"unused\"", ">Apply</button>", ">Reset filters</a>", ">Update EoL data</button>", "<summary>Help</summary>")
-                .doesNotContain("Both dates are inclusive");
-        assertThat(html).contains("id=\"filter-help\"", "id=\"update-help\"", "Both dates are inclusive", "href=\"https://endoflife.date/docs/api/v1/\"");
+        // filtering and sorting moved into the table headers (app.js); the old form, its help and the update button were removed
+        assertThat(html).doesNotContain("<form", ">Apply</button>", "Reset filters", "Update EoL data", "<summary>Help</summary>", "Both dates are inclusive");
+        assertThat(visible(html)).contains("<h1>EoL Dependencies</h1>", "<table id=\"dependencies-table\"");
     }
 
     @Test

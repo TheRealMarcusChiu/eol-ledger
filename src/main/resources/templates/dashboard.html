@@ -6,14 +6,8 @@
 <main id="main">
     <div class="page-head title-row">
         <h1>EoL Dependencies</h1>
-        <section class="actions" aria-labelledby="update-h">
-            <h2 id="update-h" class="sr-only">EoL data</h2>
-            <span class="hint" th:if="${status != null and status.succeededAt() != null}">Updated
-                <span th:text="${@view.time(status.succeededAt())}">time</span></span>
-            <form th:action="@{/catalog/sync}" method="post" aria-describedby="update-help">
-                <button type="submit">Update EoL data</button>
-            </form>
-        </section>
+        <span class="hint" th:if="${status != null and status.succeededAt() != null}">Updated
+            <span th:text="${@view.time(status.succeededAt())}">time</span></span>
     </div>
 
     <div th:if="${catalogEmpty}" class="notice">
@@ -23,47 +17,12 @@
         Last catalogue sync had problems; previous data still in use. <a th:href="@{/imports}">See sync status</a>.
     </div>
 
-    <form class="filters" method="get" th:action="@{/}" aria-describedby="filter-help">
-        <div class="field">
-            <label for="start">EoL from</label>
-            <input id="start" name="start" type="date" th:value="${start}">
-        </div>
-        <div class="field">
-            <label for="end">EoL until</label>
-            <input id="end" name="end" type="date" th:value="${end}">
-        </div>
-        <div class="field">
-            <label for="sort">Order</label>
-            <select id="sort" name="sort">
-                <option value="asc" th:selected="${sort == 'asc'}">Earliest EoL first</option>
-                <option value="desc" th:selected="${sort == 'desc'}">Latest EoL first</option>
-            </select>
-        </div>
-        <div class="field field-check">
-            <input id="unused" name="unused" type="checkbox" value="true" th:checked="${unused}">
-            <label for="unused">Include unused dependencies</label>
-        </div>
-        <div class="actions">
-            <button type="submit">Apply</button>
-            <a class="button-quiet" th:href="@{/}">Reset filters</a>
-        </div>
-        <details class="help">
-            <summary>Help</summary>
-            <p id="filter-help">Matches upstream release cycles to the latest SBOM of each code repo branch.
-                By default every tracked dependency version is listed, whatever its EoL date: past, future or not published.
-                Both dates are inclusive. Leave a date blank for an open range; any date drops versions whose EoL date is unknown.</p>
-            <p id="update-help">Update EoL data downloads the current release cycles from the official
-                <a href="https://endoflife.date/docs/api/v1/">endoflife.date API</a>, generated from the
-                <a href="https://github.com/endoflife-date/endoflife.date">endoflife-date/endoflife.date</a> GitHub project.
-                The result is shown on <a th:href="@{/imports}">Imports</a>; a failed update keeps the previous dates.</p>
-        </details>
-    </form>
-
     <div th:if="${error}" class="notice notice-error" role="alert">
         <strong>Those filters could not be applied.</strong> <span th:text="${error}">error</span>
+        <a th:href="@{/}">Show all</a>
     </div>
 
-    <!--/* Column show/hide and widths are built by app.js; hidden until then so no-JS users see no dead controls. */-->
+    <!--/* Column show/hide, widths and the header sort/filter controls are built by app.js; no-JS users get the plain full table. */-->
     <details id="table-settings" class="help" hidden th:unless="${error}">
         <summary>Table settings</summary>
         <div class="col-settings"></div>
@@ -71,7 +30,8 @@
     </details>
 
     <div class="table-wrap" th:unless="${error}" tabindex="0" role="region" aria-label="EoL Dependencies">
-        <table id="dependencies-table">
+        <!--/* data-start/end/sort: a legacy ?start=&end=&sort= link's validated values, the header filters' initial state. */-->
+        <table id="dependencies-table" th:attr="data-start=${start},data-end=${end},data-sort=${sort},data-legacy=${legacy}">
             <colgroup>
                 <col data-column="dependency"><col data-column="version"><col data-column="eol">
                 <col data-column="status"><col data-column="repos"><col data-column="branches">
@@ -88,16 +48,17 @@
             </thead>
             <tbody>
             <tr th:each="r : ${rows}" th:with="href=@{/products/{p}(p=${r.cycle().product()},cycle=${r.cycle().name()})}"
-                th:attr="data-row=${r.cycle().key()},data-repos=${r.repos()},data-branches=${r.branches()},data-href=${href}">
-                <td data-column="dependency" th:text="${r.cycle().productLabel()}">Python</td>
-                <td data-column="version"><a th:href="${href}" th:text="${r.cycle().label() ?: r.cycle().name()}">3.10</a></td>
-                <td data-column="eol" class="date" th:text="${r.cycle().eolFrom() ?: 'Not published'}">2026-10-31</td>
-                <td data-column="status" th:insert="~{fragments :: eol(${r.eol()})}"></td>
-                <td data-column="repos" class="num" th:text="${r.repos()}">1</td>
-                <td data-column="branches" class="num" th:text="${r.branches()}">1</td>
+                th:attr="data-row=${r.cycle().key()},data-repos=${r.repos()},data-branches=${r.branches()},data-href=${href}"
+                th:hidden="${hiddenRows.contains(r.cycle().key())}">
+                <td data-column="dependency" th:attr="data-value=${r.cycle().productLabel()}" th:text="${r.cycle().productLabel()}">Python</td>
+                <td data-column="version" th:attr="data-value=${r.cycle().label() ?: r.cycle().name()}"><a th:href="${href}" th:text="${r.cycle().label() ?: r.cycle().name()}">3.10</a></td>
+                <td data-column="eol" class="date" data-value="" th:attrappend="data-value=${r.cycle().eolFrom()}" th:text="${r.cycle().eolFrom() ?: 'Not published'}">2026-10-31</td>
+                <td data-column="status" th:attr="data-value=${r.eol().text()}" th:insert="~{fragments :: eol(${r.eol()})}"></td>
+                <td data-column="repos" class="num" th:attr="data-value=${r.repos()}" th:text="${r.repos()}">1</td>
+                <td data-column="branches" class="num" th:attr="data-value=${r.branches()}" th:text="${r.branches()}">1</td>
             </tr>
-            <tr th:if="${rows.isEmpty()}">
-                <td colspan="6" class="empty">No dependency versions in this range.</td>
+            <tr data-empty th:hidden="${rows.size() > hiddenRows.size()}">
+                <td colspan="6" class="empty">No dependency versions match.</td>
             </tr>
             </tbody>
         </table>
