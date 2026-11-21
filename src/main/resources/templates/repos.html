@@ -4,7 +4,7 @@
 <body>
 <header th:replace="~{fragments :: nav('repos')}"></header>
 <main id="main">
-    <div class="page-head">
+    <div class="page-head" data-eyebrow="the archive · branches under watch">
         <h1>Code repos</h1>
         <p class="lede"><span th:text="${repoCount}">3</span> code repos, <span th:text="${branches.size()}">4</span> branches</p>
     </div>
@@ -16,8 +16,8 @@
                 <th scope="col">Code repo</th>
                 <th scope="col">Branch</th>
                 <th scope="col">Provider</th>
-                <th scope="col" class="num">Packages</th>
-                <th scope="col">Latest snapshot</th>
+                <th scope="col" data-type="number" class="num">Packages</th>
+                <th scope="col" data-type="datetime">Latest snapshot</th>
             </tr>
             </thead>
             <tbody>
@@ -30,7 +30,7 @@
                     <noscript><a th:href="${href}">Details</a></noscript></td>
                 <td data-column="provider" th:text="${b.provider()}">gitlab</td>
                 <td data-column="packages" class="num" th:text="${b.depCount()}">5</td>
-                <td data-column="snapshot" class="date small" th:text="${b.observedAt() != null} ? ${@view.time(b.observedAt())} : 'No snapshot yet'">time</td>
+                <td data-column="snapshot" class="date small" th:attr="data-value=${b.observedAt() != null} ? ${@view.time(b.observedAt())} : ''" th:text="${b.observedAt() != null} ? ${@view.time(b.observedAt())} : 'No snapshot yet'">time</td>
             </tr>
             <tr th:if="${branches.isEmpty()}">
                 <td colspan="6" class="empty">No code repos yet. <a th:href="@{/imports}">Import a CSV or JSON</a>.</td>

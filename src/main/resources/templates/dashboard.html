@@ -4,7 +4,7 @@
 <body>
 <header th:replace="~{fragments :: nav('dashboard')}"></header>
 <main id="main">
-    <div class="page-head title-row">
+    <div class="page-head title-row" data-eyebrow="the ledger · release cycles in use">
         <h1>EoL Dependencies</h1>
         <span class="hint" th:if="${status != null and status.succeededAt() != null}">Updated
             <span th:text="${@view.time(status.succeededAt())}">time</span></span>
@@ -39,11 +39,11 @@
             <thead>
             <tr>
                 <th scope="col" data-column="dependency">Dependency Name</th>
-                <th scope="col" data-column="version">Version</th>
-                <th scope="col" data-column="eol">EoL date</th>
+                <th scope="col" data-type="version" data-column="version">Version</th>
+                <th scope="col" data-type="date" data-column="eol">EoL date</th>
                 <th scope="col" data-column="status">Status</th>
-                <th scope="col" class="num" data-column="repos">Code repos</th>
-                <th scope="col" class="num" data-column="branches">Branches</th>
+                <th scope="col" data-type="number" class="num" data-column="repos">Code repos</th>
+                <th scope="col" data-type="number" class="num" data-column="branches">Branches</th>
             </tr>
             </thead>
             <tbody>

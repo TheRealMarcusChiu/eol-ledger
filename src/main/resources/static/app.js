@@ -160,17 +160,23 @@ function initColumns(table, settings) {
   settings.hidden = false;
 }
 
-// ---- Dashboard header sort and filters: page-local state, nothing stored. Pure helpers first (tested in Node). ----
+// ---- Header sort and filters for EVERY table: page-local state, nothing stored. Pure helpers first (tested in Node). ----
+// A column's key is its th[data-column] (else its position), its type th[data-type]: text | version | number | date | datetime.
+// A cell's value is its td[data-value] when present (e.g. a blank EoL date shown as "Not published"), else its visible text.
 
 var COLUMN_TYPES = { dependency: 'text', version: 'version', eol: 'date', status: 'text', repos: 'number', branches: 'number' };
 var TEXT_OPS = { 'contains': 'Contains', 'not-contains': 'Does not contain', 'exact': 'Is exactly', 'not-exact': 'Is not exactly',
   'starts-with': 'Starts with', 'ends-with': 'Ends with', 'fuzzy': 'Fuzzy match', 'is-blank': 'Is blank', 'not-blank': 'Is not blank' };
 var natural = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 
-/** Typed comparison of two non-blank cell values: ISO dates, real numbers, else natural text (3.9 before 3.10). */
+/**
+ * Typed comparison of two non-blank cell values: ISO dates, real numbers, else natural text (3.9 before 3.10).
+ * datetime ("2026-11-20 10:00:00 UTC") sorts on the whole stamp but compares by day against a YYYY-MM-DD bound.
+ */
 function compareTyped(type, a, b) {
   if (type === 'number') return Number(a) - Number(b);
-  if (type === 'date') return a < b ? -1 : a > b ? 1 : 0;
+  if (type === 'datetime' && (a.length === 10 || b.length === 10)) { a = a.slice(0, 10); b = b.slice(0, 10); }
+  if (type === 'date' || type === 'datetime') return a < b ? -1 : a > b ? 1 : 0;
   return natural.compare(a, b);
 }
 
@@ -189,7 +195,7 @@ function parseBound(type, text) {
   var t = String(text == null ? '' : text).trim();
   if (!t) return { value: null };
   if (type === 'number') return /^-?\d+(\.\d+)?$/.test(t) ? { value: t } : { error: 'Enter a number.' };
-  if (type === 'date') {
+  if (type === 'date' || type === 'datetime') {
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
     var d = m && new Date(Date.UTC(+m[1], m[2] - 1, +m[3]));
     return d && d.getUTCMonth() === m[2] - 1 && d.getUTCDate() === +m[3] ? { value: t } : { error: 'Enter a real date as YYYY-MM-DD.' };
@@ -269,18 +275,30 @@ function filterPredicate(f, type) {
   };
 }
 
-/** Rows (arrays of {key: value}) that pass every active column filter: AND across columns. */
-function visibleRows(rows, filters) {
-  var preds = Object.keys(filters).map(function (k) { return [k, filterPredicate(filters[k], COLUMN_TYPES[k])]; })
+/** Rows (arrays of {key: value}) that pass every active column filter: AND across columns. types: {key: type}, the dashboard's by default. */
+function visibleRows(rows, filters, types) {
+  var t = types || COLUMN_TYPES;
+  var preds = Object.keys(filters).map(function (k) { return [k, filterPredicate(filters[k], t[k] || 'text')]; })
     .filter(function (p) { return p[1]; });
   return rows.map(function (r) { return preds.every(function (p) { return p[1](r[p[0]]); }); });
 }
 
-/** Clears one column's filter (other filters and the sort kept) or, without a key, every filter plus the default EoL date ascending sort. */
-function clearedState(state, key) {
-  var next = { filters: Object.assign({}, state && state.filters), sort: key ? state.sort : { key: 'eol', dir: 'asc' } };
-  (key ? [key] : Object.keys(COLUMN_TYPES)).forEach(function (k) { next.filters[k] = emptyFilter(); });
+/**
+ * Clears one column's filter (other filters and the sort kept) or, without a key, every filter plus the table's default sort.
+ * keys and defaultSort describe the table; they default to the dashboard's columns and EoL date ascending. A null defaultSort
+ * means "source order".
+ */
+function clearedState(state, key, keys, defaultSort) {
+  var all = keys || Object.keys(COLUMN_TYPES);
+  var initial = defaultSort === undefined ? { key: 'eol', dir: 'asc' } : defaultSort;
+  var next = { filters: Object.assign({}, state && state.filters), sort: key ? state.sort : initial };
+  (key ? [key] : all).forEach(function (k) { next.filters[k] = emptyFilter(); });
   return next;
+}
+
+/** Next sort after a header click: a new column starts ascending; the same column flips. */
+function nextSort(sort, key) {
+  return { key: key, dir: sort && sort.key === key && sort.dir === 'asc' ? 'desc' : 'asc' };
 }
 
 /**
@@ -303,17 +321,57 @@ function toggleValue(selected, all, value, on) {
   return next.length === all.length ? null : next;
 }
 
-function initFilters(table) {
-  var keys = Object.keys(COLUMN_TYPES);
-  var trs = Array.prototype.slice.call(table.querySelectorAll('tbody tr[data-row]'));
-  var emptyRow = table.querySelector('tbody tr[data-empty]');
-  var tbody = trs.length ? trs[0].parentNode : null;
+/** A cell's filter/sort value: its data-value when the server set one, else its visible text with whitespace collapsed. */
+function cellText(td) {
+  return td ? td.textContent.replace(/\s+/g, ' ').trim() : '';
+}
+function cellValue(td) {
+  return td && td.hasAttribute('data-value') ? td.getAttribute('data-value') : cellText(td);
+}
+
+var tableSeq = 0;
+
+/**
+ * Gives one table the shared header controls: click a column name to sort (asc, then desc), open its funnel for
+ * Values / Text / Range filters. opts: {noun, defaultSort, legacy} (dashboard only sets them).
+ */
+function initTable(table, opts) {
+  opts = opts || {};
+  var head = table.tHead && table.tHead.rows[0];
+  var tbody = table.tBodies[0];
+  if (!head || !tbody) return;
+  var trs = Array.prototype.filter.call(tbody.rows, function (tr) { return !tr.hasAttribute('data-empty') && !tr.querySelector('td.empty'); });
+  if (!trs.length) return; // nothing to sort or filter; the page's own empty message stays
+  var uid = 't' + (++tableSeq);
+  var noun = opts.noun || 'rows';
+  var defaultSort = opts.defaultSort || null;
+
+  var cols = Array.prototype.map.call(head.cells, function (cell, i) {
+    return { th: cell, index: i, key: cell.getAttribute('data-column') || 'c' + i, type: cell.getAttribute('data-type') || 'text' };
+  });
+  var keys = cols.map(function (c) { return c.key; });
+  var types = {}, th = {}, colIndex = {};
+  cols.forEach(function (c) { types[c.key] = c.type; th[c.key] = c.th; colIndex[c.key] = c.index; });
+
+  var emptyRow = tbody.querySelector('tr[data-empty]');
+  if (!emptyRow) {
+    emptyRow = document.createElement('tr');
+    emptyRow.setAttribute('data-empty', '');
+    emptyRow.hidden = true;
+    var td = document.createElement('td');
+    td.className = 'empty';
+    td.colSpan = cols.length;
+    td.textContent = 'No ' + noun + ' match these filters.';
+    emptyRow.appendChild(td);
+    tbody.appendChild(emptyRow);
+  }
+
   var data = trs.map(function (tr) {
     var r = {};
-    keys.forEach(function (k) { r[k] = tr.querySelector('td[data-column="' + k + '"]').getAttribute('data-value') || ''; });
+    keys.forEach(function (k) { r[k] = cellValue(tr.cells[colIndex[k]]); });
     return r;
   });
-  var labels = {}, th = {}, menus = {}, sortButtons = {}, openButtons = {}, distinct = {};
+  var labels = {}, menus = {}, sortButtons = {}, openButtons = {}, distinct = {};
   var filters = {}, sort;
   var openKey = null;
 
@@ -328,32 +386,35 @@ function initFilters(table) {
   clearAll.setAttribute('data-filters-clear-all', '');
   clearAll.textContent = 'Clear all filters';
   bar.append(count, clearAll);
-  table.closest('.table-wrap').before(bar);
+  (table.closest('.table-wrap') || table).before(bar);
 
   function reset(k) {
-    var s = clearedState({ filters: filters, sort: sort }, k);
+    var s = clearedState({ filters: filters, sort: sort }, k, keys, defaultSort);
     filters = s.filters;
     sort = s.sort;
   }
 
   function render() {
-    var shown = visibleRows(data, filters);
+    var shown = visibleRows(data, filters, types);
     var n = 0;
     trs.forEach(function (tr, i) { tr.hidden = !shown[i]; if (shown[i]) n++; });
-    sortOrder(data.map(function (r) { return r[sort.key]; }), COLUMN_TYPES[sort.key], sort.dir)
-      .forEach(function (i) { tbody.insertBefore(trs[i], emptyRow); });
-    if (emptyRow) emptyRow.hidden = n > 0;
-    var active = keys.filter(function (k) { return filterPredicate(filters[k], COLUMN_TYPES[k]); });
+    var order = sort ? sortOrder(data.map(function (r) { return r[sort.key]; }), types[sort.key], sort.dir) : data.map(function (r, i) { return i; });
+    order.forEach(function (i) { tbody.insertBefore(trs[i], emptyRow); });
+    emptyRow.hidden = n > 0;
+    var active = keys.filter(function (k) { return filterPredicate(filters[k], types[k]); });
     keys.forEach(function (k) {
       var on = active.indexOf(k) >= 0;
       th[k].setAttribute('data-filter-active', String(on));
       openButtons[k].setAttribute('aria-label', 'Filter ' + labels[k] + (on ? ' (filter active)' : ''));
-      if (sort.key === k) th[k].setAttribute('aria-sort', sort.dir === 'asc' ? 'ascending' : 'descending');
+      if (sort && sort.key === k) th[k].setAttribute('aria-sort', sort.dir === 'asc' ? 'ascending' : 'descending');
       else th[k].removeAttribute('aria-sort');
-      sortButtons[k].lastChild.textContent = sort.key === k ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : '';
+      sortButtons[k].lastChild.textContent = sort && sort.key === k ? (sort.dir === 'asc' ? '↑' : '↓') : '↕';
     });
-    count.textContent = n + ' of ' + trs.length + ' dependency versions'
-      + (active.length ? '; filtered by ' + active.map(function (k) { return labels[k]; }).join(', ') : '');
+    count.textContent = n + ' of ' + trs.length + ' ' + noun
+      + (active.length ? ' · filtered by ' + active.map(function (k) { return labels[k]; }).join(', ') : '');
+    var sortMoved = defaultSort ? !(sort && sort.key === defaultSort.key && sort.dir === defaultSort.dir) : !!sort;
+    clearAll.hidden = !active.length && !sortMoved;
+    clearAll.textContent = active.length ? 'Clear all filters' : 'Reset sort';
     place(); // a range error line can change the open menu's height
   }
 
@@ -404,6 +465,21 @@ function initFilters(table) {
     return b;
   }
 
+  function funnel() {
+    var ns = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 12 12');
+    svg.setAttribute('aria-hidden', 'true');
+    var p = document.createElementNS(ns, 'path');
+    p.setAttribute('d', 'M1 2h10L7.2 6.6V10L4.8 11V6.6z');
+    p.setAttribute('fill', 'none');
+    p.setAttribute('stroke', 'currentColor');
+    p.setAttribute('stroke-width', '1.2');
+    p.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(p);
+    return svg;
+  }
+
   function place() {
     if (!openKey) return;
     var m = menus[openKey].root, r = openButtons[openKey].getBoundingClientRect();
@@ -436,10 +512,10 @@ function initFilters(table) {
 
   function build(k) {
     var f = function () { return filters[k]; };
-    var type = COLUMN_TYPES[k];
+    var type = types[k];
     var root = control('div', 'data-column-filter', k);
     root.className = 'filter-menu';
-    root.id = 'filter-menu-' + k;
+    root.id = 'filter-menu-' + uid + '-' + k;
     root.setAttribute('role', 'dialog');
     root.setAttribute('aria-label', 'Filter ' + labels[k]);
     root.hidden = true;
@@ -459,8 +535,10 @@ function initFilters(table) {
     function narrow() { f().search = search.value; f().searchOp = searchOp.value; sync(k); }
     search.addEventListener('input', narrow);
     searchOp.addEventListener('change', narrow);
-    var all = button('data-filter-select-all', k, 'Select all values');
-    var none = button('data-filter-select-none', k, 'Select no values');
+    var all = button('data-filter-select-all', k, 'Select all');
+    var none = button('data-filter-select-none', k, 'Select none');
+    all.setAttribute('aria-label', 'Select all values');
+    none.setAttribute('aria-label', 'Select no values');
     all.addEventListener('click', function () { f().selected = null; sync(k); render(); });
     none.addEventListener('click', function () { f().selected = []; sync(k); render(); });
     var list = document.createElement('div');
@@ -477,7 +555,7 @@ function initFilters(table) {
       box.addEventListener('change', function () { f().selected = toggleValue(f().selected, distinct[k], v, box.checked); render(); });
       var l = document.createElement('label');
       // Cell text, e.g. "Not published" for a blank EoL date; "(blank)" when the cell has none.
-      l.append(box, ' ' + (trs[i].querySelector('td[data-column="' + k + '"]').textContent.trim() || '(blank)'));
+      l.append(box, ' ' + (cellText(trs[i].cells[colIndex[k]]) || '(blank)'));
       list.appendChild(l);
       boxes.push(box);
     });
@@ -501,13 +579,13 @@ function initFilters(table) {
 
     var rng = document.createElement('div');
     rng.setAttribute('data-mode', 'range');
-    var hint = type === 'date' ? 'YYYY-MM-DD' : type === 'number' ? 'Number' : 'Text';
+    var hint = type === 'date' || type === 'datetime' ? 'YYYY-MM-DD' : type === 'number' ? 'Number' : 'Text';
     var start = control('input', 'data-filter-start', k);
     var end = control('input', 'data-filter-end', k);
     var error = document.createElement('p');
     error.className = 'filter-error';
     error.setAttribute('role', 'alert');
-    error.id = 'filter-error-' + k;
+    error.id = 'filter-error-' + uid + '-' + k;
     [start, end].forEach(function (el) {
       el.type = 'text';
       el.placeholder = hint;
@@ -525,7 +603,10 @@ function initFilters(table) {
         render();
       });
     });
-    rng.append(field('From', start), field('To', end), document.createTextNode('Both inclusive; blank is open.'));
+    var note = document.createElement('p');
+    note.className = 'filter-hint';
+    note.textContent = 'Both inclusive; blank is open.';
+    rng.append(field('From', start), field('To', end), note);
 
     var clear = button('data-filter-clear', k, 'Clear filter');
     clear.addEventListener('click', function () { reset(k); sync(k); render(); mode.focus(); });
@@ -541,28 +622,28 @@ function initFilters(table) {
   }
 
   keys.forEach(function (k) {
-    var cell = th[k] = table.querySelector('th[data-column="' + k + '"]');
-    var title = cell.firstChild;
-    labels[k] = title.textContent.trim();
+    var cell = th[k];
+    var title = Array.prototype.find.call(cell.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); });
+    labels[k] = title ? title.textContent.trim() : cellText(cell);
+    cell.setAttribute('data-sortable', '');
     var s = sortButtons[k] = control('button', 'data-column-sort', k);
     s.type = 'button';
     s.className = 'th-sort';
+    s.title = 'Sort by ' + labels[k];
     var ind = document.createElement('span');
+    ind.className = 'sort-ind';
     ind.setAttribute('aria-hidden', 'true');
     s.append(labels[k], ind);
-    s.addEventListener('click', function () {
-      sort = { key: k, dir: sort.key === k && sort.dir === 'asc' ? 'desc' : 'asc' };
-      render();
-    });
+    s.addEventListener('click', function () { sort = nextSort(sort, k); render(); });
     var o = openButtons[k] = control('button', 'data-filter-open', k);
     o.type = 'button';
     o.className = 'th-filter';
-    o.textContent = '▾';
+    o.appendChild(funnel());
     o.setAttribute('aria-haspopup', 'dialog');
     o.setAttribute('aria-expanded', 'false');
-    o.setAttribute('aria-controls', 'filter-menu-' + k);
+    o.setAttribute('aria-controls', 'filter-menu-' + uid + '-' + k);
     o.addEventListener('click', function () { if (openKey === k) close(true); else open(k); });
-    title.replaceWith(s, o);
+    if (title) title.replaceWith(s, o); else cell.prepend(s, o);
     // In the header for natural tab order; position: fixed keeps it clear of the table's scroll clipping.
     cell.appendChild(build(k));
   });
@@ -582,8 +663,8 @@ function initFilters(table) {
   }, true);
 
   clearAll.addEventListener('click', function () {
-    // A legacy ?unused=true page holds rows the default omits: reload the default view (column prefs are stored, so they stay).
-    if (table.getAttribute('data-legacy') === 'true') { window.location.assign(window.location.pathname); return; }
+    // A legacy ?unused=true dashboard page holds rows the default omits: reload the default view (column prefs are stored, so they stay).
+    if (opts.legacy && table.getAttribute('data-legacy') === 'true') { window.location.assign(window.location.pathname); return; }
     close(false);
     reset();
     keys.forEach(sync);
@@ -591,22 +672,33 @@ function initFilters(table) {
   });
 
   reset();
-  // Legacy ?start=&end=&sort= links (validated by the server) become the initial header state.
-  var legacy = checkRange('date', table.getAttribute('data-start'), table.getAttribute('data-end'));
-  if (!legacy.error && (legacy.start || legacy.end)) {
-    filters.eol = Object.assign(emptyFilter(), { mode: 'range', start: legacy.start, end: legacy.end, startText: legacy.start || '', endText: legacy.end || '' });
+  if (opts.legacy) {
+    // Legacy ?start=&end=&sort= links (validated by the server) become the initial header state.
+    var legacy = checkRange('date', table.getAttribute('data-start'), table.getAttribute('data-end'));
+    if (!legacy.error && (legacy.start || legacy.end) && filters.eol) {
+      filters.eol = Object.assign(emptyFilter(), { mode: 'range', start: legacy.start, end: legacy.end, startText: legacy.start || '', endText: legacy.end || '' });
+    }
+    if (table.getAttribute('data-sort') === 'desc' && sort) sort.dir = 'desc';
   }
-  if (table.getAttribute('data-sort') === 'desc') sort.dir = 'desc';
   keys.forEach(sync);
   render();
 }
 
-var dependenciesTable = document.getElementById('dependencies-table');
-if (dependenciesTable) {
-  initColumns(dependenciesTable, document.getElementById('table-settings'));
-  initFilters(dependenciesTable);
+/** "3 of 4 code repo branches": the table's data-noun, else its region label in lower case, else "rows". */
+function tableNoun(t) {
+  var region = t.closest && t.closest('[aria-label]');
+  return t.getAttribute('data-noun') || (region ? region.getAttribute('aria-label').toLowerCase() : 'rows');
 }
 
-// Code repos rows open their branch on Enter too; the repo URL inside stays an ordinary external link.
-var reposTable = document.getElementById('code-repos-table');
-if (reposTable) reposTable.querySelectorAll('tbody tr[data-href]').forEach(function (row) { row.tabIndex = 0; });
+// Wire-up: the dashboard keeps its column settings; every table on every page gets the same header sort and filters.
+if (document.querySelectorAll) {
+  var dependenciesTable = document.getElementById('dependencies-table');
+  if (dependenciesTable) initColumns(dependenciesTable, document.getElementById('table-settings'));
+  document.querySelectorAll('main table').forEach(function (t) {
+    initTable(t, t === dependenciesTable
+      ? { noun: 'dependency versions', defaultSort: { key: 'eol', dir: 'asc' }, legacy: true }
+      : { noun: tableNoun(t) });
+  });
+  // Linked rows open on Enter too (each row's links stay ordinary links).
+  document.querySelectorAll('#code-repos-table tbody tr[data-href]').forEach(function (row) { row.tabIndex = 0; });
+}
