@@ -90,6 +90,16 @@ class MinimalUiTest extends WebTestBase {
     }
 
     @Test
+    void everyPageAppliesTheSavedAppearanceBeforeItsStylesheet() throws Exception {
+        for (String url : List.of("/", "/imports", "/repos", "/dependencies/react", "/dependencies/react?version=18")) {
+            String html = page(url);
+            assertThat(html.indexOf("<script src=\"/theme.js\"></script>")).as(url).isPositive().isLessThan(html.indexOf("/app.css"));
+        }
+        String js = mvc.perform(get("/theme.js")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(js).contains("eol-ledger.appearance.v1", "data-mode", "data-theme", "'dark', 'light', 'system'");
+    }
+
+    @Test
     void oldProductLinksRedirectPermanentlyToDependencyPages() throws Exception {
         mvc.perform(get("/products/react").param("cycle", "18")).andExpect(status().isMovedPermanently())
                 .andExpect(header().string("Location", "/dependencies/react?version=18"));

@@ -936,8 +936,125 @@ function linkRows(table) {
   });
 }
 
+// ---- Settings gear (top bar): appearance mode and accent theme, applied and stored by theme.js ----
+
+var THEME_NAMES = { candle: 'Candle', ember: 'Ember', sage: 'Sage', lapis: 'Lapis', plum: 'Plum' };
+var MODE_NAMES = { dark: 'Dark', light: 'Light', system: 'System' };
+
+function initSettings(topbar, appearance) {
+  var ns = 'http://www.w3.org/2000/svg';
+  var wrap = document.createElement('div');
+  wrap.className = 'settings';
+
+  var toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'settings-toggle';
+  toggle.setAttribute('aria-label', 'Settings');
+  toggle.title = 'Settings';
+  toggle.setAttribute('aria-haspopup', 'dialog');
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.setAttribute('aria-controls', 'settings-panel');
+  var svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  [['path', { d: 'M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z' }],
+   ['path', { d: 'M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.56 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z' }]]
+    .forEach(function (d) {
+      var el = document.createElementNS(ns, d[0]);
+      Object.keys(d[1]).forEach(function (k) { el.setAttribute(k, d[1][k]); });
+      el.setAttribute('fill', 'none');
+      el.setAttribute('stroke', 'currentColor');
+      el.setAttribute('stroke-width', '1.4');
+      el.setAttribute('stroke-linecap', 'round');
+      el.setAttribute('stroke-linejoin', 'round');
+      svg.appendChild(el);
+    });
+  toggle.appendChild(svg);
+
+  var panel = document.createElement('div');
+  panel.id = 'settings-panel';
+  panel.className = 'settings-panel';
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-label', 'Appearance settings');
+  panel.hidden = true;
+
+  var title = document.createElement('p');
+  title.className = 'settings-title';
+  title.textContent = 'Appearance';
+
+  function group(label, names, kind) {
+    var fs = document.createElement('fieldset');
+    fs.className = 'settings-group settings-' + kind;
+    var legend = document.createElement('legend');
+    legend.textContent = label;
+    fs.appendChild(legend);
+    var buttons = {};
+    Object.keys(names).forEach(function (key) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'settings-option';
+      b.setAttribute('data-' + kind, key);
+      if (kind === 'theme') {
+        var sw = document.createElement('span');
+        sw.className = 'swatch';
+        sw.setAttribute('data-swatch', key);
+        sw.setAttribute('aria-hidden', 'true');
+        b.appendChild(sw);
+      }
+      b.append(names[key]);
+      b.addEventListener('click', function () {
+        var next = {};
+        next[kind] = key;
+        appearance.set(next);
+        sync();
+      });
+      buttons[key] = b;
+      fs.appendChild(b);
+    });
+    return { el: fs, buttons: buttons };
+  }
+
+  var modes = group('Mode', MODE_NAMES, 'mode');
+  var themes = group('Accent', THEME_NAMES, 'theme');
+  var note = document.createElement('p');
+  note.className = 'settings-note';
+  note.textContent = 'Saved in this browser. Status colours (ended, ends soon, supported) never change.';
+  panel.append(title, modes.el, themes.el, note);
+
+  function sync() {
+    var cur = appearance.get();
+    Object.keys(modes.buttons).forEach(function (k) { modes.buttons[k].setAttribute('aria-pressed', String(cur.mode === k)); });
+    Object.keys(themes.buttons).forEach(function (k) { themes.buttons[k].setAttribute('aria-pressed', String(cur.theme === k)); });
+  }
+
+  function open() {
+    sync();
+    panel.hidden = false;
+    toggle.setAttribute('aria-expanded', 'true');
+    var pressed = panel.querySelector('[aria-pressed="true"]');
+    (pressed || panel.querySelector('button')).focus();
+  }
+
+  function close(focus) {
+    if (panel.hidden) return;
+    panel.hidden = true;
+    toggle.setAttribute('aria-expanded', 'false');
+    if (focus) toggle.focus();
+  }
+
+  toggle.addEventListener('click', function () { if (panel.hidden) open(); else close(true); });
+  document.addEventListener('pointerdown', function (e) { if (!wrap.contains(e.target)) close(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !panel.hidden) { e.preventDefault(); close(true); } });
+  wrap.addEventListener('focusout', function (e) { if (e.relatedTarget && !wrap.contains(e.relatedTarget)) close(false); });
+
+  wrap.append(toggle, panel);
+  topbar.appendChild(wrap);
+}
+
 // Wire-up: the dashboard keeps its column settings; every table on every page gets the same header sort and filters.
 if (document.querySelectorAll) {
+  var topbar = document.querySelector('.topbar');
+  if (topbar && window.EolAppearance) initSettings(topbar, window.EolAppearance);
   var dependenciesTable = document.getElementById('dependencies-table');
   var dependencyColumns = dependenciesTable ? initColumns(dependenciesTable, document.getElementById('table-settings')) : null;
   document.querySelectorAll('main table').forEach(function (t) {
