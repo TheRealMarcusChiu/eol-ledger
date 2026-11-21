@@ -52,6 +52,56 @@ function tableStorage(method, value) {
   try { return window.localStorage[method](TABLE_KEY, value); } catch (e) { return null; }
 }
 
+/** Narrowest width that keeps a header on one line: its name, sort arrow and filter button plus the cell's padding. */
+function headerFloor(cell) {
+  var first = cell.querySelector('.th-sort'), last = cell.querySelector('.th-filter');
+  if (cell.hidden || !first || !last || !document.createRange) return MIN_WIDTH;
+  var range = document.createRange();
+  range.setStartBefore(first);
+  range.setEndAfter(last);
+  var cs = window.getComputedStyle(cell);
+  var w = range.getBoundingClientRect().width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 2;
+  return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.ceil(w)));
+}
+
+/** A column-resize handle for a header cell: drag it, or focus it and use Left/Right (Shift for x5); double-click resets. */
+function resizeHandle(label, key, get, set, done, reset) {
+  var h = document.createElement('span');
+  h.className = 'col-resize';
+  h.tabIndex = 0;
+  h.title = 'Drag to resize; double-click to reset';
+  h.setAttribute('role', 'separator');
+  h.setAttribute('aria-orientation', 'vertical');
+  h.setAttribute('aria-label', 'Resize ' + label + ' column');
+  h.setAttribute('aria-valuemin', MIN_WIDTH);
+  h.setAttribute('aria-valuemax', MAX_WIDTH);
+  h.setAttribute('data-column-resize', key);
+  h.addEventListener('keydown', function (e) {
+    var step = e.key === 'ArrowLeft' ? -10 : e.key === 'ArrowRight' ? 10 : 0;
+    if (!step) return;
+    e.preventDefault();
+    set(get() + (e.shiftKey ? step * 5 : step));
+    done();
+  });
+  h.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    h.setPointerCapture(e.pointerId);
+    var startX = e.clientX, startW = get();
+    function move(ev) { set(startW + ev.clientX - startX); }
+    function up() {
+      h.removeEventListener('pointermove', move);
+      h.removeEventListener('pointerup', up);
+      h.removeEventListener('pointercancel', up);
+      done();
+    }
+    h.addEventListener('pointermove', move);
+    h.addEventListener('pointerup', up);
+    h.addEventListener('pointercancel', up);
+  });
+  if (reset) h.addEventListener('dblclick', function (e) { e.preventDefault(); reset(); });
+  return h;
+}
+
 function initColumns(table, settings) {
   var keys = Object.keys(TABLE_COLUMNS);
   var prefs = tablePrefs(tableStorage('getItem'));
@@ -59,18 +109,7 @@ function initColumns(table, settings) {
   var empty = table.querySelector('td.empty');
   var col = {}, th = {}, toggle = {}, width = {}, handle = {}, drawn = {};
 
-  /** Narrowest width that keeps a header on one line: its name, sort arrow and filter button plus the cell's padding. */
-  function headerMin(key) {
-    var cell = th[key];
-    var first = cell.querySelector('.th-sort'), last = cell.querySelector('.th-filter');
-    if (cell.hidden || !first || !last || !document.createRange) return MIN_WIDTH;
-    var range = document.createRange();
-    range.setStartBefore(first);
-    range.setEndAfter(last);
-    var cs = window.getComputedStyle(cell);
-    var w = range.getBoundingClientRect().width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 2;
-    return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.ceil(w)));
-  }
+  function headerMin(key) { return headerFloor(th[key]); }
 
   function apply() {
     var shown = keys.filter(function (k) { return prefs[k].visible; });
@@ -645,6 +684,7 @@ function initTable(table, opts) {
     var title = Array.prototype.find.call(cell.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); });
     labels[k] = title ? title.textContent.trim() : cellText(cell);
     cell.setAttribute('data-sortable', '');
+    cell.setAttribute('data-label', labels[k]);
     var s = sortButtons[k] = control('button', 'data-column-sort', k);
     s.type = 'button';
     s.className = 'th-sort';
@@ -709,6 +749,152 @@ function tableNoun(t) {
   return t.getAttribute('data-noun') || (region ? region.getAttribute('aria-label').toLowerCase() : 'rows');
 }
 
+// ---- Resizable columns on every other table (widths remembered per table in this browser) ----
+
+var WIDTHS_KEY = 'eol-ledger.table-widths.v1';
+
+/** Stored widths for one table: {columnIndex: px} with only finite numbers kept; anything malformed is empty. */
+function storedWidths(text, id) {
+  var all = null;
+  try { all = JSON.parse(text); } catch (e) { /* none */ }
+  var mine = ownObject(all, id) || {};
+  var out = {};
+  Object.keys(mine).forEach(function (k) {
+    if (/^\d+$/.test(k) && typeof mine[k] === 'number' && isFinite(mine[k])) out[k] = clampWidth(mine[k], MIN_WIDTH);
+  });
+  return out;
+}
+
+function widthStorage(method, value) {
+  try { return window.localStorage[method](WIDTHS_KEY, value); } catch (e) { return null; }
+}
+
+function initResize(table) {
+  var head = table.tHead && table.tHead.rows[0];
+  if (!head || !head.cells.length || !table.offsetWidth) return null;
+  var id = table.id || tableNoun(table);
+  var cells = Array.prototype.slice.call(head.cells);
+  var natural = cells.map(function (c) { return Math.round(c.getBoundingClientRect().width); });
+  var saved = storedWidths(widthStorage('getItem'), id);
+  var widths = natural.map(function (n, i) { return saved[i] || n; });
+  var drawn = [];
+
+  function apply() {
+    var total = 0;
+    cells.forEach(function (c, i) {
+      var w = Math.max(widths[i], headerFloor(c));
+      drawn[i] = w;
+      c.style.width = w + 'px';
+      handles[i].setAttribute('aria-valuenow', w);
+      total += w;
+    });
+    table.style.width = total + 'px';
+  }
+
+  function save() {
+    var all = null;
+    try { all = JSON.parse(widthStorage('getItem')); } catch (e) { /* start fresh */ }
+    if (!all || typeof all !== 'object' || Array.isArray(all)) all = {};
+    var mine = {};
+    Object.keys(saved).forEach(function (k) { mine[k] = saved[k]; });
+    all[id] = mine;
+    widthStorage('setItem', JSON.stringify(all));
+  }
+
+  var handles = cells.map(function (c, i) {
+    var label = c.getAttribute('data-label') || cellText(c);
+    var h = resizeHandle(label, String(i),
+      function () { return drawn[i]; },
+      function (w) { widths[i] = saved[i] = clampWidth(w, widths[i]); apply(); },
+      save,
+      function () { widths[i] = natural[i]; delete saved[i]; apply(); save(); });
+    c.appendChild(h);
+    return h;
+  });
+
+  table.classList.add('cols-sized');
+  apply();
+  return apply;
+}
+
+// ---- One-line cells with a hover marquee ----
+
+/** Wraps every body cell's content in .cell-clip > .cell-run so it stays on one line; a <br> becomes a " · " separator. */
+function clipCells(table) {
+  Array.prototype.forEach.call(table.tBodies, function (tbody) {
+    Array.prototype.forEach.call(tbody.rows, function (tr) {
+      Array.prototype.forEach.call(tr.cells, function (td) {
+        if (td.classList.contains('empty') || td.querySelector('.cell-clip')) return;
+        td.querySelectorAll('br').forEach(function (br) {
+          var sep = document.createElement('span');
+          sep.className = 'cell-sep';
+          sep.setAttribute('aria-hidden', 'true');
+          sep.textContent = ' · ';
+          br.replaceWith(sep);
+        });
+        var clip = document.createElement('span');
+        clip.className = 'cell-clip';
+        var run = document.createElement('span');
+        run.className = 'cell-run';
+        while (td.firstChild) run.appendChild(td.firstChild);
+        clip.appendChild(run);
+        td.appendChild(clip);
+      });
+    });
+  });
+}
+
+/** How far (px) a cell's one-line content overflows its box; 0 when it fits. */
+function overflowOf(clip) {
+  return Math.max(0, Math.ceil(clip.scrollWidth - clip.clientWidth));
+}
+
+/** Marquee duration: about 45px a second, never shorter than 2s, so long values do not race past. */
+function marqueeSeconds(distance) {
+  return Math.max(2, Math.round(distance / 45 * 10) / 10);
+}
+
+function initMarquee() {
+  var current = null;
+  var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function stop() {
+    if (!current) return;
+    current.classList.remove('is-marquee');
+    current = null;
+  }
+
+  function start(clip) {
+    if (clip === current) return;
+    stop();
+    var over = overflowOf(clip);
+    if (!over) return;
+    var td = clip.parentNode;
+    // The full value is always available as a tooltip, which is all a reduced-motion user gets.
+    if (!td.title) td.title = cellText(td).replace(/ · /g, ' ');
+    if (still) return;
+    clip.style.setProperty('--marquee-dist', -over + 'px');
+    clip.style.setProperty('--marquee-time', marqueeSeconds(over) + 's');
+    clip.classList.add('is-marquee');
+    current = clip;
+  }
+
+  function clipFor(target) {
+    var td = target && target.closest && target.closest('main tbody td');
+    return td ? td.querySelector(':scope > .cell-clip') : null;
+  }
+
+  document.addEventListener('mouseover', function (e) {
+    var clip = clipFor(e.target);
+    if (clip) start(clip); else stop();
+  });
+  document.addEventListener('mouseleave', stop);
+  document.addEventListener('focusin', function (e) {
+    var clip = clipFor(e.target);
+    if (clip) start(clip); else stop();
+  });
+}
+
 // Wire-up: the dashboard keeps its column settings; every table on every page gets the same header sort and filters.
 if (document.querySelectorAll) {
   var dependenciesTable = document.getElementById('dependencies-table');
@@ -722,6 +908,19 @@ if (document.querySelectorAll) {
     // Header sort/filter buttons now exist: widen any column whose header would wrap; again once the web fonts have loaded.
     dependencyColumns.refit();
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(dependencyColumns.refit);
+  }
+  // After the header controls: their value lists and filters read the cells' original text.
+  document.querySelectorAll('main table').forEach(clipCells);
+  initMarquee();
+  // Every other table: measure its natural column widths (now one-line), then make them draggable.
+  var refits = [];
+  document.querySelectorAll('main table').forEach(function (t) {
+    if (t === dependenciesTable) return;
+    var refit = initResize(t);
+    if (refit) refits.push(refit);
+  });
+  if (refits.length && document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () { refits.forEach(function (f) { f(); }); });
   }
   // Linked rows open on Enter too (each row's links stay ordinary links).
   document.querySelectorAll('#code-repos-table tbody tr[data-href]').forEach(function (row) { row.tabIndex = 0; });
