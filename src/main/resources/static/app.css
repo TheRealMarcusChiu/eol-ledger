@@ -104,7 +104,7 @@ h3 { font-size: 1rem; margin: 1.25rem 0 .4rem; }
 .field label { font-size: .85rem; color: var(--muted); }
 .field-check { flex-direction: row; align-items: center; gap: .5rem; padding-bottom: .45rem; }
 .field-check label { color: var(--text); font-size: .92rem; }
-.actions { display: flex; gap: .6rem; align-items: center; }
+.actions { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
 
 input, select, button, .button, .button-quiet {
   font: inherit;

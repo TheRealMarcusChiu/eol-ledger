@@ -150,6 +150,34 @@ class JsonImportTest extends WebTestBase {
     }
 
     @Test
+    void purlFreeRowsWithTheSameNameAndVersionFromDifferentEcosystemsRejectTheFile() {
+        imports.importJson(array(entry("main", "2026-11-20T10:00:00Z", REACT)), "test");
+        CLOCK.now = CLOCK.now.plusSeconds(60);
+        String ambiguous = """
+                {"name":"requests","version":"2.31.0","ecosystem":"npm","packageManager":"npm","projectPath":"backend-maven"},
+                {"name":"requests","version":"2.31.0","ecosystem":"Python","packageManager":"pip","projectPath":"worker-gradle"}""";
+
+        assertThatThrownBy(() -> imports.importJson(array(entry("main", "2026-11-20T10:00:00Z", ambiguous)), "test"))
+                .isInstanceOf(ImportService.ImportFailedException.class).hasMessageContaining("add a purl");
+
+        assertThat(count("snapshot")).isEqualTo(1);
+        assertThat(db.sql("SELECT name FROM dependency").query(String.class).list()).containsExactly("react");
+    }
+
+    @Test
+    void purlFreeRowsOfOnePackageInSeveralModulesStillListOnce() {
+        String repeated = """
+                {"name":"requests","version":"2.31.0","ecosystem":"Python","packageManager":"pip","projectPath":"backend-maven","scope":"main"},
+                {"name":"requests","version":"2.31.0","ecosystem":"Python","packageManager":"pip","projectPath":"worker-gradle","scope":"main"}""";
+
+        imports.importJson(array(entry("main", "2026-11-20T10:00:00Z", repeated)), "test");
+
+        assertThat(db.sql("SELECT name FROM dependency").query(String.class).list()).containsExactly("requests");
+        assertThat(ledger.inline(ledger.branch(branchId(REPO, "main")).snapshotId()).contexts())
+                .containsEntry("requests\n2.31.0", "backend-maven: main; worker-gradle: main");
+    }
+
+    @Test
     void appIdOrProjectMetadataChangeIsANewSnapshot() {
         imports.importJson(array(entry("main", "2026-11-20T10:00:00Z", REACT)), "test");
         CLOCK.now = CLOCK.now.plusSeconds(60);
@@ -268,6 +296,60 @@ class JsonImportTest extends WebTestBase {
         assertThat(r.message()).contains("1 inline JSON branch(es) skipped");
         assertThat(ledger.timeline(branchId(REPO, "main"))).hasSize(1);
         assertThat(db.sql("SELECT sbom_url FROM repo_branch WHERE id = ?").param(branchId(REPO, "main")).query(String.class).single()).isEqualTo(ImportService.INLINE);
+    }
+
+    /**
+     * A refresh that starts while a JSON upload holds the import monitor must see the branch as inline once it runs,
+     * not act on the registration it read before waiting. Deterministic: the worker is proven BLOCKED on the monitor
+     * this thread owns before the upload happens.
+     */
+    ImportService.Result refreshRacingAJsonUpload(java.util.concurrent.Callable<ImportService.Result> refresh) throws Exception {
+        TestSupport.REPLIES.put("/x.json", TestSupport.Reply.ok(cdx("pkg:npm/react@19.0.0")));
+        imports.importCsv("repo_name,repo_url,provider,branch,sbom_url\nDemo," + REPO + ",other,main," + TestSupport.base() + "/x.json\n", "upload");
+        CLOCK.now = CLOCK.now.plusSeconds(60);
+        var result = new java.util.concurrent.CompletableFuture<ImportService.Result>();
+        var started = new java.util.concurrent.CountDownLatch(1);
+        var threads = java.lang.management.ManagementFactory.getThreadMXBean();
+        synchronized (imports) {
+            Thread worker = new Thread(() -> {
+                started.countDown();
+                try {
+                    result.complete(refresh.call());
+                } catch (Throwable t) {
+                    result.completeExceptionally(t);
+                }
+            });
+            worker.start();
+            assertThat(started.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(10);
+            while (!(worker.getState() == Thread.State.BLOCKED && threads.getThreadInfo(worker.threadId()).getLockOwnerId() == Thread.currentThread().threadId())) {
+                assertThat(System.nanoTime()).as("refresh worker never blocked on the import monitor").isLessThan(deadline);
+                Thread.onSpinWait();
+            }
+            imports.importJson(array(entry("main", "2026-11-20T10:00:00Z", REACT)), "test");
+        }
+        return result.get(10, java.util.concurrent.TimeUnit.SECONDS);
+    }
+
+    void assertJsonInventorySurvived(ImportService.Result r) {
+        long id = branchId(REPO, "main");
+        assertThat(r.message()).contains("1 inline JSON branch(es) skipped");
+        assertThat(count("snapshot")).isEqualTo(2);
+        assertThat(db.sql("SELECT sbom_url FROM repo_branch WHERE id = ?").param(id).query(String.class).single()).isEqualTo(ImportService.INLINE);
+        Ledger.Branch b = ledger.branch(id);
+        assertThat(ledger.inline(b.snapshotId())).isNotNull();
+        assertThat(ledger.deps(b.snapshotId())).extracting(d -> d.name() + "@" + d.version()).containsExactly("react@18.2.0");
+    }
+
+    @Test
+    void registryRefreshWaitingOnAJsonUploadDoesNotOverwriteIt() throws Exception {
+        assertJsonInventorySurvived(refreshRacingAJsonUpload(() -> imports.refreshRegistry("scheduled registry refresh")));
+    }
+
+    @Test
+    void scheduledCsvRefreshWaitingOnAJsonUploadDoesNotOverwriteIt() throws Exception {
+        String csv = "repo_name,repo_url,provider,branch,sbom_url\nDemo," + REPO + ",other,main," + TestSupport.base() + "/x.json\n";
+        assertJsonInventorySurvived(refreshRacingAJsonUpload(() -> imports.refreshCsv(csv, "scheduled CSV")));
     }
 
     @Test

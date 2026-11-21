@@ -278,7 +278,9 @@ and `source` paths name ship in the separate demo archive, not in the app.
 * **Refresh.** JSON branches are stored with the SBOM location `inline:json-upload` and are marked
   "Inline JSON upload" in the UI. The registry refresh (button or schedule) skips them and says how
   many it skipped; a scheduled `eol.refresh-csv-path` CSV naming such a branch is skipped the same way,
-  so a declared `sbom.url` never silently replaces the uploaded inventory. Only an explicit upload
+  so a declared `sbom.url` never silently replaces the uploaded inventory. Imports and refreshes run
+  one at a time and a refresh reads the registry only once it runs, so a refresh that was waiting on
+  a JSON upload skips that branch too. Only an explicit upload
   (new JSON, or a manual registry CSV upload for that url + branch) changes it.
 * **Pages.** Branch and history pages show App ID, projects/managers, declared SBOM (if any),
   generated time and demo status, and add a *Project context* column (project: scope, direct or

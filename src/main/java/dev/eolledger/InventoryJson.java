@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
@@ -134,10 +135,20 @@ public final class InventoryJson {
         // one inventory row per package identity + version; every graph-context row stays in the payload
         TreeMap<String, SbomParser.Dep> unique = new TreeMap<>();
         List<SbomParser.Dep> all = new ArrayList<>();
+        Map<String, String> purlFreeOrigin = new HashMap<>();
         for (int i = 0; i < deps.size(); i++) {
             String at = "dependencies[" + i + "]";
             JsonNode d = object(deps.get(i), at);
-            all.add(dep(d, at, paths));
+            SbomParser.Dep dep = dep(d, at, paths);
+            all.add(dep);
+            if (dep.purl() != null) continue;
+            // without a purl only the name identifies the package: it must not merge packages from different ecosystems/coordinates
+            String origin = d.path("ecosystem").asText("") + "\n" + d.path("groupId").asText("") + "\n" + d.path("artifactId").asText("");
+            String seen = purlFreeOrigin.putIfAbsent(dep.name() + "\n" + dep.version(), origin);
+            if (seen != null && !seen.equals(origin)) {
+                throw new IllegalArgumentException(at + " " + dep.name() + " " + dep.version()
+                        + " has no purl and another row with that name and version has a different ecosystem, groupId or artifactId; add a purl to both");
+            }
         }
         all.sort(SbomParser.ORDER);
         for (SbomParser.Dep d : all) {

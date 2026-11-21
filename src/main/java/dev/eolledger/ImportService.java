@@ -94,8 +94,11 @@ public class ImportService {
         return run(parseCsv(csv, source), source, 2, "");
     }
 
-    /** Re-fetches every registered branch from the stored registry, skipping inline JSON branches. */
-    public Result refreshRegistry(String source) {
+    /**
+     * Re-fetches every registered branch from the stored registry, skipping inline JSON branches. Synchronized with
+     * every import so the registry it reads cannot go stale (e.g. turn inline) before its commit.
+     */
+    public synchronized Result refreshRegistry(String source) {
         List<RegistryCsv.Row> rows = db.sql("SELECT repo_name, repo_url, provider, branch, sbom_url FROM repo_branch ORDER BY id")
                 .query((rs, i) -> new RegistryCsv.Row(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5)))
                 .list();
@@ -130,7 +133,8 @@ public class ImportService {
         }
     }
 
-    private Result runSkippingInline(List<RegistryCsv.Row> rows, String source, int firstLine) {
+    // synchronized: the inline filter and the commit must see the same registry state
+    private synchronized Result runSkippingInline(List<RegistryCsv.Row> rows, String source, int firstLine) {
         Set<String> inline = new HashSet<>(db.sql("SELECT repo_url, branch FROM repo_branch WHERE sbom_url = ?").param(INLINE)
                 .query((rs, i) -> rs.getString(1) + "\n" + rs.getString(2)).list());
         List<RegistryCsv.Row> kept = rows.stream().filter(r -> !inline.contains(r.repoUrl() + "\n" + r.branch())).toList();

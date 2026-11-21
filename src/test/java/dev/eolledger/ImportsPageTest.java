@@ -50,6 +50,13 @@ class ImportsPageTest extends IntegrationTest {
     }
 
     @Test
+    void actionRowsWrapSoNarrowScreensDoNotOverflow() throws Exception {
+        // the demo-data row holds two download links and two forms side by side; at 400px they must wrap
+        String css = mvc.perform(get("/app.css")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(css).containsPattern("\\.actions \\{[^}]*flex-wrap: wrap");
+    }
+
+    @Test
     void unknownSampleNameIsNotFound() throws Exception {
         mvc.perform(get("/imports/samples/application.properties")).andExpect(status().isNotFound());
     }
