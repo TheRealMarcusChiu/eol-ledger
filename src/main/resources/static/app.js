@@ -68,7 +68,7 @@ function tableStorage(method, value, key) {
 
 /** Narrowest width that keeps a header on one line: its name, sort arrow and filter button plus the cell's padding. */
 function headerFloor(cell) {
-  var first = cell.querySelector('.th-sort'), last = cell.querySelector('.th-filter');
+  var first = cell.querySelector('.th-sort'), last = cell.querySelector('.th-filter') || first;
   if (cell.hidden || !first || !last || !document.createRange) return MIN_WIDTH;
   var range = document.createRange();
   range.setStartBefore(first);

@@ -136,6 +136,35 @@ test('visibility storage is scoped by stable table role and tolerates blocked st
   }
 });
 
+test('header floor measures the full sort label without a filter on empty tables', () => {
+  const sort = { textContent: '# CODE REPO BRANCHES' }, filter = {};
+  let start, end, measurements = 0;
+  const document = { addEventListener() {}, getElementById() { return null; }, createRange() {
+    return {
+      setStartBefore(node) { start = node; },
+      setEndAfter(node) { end = node; },
+      getBoundingClientRect() { measurements++; return { width: end === filter ? 231.5 : 211.5 }; },
+    };
+  } };
+  const { headerFloor } = load({ getComputedStyle: () => ({ paddingLeft: '12px', paddingRight: '14px' }) }, document);
+  const cell = { hidden: false, querySelector: selector => selector === '.th-sort' ? sort : null };
+  assert.strictEqual(headerFloor(cell), 240, 'full sort label range plus both paddings and safety margin');
+  assert.strictEqual(start, sort);
+  assert.strictEqual(end, sort, 'range includes the entire sort button');
+  cell.querySelector = selector => selector === '.th-sort' ? sort : filter;
+  assert.strictEqual(headerFloor(cell), 260, 'normal filter header keeps its full range');
+  assert.strictEqual(end, filter);
+  cell.hidden = true;
+  assert.strictEqual(headerFloor(cell), 80);
+  assert.strictEqual(measurements, 2, 'hidden cells are not measured');
+  cell.hidden = false;
+  cell.querySelector = () => null;
+  assert.strictEqual(headerFloor(cell), 80, 'missing sort button remains guarded');
+  cell.querySelector = () => sort;
+  delete document.createRange;
+  assert.strictEqual(headerFloor(cell), 80, 'missing Range API remains guarded');
+});
+
 // ---- header sort and filters ----
 
 const order = (ctx, values, type, dir) => Array.from(ctx.sortOrder(values, type, dir)).map((i) => values[i]);
