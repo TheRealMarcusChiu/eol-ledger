@@ -111,7 +111,7 @@ public class ImportService {
             recordRun(source, false, rows, 0, msg);
             throw new ImportFailedException(List.of(msg));
         }
-        String msg = rows + " row(s) imported, " + created + " new snapshot(s), " + (rows - created) + " unchanged";
+        String msg = rows + " code-repos imported";
         recordRun(source, true, rows, created, msg);
         return new Result(rows, created, msg);
     }

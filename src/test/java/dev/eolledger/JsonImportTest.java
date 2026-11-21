@@ -23,6 +23,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -83,6 +84,7 @@ class JsonImportTest extends WebTestBase {
 
         assertThat(r.rows()).isEqualTo(2);
         assertThat(r.newSnapshots()).isEqualTo(2);
+        assertThat(r.message()).isEqualTo("2 code-repos imported");
         long main = branchId(REPO, "main");
         assertThat(db.sql("SELECT sbom_url FROM repo_branch WHERE id = ?").param(main).query(String.class).single()).isEqualTo(ImportService.INLINE);
         Ledger.Branch b = ledger.branch(main);
@@ -284,7 +286,8 @@ class JsonImportTest extends WebTestBase {
         String body = array(entry("main", "2026-11-20T10:00:00Z", GUAVA_BACKEND, GUAVA_WORKER, REACT));
 
         mvc.perform(multipart("/imports").file(new MockMultipartFile("file", "deps.json", "application/json", body.getBytes(StandardCharsets.UTF_8)))
-                .with(csrf())).andExpect(status().isSeeOther());
+                .with(csrf())).andExpect(status().isSeeOther())
+                .andExpect(flash().attribute("message", "1 code-repos imported"));
 
         long id = branchId(REPO, "main");
         mvc.perform(get("/repos/" + id)).andExpect(status().isOk())
@@ -333,9 +336,15 @@ class JsonImportTest extends WebTestBase {
         assertThat(sample.findValuesAsText("recordSource")).containsOnly("resolved-dependency-tree");
 
         mvc.perform(multipart("/imports").file(new MockMultipartFile("file", "demo.json", "application/json", body)).with(csrf()))
-                .andExpect(status().isSeeOther());
+                .andExpect(status().isSeeOther())
+                .andExpect(flash().attribute("message", "4 code-repos imported"));
         assertThat(count("snapshot")).isEqualTo(4);
-        assertThat(imports.importJson(new String(body, StandardCharsets.UTF_8), "reupload").newSnapshots()).isZero();
+        ImportService.Result repeated = imports.importJson(new String(body, StandardCharsets.UTF_8), "reupload");
+        assertThat(repeated.rows()).isEqualTo(4);
+        assertThat(repeated.newSnapshots()).isZero();
+        assertThat(repeated.message()).isEqualTo("4 code-repos imported");
+        assertThat(db.sql("SELECT message FROM import_run ORDER BY id").query(String.class).list())
+                .containsExactly("4 code-repos imported", "4 code-repos imported");
         assertThat(count("snapshot")).isEqualTo(4);
 
         boolean sawMultiModulePackage = false;
