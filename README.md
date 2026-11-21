@@ -18,10 +18,10 @@ Data is stored in `./data/eol-ledger.mv.db` (relative to the working directory).
 Health: `GET /actuator/health`.
 
 First steps:
-1. **Update EoL data** on the EoL Packages page (same action as **Imports & sync → Sync catalogue now**;
+1. **Update EoL data** on the EoL Dependencies page (same action as **Imports & sync → Sync catalogue now**;
    one HTTPS request to endoflife.date, about 3 MB). The result and last success are shown on Imports & sync.
 2. **Import demo registry** (or upload your own CSV).
-3. Open **EoL Packages**.
+3. Open **EoL Dependencies**.
 
 ## Security and deployment
 
@@ -306,11 +306,18 @@ current catalogue**, not from the catalogue as it was on that day, and the page 
 
 ## Dashboard semantics
 
-* With no query string, the start date is today (in `eol.zone`) and only cycles used by at least one
-  branch are shown. **Reset to today** returns to that view.
-* Dates are inclusive. Start only = from start onwards. End only = up to and including end. Clearing
-  both (`?start=&end=`) = all time. A deliberately cleared start is different from the default view.
-* Cycles without a published EoL date appear only in the all-time view and are labelled
+* With no query string, every tracked dependency version (release cycle used by at least one branch)
+  is listed with no date cutoff: EoL dates in the past, in the future and not published. **Include
+  unused dependencies** adds catalogue cycles no branch uses. **Reset filters** returns to the default view.
+* Dates are inclusive. Start only = from start onwards. End only = up to and including end. Both blank
+  (the default, same as `?start=&end=`) = all time.
+* Columns: Dependency Name (endoflife.date product), Version (its release cycle), EoL date, Status,
+  Code repos, Branches. **Table settings** (needs JavaScript) shows or hides any column (at least one
+  stays visible) and sets widths of 80–1000 px; headers also have drag/arrow-key resize handles. These
+  settings live only in this browser's localStorage under `eol-ledger.dependencies-table.v1`;
+  **Reset columns** removes that key. Without JavaScript all columns show at automatic widths.
+  The pure settings logic has a Node test: `node --test src/test/js/app.test.js`.
+* Cycles without a published EoL date appear only when both dates are blank and are labelled
   "No EoL date announced" or "Ended (date not published)". They never pass a date filter.
 * **Code repos** counts distinct repository URLs. A repo with two branches on the same cycle counts
   once. **Branches** counts branches.
@@ -359,7 +366,7 @@ EoL data comes from the endoflife.date API v1 (`/products/full`, or `/products/<
 generated from [github.com/endoflife-date/endoflife.date](https://github.com/endoflife-date/endoflife.date)
 (MIT licence). That project's README points to this API ([docs](https://endoflife.date/docs/api/v1/))
 as the way to consume its data, so the app does not clone or parse the repository itself. The
-**Update EoL data** button on the EoL Packages page runs the same sync as the Imports & sync page. Each product's cycles and identifiers are replaced in one transaction only after
+**Update EoL data** button on the EoL Dependencies page runs the same sync as the Imports & sync page. Each product's cycles and identifiers are replaced in one transaction only after
 that product parsed completely. A failed request or a malformed product keeps the previous data.
 Products missing from a later response are kept, not deleted. The sync status (last attempt, last
 success, errors) is shown on the Imports & sync page.

@@ -20,7 +20,7 @@
         <span th:case="403">The form was missing its security token or the page had expired. Reload the page and try again.</span>
         <span th:case="*">Error <span th:text="${status}">500</span>. Details were written to the server log.</span>
     </p>
-    <p><a th:href="@{/}">Back to EoL Packages</a></p>
+    <p><a th:href="@{/}">Back to EoL Dependencies</a></p>
 </main>
 </body>
 </html>

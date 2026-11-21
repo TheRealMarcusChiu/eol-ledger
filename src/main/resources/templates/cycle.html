@@ -5,7 +5,7 @@
 <header th:replace="~{fragments :: nav('dashboard')}"></header>
 <main id="main">
     <div class="page-head">
-        <p class="crumbs"><a th:href="@{/}">EoL Packages</a> /
+        <p class="crumbs"><a th:href="@{/}">EoL Dependencies</a> /
             <a th:href="@{/products/{p}(p=${product.name()})}" th:text="${product.label()}">Python</a> /
             <span th:text="${cycle.name()}">3.10</span></p>
         <div class="title-row">

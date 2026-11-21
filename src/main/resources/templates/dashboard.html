@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
-<head th:replace="~{fragments :: head('EoL Packages')}"></head>
+<head th:replace="~{fragments :: head('EoL Dependencies')}"></head>
 <body>
 <header th:replace="~{fragments :: nav('dashboard')}"></header>
 <main id="main">
     <div class="page-head title-row">
-        <h1>EoL Packages</h1>
+        <h1>EoL Dependencies</h1>
         <section class="actions" aria-labelledby="update-h">
             <h2 id="update-h" class="sr-only">EoL data</h2>
             <span class="hint" th:if="${status != null and status.succeededAt() != null}">Updated
@@ -41,18 +41,17 @@
         </div>
         <div class="field field-check">
             <input id="unused" name="unused" type="checkbox" value="true" th:checked="${unused}">
-            <label for="unused">Include unused cycles</label>
+            <label for="unused">Include unused dependencies</label>
         </div>
         <div class="actions">
             <button type="submit">Apply</button>
-            <a class="button-quiet" th:href="@{/}">Reset to today</a>
+            <a class="button-quiet" th:href="@{/}">Reset filters</a>
         </div>
         <details class="help">
             <summary>Help</summary>
             <p id="filter-help">Matches upstream release cycles to the latest SBOM of each code repo branch.
-                Both dates are inclusive. Clear a date for an open range; clear both for all time,
-                which also lists cycles whose EoL date is unknown. Default view starts at today
-                (<span th:text="${today}">date</span>).</p>
+                By default every tracked dependency version is listed, whatever its EoL date: past, future or not published.
+                Both dates are inclusive. Leave a date blank for an open range; any date drops versions whose EoL date is unknown.</p>
             <p id="update-help">Update EoL data downloads the current release cycles from the official
                 <a href="https://endoflife.date/docs/api/v1/">endoflife.date API</a>, generated from the
                 <a href="https://github.com/endoflife-date/endoflife.date">endoflife-date/endoflife.date</a> GitHub project.
@@ -64,31 +63,41 @@
         <strong>Those filters could not be applied.</strong> <span th:text="${error}">error</span>
     </div>
 
-    <div class="table-wrap" th:unless="${error}" tabindex="0" role="region" aria-label="EoL Packages">
-        <table>
+    <!--/* Column show/hide and widths are built by app.js; hidden until then so no-JS users see no dead controls. */-->
+    <details id="table-settings" class="help" hidden th:unless="${error}">
+        <summary>Table settings</summary>
+        <div class="col-settings"></div>
+        <button type="button" data-columns-reset>Reset columns</button>
+    </details>
+
+    <div class="table-wrap" th:unless="${error}" tabindex="0" role="region" aria-label="EoL Dependencies">
+        <table id="dependencies-table">
+            <colgroup>
+                <col data-column="dependency"><col data-column="version"><col data-column="eol">
+                <col data-column="status"><col data-column="repos"><col data-column="branches">
+            </colgroup>
             <thead>
             <tr>
-                <th scope="col">Product</th>
-                <th scope="col">Cycle</th>
-                <th scope="col">EoL date</th>
-                <th scope="col">Status</th>
-                <th scope="col" class="num">Code repos</th>
-                <th scope="col" class="num">Branches</th>
+                <th scope="col" data-column="dependency">Dependency Name</th>
+                <th scope="col" data-column="version">Version</th>
+                <th scope="col" data-column="eol">EoL date</th>
+                <th scope="col" data-column="status">Status</th>
+                <th scope="col" class="num" data-column="repos">Code repos</th>
+                <th scope="col" class="num" data-column="branches">Branches</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="r : ${rows}" th:with="href=@{/products/{p}(p=${r.cycle().product()},cycle=${r.cycle().name()})}"
                 th:attr="data-row=${r.cycle().key()},data-repos=${r.repos()},data-branches=${r.branches()},data-href=${href}">
-                <td th:text="${r.cycle().productLabel()}">Python</td>
-                <td><a th:href="${href}" th:text="${r.cycle().label() ?: r.cycle().name()}">3.10</a></td>
-                <td class="date" th:text="${r.cycle().eolFrom() ?: 'Not published'}">2026-10-31</td>
-                <td th:insert="~{fragments :: eol(${r.eol()})}"></td>
-                <td class="num" th:text="${r.repos()}">1</td>
-                <td class="num" th:text="${r.branches()}">1</td>
+                <td data-column="dependency" th:text="${r.cycle().productLabel()}">Python</td>
+                <td data-column="version"><a th:href="${href}" th:text="${r.cycle().label() ?: r.cycle().name()}">3.10</a></td>
+                <td data-column="eol" class="date" th:text="${r.cycle().eolFrom() ?: 'Not published'}">2026-10-31</td>
+                <td data-column="status" th:insert="~{fragments :: eol(${r.eol()})}"></td>
+                <td data-column="repos" class="num" th:text="${r.repos()}">1</td>
+                <td data-column="branches" class="num" th:text="${r.branches()}">1</td>
             </tr>
             <tr th:if="${rows.isEmpty()}">
-                <td colspan="6" class="empty">No release cycles in this range.
-                    <span th:if="${isDefault}">Clear the start date to include ended cycles.</span></td>
+                <td colspan="6" class="empty">No dependency versions in this range.</td>
             </tr>
             </tbody>
         </table>

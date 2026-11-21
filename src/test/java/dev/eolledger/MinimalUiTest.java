@@ -45,7 +45,7 @@ class MinimalUiTest extends WebTestBase {
     void dashboardControlsAreVisibleAndHelpKeepsItsLinks() throws Exception {
         String html = page("/");
         assertThat(visible(html)).contains("id=\"start\" name=\"start\"", "id=\"end\" name=\"end\"", "id=\"sort\" name=\"sort\"",
-                "id=\"unused\" name=\"unused\"", ">Apply</button>", ">Reset to today</a>", ">Update EoL data</button>", "<summary>Help</summary>")
+                "id=\"unused\" name=\"unused\"", ">Apply</button>", ">Reset filters</a>", ">Update EoL data</button>", "<summary>Help</summary>")
                 .doesNotContain("Both dates are inclusive");
         assertThat(html).contains("id=\"filter-help\"", "id=\"update-help\"", "Both dates are inclusive", "href=\"https://endoflife.date/docs/api/v1/\"");
     }
@@ -67,25 +67,25 @@ class MinimalUiTest extends WebTestBase {
     }
 
     @Test
-    void navHeadingsAndBreadcrumbsUseEolPackagesAndCodeRepos() throws Exception {
+    void navHeadingsAndBreadcrumbsUseEolDependenciesAndCodeRepos() throws Exception {
         long main = branchId("https://gitlab.com/acme/alpha", "main");
         long coreId = db.sql("SELECT d.id FROM dependency d JOIN snapshot s ON s.id = d.snapshot_id WHERE s.branch_id = ? AND d.name = 'core'")
                 .param(main).query(Long.class).single();
         for (String url : List.of("/", "/imports", "/repos", "/repos/" + main, "/repos/" + main + "/history",
                 "/repos/" + main + "/deps/" + coreId, "/products/react", "/products/react?cycle=18")) {
             String html = page(url);
-            assertThat(html).as(url).contains(">EoL Packages</a>", ">Code repos</a>")
-                    .doesNotContain(">Cycles</a>", "Repositories", "repositories", ">Release cycles</");
+            assertThat(html).as(url).contains(">EoL Dependencies</a>", ">Code repos</a>")
+                    .doesNotContain(">Cycles</a>", "Repositories", "repositories", ">Release cycles</", "EoL Packages");
         }
-        assertThat(page("/")).contains("<title>EoL Packages · EoL Ledger</title>", "<h1>EoL Packages</h1>", ">Code repos</th>");
+        assertThat(page("/")).contains("<title>EoL Dependencies · EoL Ledger</title>", "<h1>EoL Dependencies</h1>", ">Code repos</th>");
         assertThat(page("/repos")).contains("<title>Code repos · EoL Ledger</title>", "<h1>Code repos</h1>", "2</span> code repos,",
                 ">Code repo</th>", "aria-label=\"Code repo branches\"");
         for (String url : List.of("/repos/" + main, "/repos/" + main + "/history", "/repos/" + main + "/deps/" + coreId)) {
             assertThat(page(url)).as(url).contains("<a href=\"/repos\">Code repos</a>");
         }
         assertThat(page("/repos/" + main)).contains("<dt>Code repo</dt>");
-        assertThat(page("/products/react")).contains("<a href=\"/\">EoL Packages</a> /", "class=\"num\">Code repos</th>");
-        assertThat(page("/products/react?cycle=18")).contains("<a href=\"/\">EoL Packages</a> /", "<dt>Code repos</dt>", " code repos,",
+        assertThat(page("/products/react")).contains("<a href=\"/\">EoL Dependencies</a> /", "class=\"num\">Code repos</th>");
+        assertThat(page("/products/react?cycle=18")).contains("<a href=\"/\">EoL Dependencies</a> /", "<dt>Code repos</dt>", " code repos,",
                 ">Code repo</th>");
         // the product page's own table is still a list of actual release cycles
         assertThat(page("/products/react")).contains("aria-label=\"Release cycles\"", ">Cycle</th>");

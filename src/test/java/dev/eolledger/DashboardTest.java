@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -22,11 +21,42 @@ class DashboardTest extends WebTestBase {
     }
 
     @Test
-    void defaultStartsTodayInclusiveAndHidesUnusedCycles() throws Exception {
+    void defaultListsAllTrackedVersionsWithNoDateCutoffAndHidesUnused() throws Exception {
         String html = page("/");
-        assertThat(html).contains("data-row=\"python 3.10\"", "data-row=\"django 4.2\"")
-                .doesNotContain("data-row=\"react 18\"", "data-row=\"python 3.1\"", "data-row=\"python 2.7\"", "data-row=\"react 19\"");
-        assertThat(html).contains("value=\"2026-11-20\"");
+        // past, today, future and unknown EoL dates alike; unused versions only on request
+        assertThat(html).contains("data-row=\"react 18\"", "data-row=\"python 3.1\"", "data-row=\"python 3.10\"", "data-row=\"django 4.2\"", "data-row=\"python 2.7\"")
+                .doesNotContain("data-row=\"react 19\"", "data-row=\"python 3.9\"");
+        assertThat(html).contains("id=\"start\" name=\"start\" type=\"date\" value=\"\"", "id=\"end\" name=\"end\" type=\"date\" value=\"\"")
+                .doesNotContain("value=\"2026-11-20\"", "id=\"unused\" name=\"unused\" type=\"checkbox\" value=\"true\" checked");
+        assertThat(rows(html)).isEqualTo(rows(page("/?start=&end=")));
+    }
+
+    static java.util.List<String> rows(String html) {
+        return java.util.regex.Pattern.compile("data-row=\"[^\"]+\"").matcher(html).results().map(java.util.regex.MatchResult::group).toList();
+    }
+
+    @Test
+    void dependencyTableHasTheColumnContractAndProgressiveSettings() throws Exception {
+        String html = page("/");
+        String table = html.substring(html.indexOf("<table id=\"dependencies-table\">"), html.indexOf("</table>"));
+        for (String key : java.util.List.of("dependency", "version", "eol", "status", "repos", "branches")) {
+            assertThat(table).as(key).contains("<col data-column=\"" + key + "\">", "<th scope=\"col\"", "data-column=\"" + key + "\">");
+            // one header cell plus one cell per row (5 used versions)
+            assertThat(table.split("data-column=\"" + key + "\"", -1)).as(key).hasSize(1 + 1 + 1 + 5);
+        }
+        assertThat(table).contains(">Dependency Name</th>", ">Version</th>", ">EoL date</th>", ">Status</th>", ">Code repos</th>", ">Branches</th>")
+                .doesNotContain(">Product</th>", ">Cycle</th>");
+        assertThat(html).contains("role=\"region\" aria-label=\"EoL Dependencies\"", "<details id=\"table-settings\" class=\"help\" hidden>",
+                "<summary>Table settings</summary>", "<button type=\"button\" data-columns-reset>Reset columns</button>",
+                ">Include unused dependencies</label>").doesNotContain("Include unused cycles");
+        // the no-JS table keeps every column and link; resize handles and per-column controls only exist once app.js runs
+        assertThat(html).doesNotContain("data-column-resize", "data-column-toggle", "data-column-width");
+    }
+
+    @Test
+    void emptyTableRowSpansAllColumns() throws Exception {
+        String html = page("/?start=2000-01-01&end=2000-01-02");
+        assertThat(html).contains("<td colspan=\"6\" class=\"empty\">No dependency versions in this range.</td>");
     }
 
     @Test
@@ -93,7 +123,7 @@ class DashboardTest extends WebTestBase {
 
     @Test
     void resetLinkPointsToDefaultView() throws Exception {
-        mvc.perform(get("/?start=&end=")).andExpect(content().string(containsString("Reset to today")));
+        mvc.perform(get("/?start=2026-01-01&unused=true")).andExpect(content().string(containsString("href=\"/\">Reset filters</a>")));
     }
 
     @Test
@@ -115,10 +145,9 @@ class DashboardTest extends WebTestBase {
     }
 
     @Test
-    void todayFollowsClockInConfiguredZone() throws Exception {
-        // 23:30 UTC on 19 Nov is already 20 Nov in Amsterdam
-        CLOCK.now = java.time.Instant.parse("2026-11-19T23:30:00Z");
-        mvc.perform(get("/")).andExpect(content().string(containsString("value=\"2026-11-20\"")))
-                .andExpect(content().string(not(containsString("value=\"2026-11-19\""))));
+    void defaultViewHasNoDateCutoffWhateverTheClock() throws Exception {
+        CLOCK.now = java.time.Instant.parse("2030-01-01T00:00:00Z");
+        assertThat(page("/")).contains("data-row=\"python 3.10\"", "data-row=\"django 4.2\"")
+                .doesNotContain("value=\"2030-01-01\"");
     }
 }

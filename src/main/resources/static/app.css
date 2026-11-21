@@ -174,6 +174,18 @@ td.num, th.num { text-align: right; }
 td.date { white-space: nowrap; }
 td.empty { color: var(--muted); padding: 1.25rem .8rem; }
 td.col-source, td.col-sbom { font-size: .82rem; min-width: 12rem; max-width: 20rem; overflow-wrap: anywhere; }
+/* Dashboard columns sized by app.js: fixed layout only once widths are set, so no-JS keeps the auto layout. Text wraps, never clips. */
+#dependencies-table.cols-sized { table-layout: fixed; min-width: 0; }
+#dependencies-table.cols-sized th, #dependencies-table.cols-sized td, #dependencies-table.cols-sized .eol { white-space: normal; overflow-wrap: anywhere; }
+#dependencies-table th { position: relative; }
+.col-resize { position: absolute; top: 0; right: 0; bottom: 0; width: .7rem; cursor: col-resize; touch-action: none; }
+.col-resize:hover, .col-resize:focus-visible { background: var(--line); }
+#table-settings { margin: 0 0 .7rem; }
+.col-settings { display: flex; flex-direction: column; gap: .4rem; margin: .5rem 0 .7rem; }
+.col-setting { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem 1.25rem; color: var(--text); }
+.col-setting label { display: inline-flex; align-items: center; gap: .4rem; }
+.col-setting input[type="number"] { width: 6rem; }
+
 code, .mono { font-family: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: .86em; overflow-wrap: anywhere; }
 .muted { color: var(--muted); }
 .small { font-size: .86rem; }

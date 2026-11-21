@@ -26,25 +26,19 @@ public class PagesController {
         this.catalog = catalog;
     }
 
-    /**
-     * No query string at all = default view (start today). A present-but-blank start means the user
-     * cleared it on purpose, i.e. no lower bound.
-     */
+    /** Default view: all tracked versions with no date bounds (past, future and unknown EoL dates), used ones only. */
     @GetMapping("/")
     String dashboard(@RequestParam(required = false) String start, @RequestParam(required = false) String end,
                      @RequestParam(defaultValue = "asc") String sort, @RequestParam(defaultValue = "false") boolean unused,
                      Model model, HttpServletResponse response) {
-        LocalDate today = ledger.today();
-        String startText = start == null ? today.toString() : start.trim();
+        String startText = start == null ? "" : start.trim();
         String endText = end == null ? "" : end.trim();
         model.addAttribute("start", startText);
         model.addAttribute("end", endText);
         model.addAttribute("sort", "desc".equals(sort) ? "desc" : "asc");
         model.addAttribute("unused", unused);
-        model.addAttribute("today", today);
         model.addAttribute("status", catalog.status());
         model.addAttribute("catalogEmpty", ledger.catalogEmpty());
-        model.addAttribute("isDefault", start == null && end == null);
         LocalDate from;
         LocalDate to;
         try {
