@@ -253,6 +253,10 @@ function initColumnOrder(table) {
     groups.forEach(function (nodes) {
       order.forEach(function (key) { var node = nodes[keys.indexOf(key)]; node.parentNode.appendChild(node); });
     });
+    order.forEach(function (key, i) {
+      var cell = cells[keys.indexOf(key)], button = cell.querySelector('.th-sort');
+      if (button) button.setAttribute('aria-label', (cell.getAttribute('data-label') || cellText(cell)) + ', column ' + (i + 1) + ' of ' + cells.length + '. Alt+Left or Alt+Right to move');
+    });
   }
   function move(cell, target) {
     var from = order.indexOf(keys[cells.indexOf(cell)]), to = order.indexOf(keys[cells.indexOf(target)]);
@@ -260,8 +264,6 @@ function initColumnOrder(table) {
     order.splice(to, 0, order.splice(from, 1)[0]);
     apply();
     tableStorage('setItem', JSON.stringify(order), storageKey);
-    var button = cell.querySelector('.th-sort');
-    if (button) button.setAttribute('aria-label', (cell.getAttribute('data-label') || cellText(cell)) + ', column ' + (to + 1) + ' of ' + cells.length + '. Alt+Left or Alt+Right to move');
   }
   table.columnLayout = { cells: cells, reset: function () { order = keys.slice(); apply(); tableStorage('removeItem', null, storageKey); } };
   var drag = null, suppressClick = false;
@@ -272,7 +274,7 @@ function initColumnOrder(table) {
     if (old && old.cell.hasPointerCapture(old.id)) old.cell.releasePointerCapture(old.id);
   }
   head.addEventListener('click', function (e) {
-    if (suppressClick) { suppressClick = false; e.preventDefault(); e.stopImmediatePropagation(); }
+    if (suppressClick && e.detail !== 0) { suppressClick = false; e.preventDefault(); e.stopImmediatePropagation(); }
   }, true);
   head.addEventListener('pointerdown', function (e) {
     suppressClick = false;

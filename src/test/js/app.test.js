@@ -456,6 +456,48 @@ test('drag moves original header, body and col nodes together without changing v
   assert.strictEqual(f.saved.size, 0);
 });
 
+test('accessible positions follow moves of other columns and reset', () => {
+  const f = columnFixture();
+  const right = cell => f.head.emit('keydown', { key: 'ArrowRight', altKey: true, target: cell.button, preventDefault() {} });
+  const accurate = () => f.head.cells.forEach((cell, i) => {
+    assert.strictEqual(cell.button.attrs['aria-label'], `${cell.key}, column ${i + 1} of 3. Alt+Left or Alt+Right to move`);
+    assert.strictEqual(cell.button.attrs['aria-keyshortcuts'], 'Alt+ArrowLeft Alt+ArrowRight');
+  });
+  right(f.heads[0]);
+  right(f.heads[1]);
+  accurate();
+  right(f.heads[0]);
+  f.ctx.resetColumnOrder(f.table);
+  accurate();
+});
+
+test('accessible positions are accurate on initial and persisted layouts', () => {
+  for (const order of [null, '["date","name","version"]']) {
+    const f = columnFixture(new Map(order ? [['eol-ledger.table-order.v1.fixture', order]] : []));
+    f.head.cells.forEach((cell, i) => assert.strictEqual(cell.button.attrs['aria-label'], `${cell.key}, column ${i + 1} of 3. Alt+Left or Alt+Right to move`));
+  }
+});
+
+test('cancelled drags do not suppress keyboard sort clicks', () => {
+  for (const cancellation of ['Escape', 'scroll', 'pointercancel', 'lostpointercapture']) {
+    const f = columnFixture();
+    f.head.emit('pointerdown', f.pointer(f.heads[0], 0));
+    f.head.emit('pointermove', f.pointer(f.heads[0], 20));
+    if (cancellation === 'Escape') f.head.emit('keydown', { key: 'Escape' });
+    else if (cancellation === 'scroll') f.win.emit('scroll');
+    else f.head.emit(cancellation);
+    let stopped = false, sorts = 0;
+    const click = { detail: 0, target: f.heads[0].button, preventDefault() {}, stopImmediatePropagation() { stopped = true; } };
+    f.ctx.headerSort(f.heads[0], () => sorts++);
+    f.head.emit('click', click);
+    if (!stopped) f.heads[0].emit('click', click);
+    assert.strictEqual(sorts, 1, `${cancellation}: keyboard click must sort`);
+    let pointerStopped = false;
+    f.head.emit('click', { detail: 1, preventDefault() {}, stopImmediatePropagation() { pointerStopped = true; } });
+    assert.ok(pointerStopped, `${cancellation}: trailing pointer click must still be suppressed`);
+  }
+});
+
 test('threshold, cancellation and keyboard reorder preserve independent stored preferences', () => {
   const saved = new Map([['unrelated', 'keep'], ['eol-ledger.table-widths.v1', '{"fixture":{"0":333}}']]);
   const f = columnFixture(saved);
