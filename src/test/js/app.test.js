@@ -13,6 +13,14 @@ function load(window, document) {
   return ctx;
 }
 
+test('column order normalizes corrupt, duplicate, unknown and missing identities', () => {
+  const { columnOrder } = load();
+  const keys = ['name', 'version', 'date'];
+  for (const text of [null, '', 'bad', '{}', 'null', '42']) assert.deepStrictEqual(plain(columnOrder(text, keys)), keys);
+  assert.deepStrictEqual(plain(columnOrder('["date","date","unknown","name"]', keys)), ['date', 'name', 'version']);
+  assert.deepStrictEqual(plain(columnOrder('["__proto__",0,"version"]', keys)), ['version', 'name', 'date']);
+});
+
 const plain = (o) => JSON.parse(JSON.stringify(o));
 const DEFAULTS = {
   dependency: { visible: true, width: 220 }, version: { visible: true, width: 120 },
@@ -374,6 +382,123 @@ test('copy: the Clipboard API is the fallback when execCommand fails, and its re
   assert.deepStrictEqual(writes, ['v1']);
   const denied = fakeDoc(false);
   assert.strictEqual(await load({ navigator: { clipboard: { writeText: async () => { throw new Error('denied'); } } } }, denied.doc).copyText('v2', denied.host), false);
+});
+
+test('full header sorts once for padding or native button, never other controls', () => {
+  const ctx = load();
+  const handlers = [];
+  const cell = { addEventListener: (name, fn) => handlers.push(fn) };
+  let toggles = 0;
+  ctx.headerSort(cell, () => toggles++);
+  for (const excluded of [false, false, true, true, true, true]) handlers[0]({ target: { closest: () => excluded ? {} : null } });
+  assert.strictEqual(toggles, 2);
+  assert.strictEqual(handlers.length, 1);
+});
+
+function columnFixture(saved = new Map()) {
+  function node(key) {
+    const events = {};
+    return { key, hidden: false, style: {}, events, attrs: {},
+      classList: { add() {}, remove() {}, toggle() {} },
+      addEventListener(name, fn) { (events[name] ||= []).push(fn); },
+      emit(name, e = {}) { for (const fn of events[name] || []) fn(e); },
+      getAttribute(name) { return name === 'data-column' || name === 'data-label' ? key : this.attrs[name] || null; },
+      setAttribute(name, value) { this.attrs[name] = value; }, hasAttribute() { return true; },
+      append(...children) { (this.children ||= []).push(...children); },
+      appendChild(child) { (this.children ||= []).push(child); },
+      getBoundingClientRect() { return { width: 120 }; },
+      closest(selector) { return selector === 'th' ? this : null; },
+      querySelector(selector) { return selector === '.th-sort' ? this.button : null; },
+      querySelectorAll() { return []; },
+      matches() { return true; }, focus() {},
+      setPointerCapture() { this.captured = true; }, hasPointerCapture() { return this.captured; }, releasePointerCapture() { this.captured = false; },
+    };
+  }
+  function group(nodes) {
+    const parent = node(''); parent.cells = parent.children = nodes;
+    parent.appendChild = child => { const i = nodes.indexOf(child); if (i >= 0) nodes.splice(i, 1); nodes.push(child); child.parentNode = parent; };
+    nodes.forEach(n => n.parentNode = parent);
+    return parent;
+  }
+  const heads = ['name', 'version', 'date'].map(node);
+  heads.forEach(n => { n.button = node(n.key); n.button.closest = selector => selector === 'th' ? n : null; });
+  const head = group(heads.slice()), body = group(['A', '1', '2026'].map(node)), cols = group(['name', 'version', 'date'].map(node));
+  const table = { id: 'fixture', dataset: {}, style: {}, classList: { add() {} }, offsetWidth: 360,
+    tHead: { rows: [head] }, tBodies: [{ rows: [body] }], rows: [head, body], before(settings) { this.settings = settings; },
+    closest() { return null; }, getAttribute() { return null; }, querySelectorAll: selector => selector === 'colgroup' ? [cols] : [], };
+  const win = node('window');
+  win.localStorage = { getItem: k => saved.get(k), setItem: (k, v) => saved.set(k, v), removeItem: k => saved.delete(k) };
+  const created = [];
+  const doc = { addEventListener() {}, elementFromPoint: () => heads[2], createElement() { const n = node(''); created.push(n); return n; } };
+  const ctx = load(win, doc);
+  ctx.initColumnOrder(table);
+  const pointer = (target, x, y = 0) => ({ target, button: 0, pointerId: 1, clientX: x, clientY: y, preventDefault() {} });
+  return { ctx, table, head, body, cols, heads, saved, win, pointer, created };
+}
+
+test('drag moves original header, body and col nodes together without changing values or widths; reset restores', () => {
+  const f = columnFixture();
+  const original = f.body.cells.slice(); original[0].style.width = '333px'; original[0].hidden = true;
+  f.head.emit('pointerdown', f.pointer(f.heads[0], 0));
+  f.head.emit('pointermove', f.pointer(f.heads[0], 20));
+  f.head.emit('pointerup', f.pointer(f.heads[0], 20));
+  assert.deepStrictEqual(f.head.cells.map(n => n.key), ['version', 'date', 'name']);
+  assert.deepStrictEqual(f.cols.cells.map(n => n.key), ['version', 'date', 'name']);
+  assert.deepStrictEqual(f.body.cells, [original[1], original[2], original[0]]);
+  assert.strictEqual(f.body.cells[2].style.width, '333px');
+  assert.strictEqual(f.body.cells[2].hidden, true);
+  assert.strictEqual(f.body.cells[2].originalColumnIndex, 0);
+  let prevented = false;
+  f.head.emit('click', { preventDefault() { prevented = true; }, stopImmediatePropagation() {} });
+  assert.ok(prevented, 'post-drag click cannot sort');
+  f.ctx.resetColumnOrder(f.table);
+  assert.deepStrictEqual(f.body.cells, original);
+  assert.strictEqual(f.saved.size, 0);
+});
+
+test('threshold, cancellation and keyboard reorder preserve independent stored preferences', () => {
+  const saved = new Map([['unrelated', 'keep'], ['eol-ledger.table-widths.v1', '{"fixture":{"0":333}}']]);
+  const f = columnFixture(saved);
+  f.head.emit('pointerdown', f.pointer(f.heads[0], 0));
+  f.head.emit('pointermove', f.pointer(f.heads[0], 3));
+  f.head.emit('pointerup', f.pointer(f.heads[0], 3));
+  assert.strictEqual(f.head.cells[0], f.heads[0]);
+  f.head.emit('pointerdown', f.pointer(f.heads[0], 0));
+  f.head.emit('pointermove', f.pointer(f.heads[0], 20));
+  f.win.emit('scroll');
+  f.head.emit('pointerup', f.pointer(f.heads[0], 20));
+  assert.strictEqual(f.head.cells[0], f.heads[0]);
+  f.head.emit('keydown', { key: 'ArrowRight', altKey: true, target: f.heads[0].button, preventDefault() {} });
+  assert.deepStrictEqual(f.head.cells.map(n => n.key), ['version', 'name', 'date']);
+  const again = columnFixture(saved);
+  assert.deepStrictEqual(again.head.cells.map(n => n.key), ['version', 'name', 'date']);
+  assert.strictEqual(saved.get('unrelated'), 'keep');
+  assert.strictEqual(saved.get('eol-ledger.table-widths.v1'), '{"fixture":{"0":333}}');
+});
+
+test('lazy resize and visibility use original identities after restored order; reset keeps saved widths', () => {
+  const saved = new Map([
+    ['eol-ledger.table-order.v1.fixture', '["date","name","version"]'],
+    ['eol-ledger.table-widths.v1', '{"fixture":{"0":333,"1":222}}'],
+    ['eol-ledger.table-columns.v1.fixture', '{"name":false}'],
+  ]);
+  const f = columnFixture(saved);
+  f.ctx.initResize(f.table);
+  assert.strictEqual(f.heads[0].style.width, '333px');
+  assert.strictEqual(f.heads[1].style.width, '222px');
+  assert.strictEqual(f.heads[0].hidden, true);
+  assert.strictEqual(f.body.cells.find(c => c.originalColumnIndex === 0).hidden, true);
+  assert.strictEqual(f.body.cells[0].key, '2026');
+  const toggle = f.created.find(n => n.attrs['data-column-toggle'] === 'version');
+  toggle.checked = false; toggle.emit('change');
+  assert.strictEqual(f.body.cells.find(c => c.originalColumnIndex === 1).hidden, true);
+  assert.strictEqual(f.body.cells.find(c => c.originalColumnIndex === 2).hidden, false);
+  const reset = f.created.find(n => Object.hasOwn(n.attrs, 'data-columns-reset'));
+  reset.emit('click');
+  assert.deepStrictEqual(f.head.cells.map(n => n.key), ['name', 'version', 'date']);
+  assert.ok(f.body.cells.every(c => !c.hidden));
+  assert.strictEqual(f.heads[0].style.width, '333px');
+  assert.strictEqual(saved.get('eol-ledger.table-widths.v1'), '{"fixture":{"0":333,"1":222}}');
 });
 
 test('storage uses only its own key', () => {

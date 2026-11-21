@@ -195,6 +195,7 @@ function initColumns(table, settings) {
   });
 
   settings.querySelector('[data-columns-reset]').addEventListener('click', function () {
+    resetColumnOrder(table);
     tableStorage('removeItem', null, storageKey);
     prefs = tablePrefs(null);
     apply();
@@ -204,6 +205,131 @@ function initColumns(table, settings) {
   apply();
   settings.hidden = false;
   return { refit: apply };
+}
+
+/** Keep known saved identities once each, then append newly introduced columns in their original order. */
+function columnOrder(text, keys) {
+  var saved;
+  try { saved = JSON.parse(text); } catch (e) { /* original order */ }
+  var order = [];
+  (Array.isArray(saved) ? saved : []).concat(keys).forEach(function (key) {
+    if (keys.indexOf(key) >= 0 && order.indexOf(key) < 0) order.push(key);
+  });
+  return order;
+}
+
+function headerControl(target) {
+  return target.closest('a, input, select, textarea, label, summary, [role="dialog"], [data-column-resize], button:not(.th-sort)');
+}
+
+function headerSort(cell, sort) {
+  cell.addEventListener('click', function (e) { if (!headerControl(e.target)) sort(); });
+}
+
+function resetColumnOrder(table) {
+  if (table.columnLayout) table.columnLayout.reset();
+}
+
+/** Capture original nodes before any movement; lazy popup sizing also uses these original identities. */
+function initColumnOrder(table) {
+  var head = table.tHead && table.tHead.rows[0];
+  if (!head || !head.cells.length) return;
+  var cells = Array.prototype.slice.call(head.cells);
+  var keys = cells.map(function (cell, i) { return cell.getAttribute('data-column') || (cell.getAttribute('data-label') || cellText(cell)) + ':' + i; });
+  var groups = [cells];
+  Array.prototype.forEach.call(table.rows, function (row) {
+    if (row !== head && row.cells.length === cells.length && !row.querySelector('td.empty')) {
+      var nodes = Array.prototype.slice.call(row.cells);
+      nodes.forEach(function (cell, i) { cell.originalColumnIndex = i; });
+      groups.push(nodes);
+    }
+  });
+  table.querySelectorAll('colgroup').forEach(function (group) {
+    if (group.children.length === cells.length) groups.push(Array.prototype.slice.call(group.children));
+  });
+  var storageKey = 'eol-ledger.table-order.v1.' + encodeURIComponent(table.dataset.dependencyTable || table.id || tableNoun(table));
+  var order = columnOrder(tableStorage('getItem', null, storageKey), keys);
+  function apply() {
+    groups.forEach(function (nodes) {
+      order.forEach(function (key) { var node = nodes[keys.indexOf(key)]; node.parentNode.appendChild(node); });
+    });
+  }
+  function move(cell, target) {
+    var from = order.indexOf(keys[cells.indexOf(cell)]), to = order.indexOf(keys[cells.indexOf(target)]);
+    if (from === to || from < 0 || to < 0) return;
+    order.splice(to, 0, order.splice(from, 1)[0]);
+    apply();
+    tableStorage('setItem', JSON.stringify(order), storageKey);
+    var button = cell.querySelector('.th-sort');
+    if (button) button.setAttribute('aria-label', (cell.getAttribute('data-label') || cellText(cell)) + ', column ' + (to + 1) + ' of ' + cells.length + '. Alt+Left or Alt+Right to move');
+  }
+  table.columnLayout = { cells: cells, reset: function () { order = keys.slice(); apply(); tableStorage('removeItem', null, storageKey); } };
+  var drag = null, suppressClick = false;
+  function clear() {
+    cells.forEach(function (cell) { cell.classList.remove('column-dragging', 'column-target'); });
+    var old = drag;
+    drag = null;
+    if (old && old.cell.hasPointerCapture(old.id)) old.cell.releasePointerCapture(old.id);
+  }
+  head.addEventListener('click', function (e) {
+    if (suppressClick) { suppressClick = false; e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+  head.addEventListener('pointerdown', function (e) {
+    suppressClick = false;
+    if (e.button !== 0 || e.isPrimary === false || headerControl(e.target)) return;
+    var cell = e.target.closest('th');
+    if (cells.indexOf(cell) < 0) return;
+    suppressClick = false;
+    drag = { cell: cell, id: e.pointerId, x: e.clientX, y: e.clientY, active: false, target: null };
+    cell.setPointerCapture(e.pointerId);
+  });
+  head.addEventListener('pointermove', function (e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    var dx = Math.abs(e.clientX - drag.x), dy = Math.abs(e.clientY - drag.y);
+    if (!drag.active && dy > 6 && dy > dx) { suppressClick = true; clear(); return; }
+    if (!drag.active && dx < 6) return;
+    drag.active = true;
+    suppressClick = true;
+    e.preventDefault();
+    drag.cell.classList.add('column-dragging');
+    var hit = document.elementFromPoint(e.clientX, e.clientY);
+    var target = hit && hit.closest('th');
+    drag.target = cells.indexOf(target) >= 0 && !headerControl(hit) ? target : null;
+    cells.forEach(function (cell) { cell.classList.toggle('column-target', cell === drag.target && cell !== drag.cell); });
+  });
+  head.addEventListener('pointerup', function (e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (drag.active && drag.target) move(drag.cell, drag.target);
+    clear();
+  });
+  head.addEventListener('pointercancel', clear);
+  head.addEventListener('lostpointercapture', clear);
+  window.addEventListener('scroll', clear, true);
+  window.addEventListener('blur', clear);
+  var pop = table.closest('[popover]');
+  if (pop) pop.addEventListener('toggle', clear);
+  head.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { clear(); return; }
+    if (!e.altKey || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || !e.target.matches('.th-sort')) return;
+    e.preventDefault();
+    var cell = e.target.closest('th');
+    var visible = order.map(function (key) { return cells[keys.indexOf(key)]; }).filter(function (c) { return !c.hidden; });
+    var target = visible[visible.indexOf(cell) + (e.key === 'ArrowLeft' ? -1 : 1)];
+    if (target) { move(cell, target); e.target.focus({ preventScroll: true }); }
+  });
+  cells.forEach(function (cell) {
+    cell.classList.add('column-reorder');
+    var button = cell.querySelector('.th-sort');
+    if (!button) {
+      button = document.createElement('button'); button.type = 'button'; button.className = 'th-sort';
+      var title = Array.prototype.find.call(cell.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); });
+      button.textContent = title ? title.textContent.trim() : cellText(cell);
+      if (title) title.replaceWith(button); else cell.prepend(button);
+    }
+    button.title = (cell.hasAttribute('data-sortable') ? 'Click to sort; ' : '') + 'Drag to move column; Alt+Left or Alt+Right to move';
+    button.setAttribute('aria-keyshortcuts', 'Alt+ArrowLeft Alt+ArrowRight');
+  });
+  apply();
 }
 
 // ---- Header sort and filters for EVERY table: page-local state, nothing stored. Pure helpers first (tested in Node). ----
@@ -738,7 +864,7 @@ function initTable(table, opts) {
     ind.className = 'sort-ind';
     ind.setAttribute('aria-hidden', 'true');
     s.append(labels[k], ind);
-    s.addEventListener('click', function () { sort = nextSort(sort, k); render(); });
+    headerSort(cell, function () { sort = nextSort(sort, k); render(); });
     var o = openButtons[k] = control('button', 'data-filter-open', k);
     o.type = 'button';
     o.className = 'th-filter';
@@ -827,7 +953,7 @@ function rowFocus(table) {
 }
 
 function initVisibility(table, refit) {
-  var cells = Array.prototype.slice.call(table.tHead.rows[0].cells);
+  var cells = table.columnLayout ? table.columnLayout.cells : Array.prototype.slice.call(table.tHead.rows[0].cells);
   var keys = cells.map(function (cell) { return cell.getAttribute('data-label') || cellText(cell); });
   var prefs = visibilityPrefs(visibilityStorage(table, 'getItem'), keys);
   var settings = document.createElement('details');
@@ -849,7 +975,7 @@ function initVisibility(table, refit) {
     });
     rows.forEach(function (row) {
       if (row.querySelector('td.empty')) { row.cells[0].colSpan = shown; return; }
-      Array.prototype.forEach.call(row.cells, function (cell, i) { cell.hidden = !prefs[keys[i]]; });
+      Array.prototype.forEach.call(row.cells, function (cell, i) { cell.hidden = !prefs[keys[cell.originalColumnIndex == null ? i : cell.originalColumnIndex]]; });
     });
     rowFocus(table);
     refit();
@@ -879,6 +1005,7 @@ function initVisibility(table, refit) {
   reset.textContent = 'Reset columns';
   reset.setAttribute('data-columns-reset', '');
   reset.addEventListener('click', function () {
+    resetColumnOrder(table);
     visibilityStorage(table, 'removeItem');
     prefs = visibilityPrefs(null, keys);
     apply();
@@ -912,7 +1039,7 @@ function initResize(table) {
   var head = table.tHead && table.tHead.rows[0];
   if (!head || !head.cells.length || !table.offsetWidth) return null;
   var id = table.id || tableNoun(table);
-  var cells = Array.prototype.slice.call(head.cells);
+  var cells = table.columnLayout ? table.columnLayout.cells : Array.prototype.slice.call(head.cells);
   var natural = cells.map(function (c) { return Math.round(c.getBoundingClientRect().width); });
   var saved = storedWidths(widthStorage('getItem'), id);
   var widths = natural.map(function (n, i) { return saved[i] || n; });
@@ -1319,6 +1446,7 @@ if (document.querySelectorAll) {
   // After the header controls: their value lists and filters read the cells' original text.
   document.querySelectorAll('main table').forEach(clipCells);
   document.querySelectorAll('main table').forEach(linkRows);
+  document.querySelectorAll('main table').forEach(initColumnOrder);
   initMarquee();
   initCopy();
   // Every other table: measure its natural column widths (now one-line), then make them draggable.
