@@ -101,6 +101,48 @@
 :root[data-mode="light"][data-theme="lapis"] { --accent: #2f5c9e; --accent-hi: #23477c; --accent-rgb: 47, 92, 158; }
 :root[data-mode="light"][data-theme="plum"] { --accent: #7a3f8c; --accent-hi: #5f2f6e; --accent-rgb: 122, 63, 140; }
 
+/* Truist: a full palette, not just an accent. Grounds and ink lean on Truist Purple (#2e1a47) and Dusk (#7c6992);
+   status colours (ember / gold / sage) are unchanged, like every other theme. */
+:root[data-theme="truist"] {
+  --bg: #140d1f;
+  --bg-rgb: 20, 13, 31;
+  --bg-deep: #0f0918;
+  --surface: #1a1228;
+  --surface-rgb: 26, 18, 40;
+  --surface-2: #221833;
+  --line: #31254a;
+  --line-soft: #291e3d;
+  --line-strong: #44365f;
+  --ink: #ece6f4;
+  --ink-rgb: 236, 230, 244;
+  --ink-2: #c8bdd9;
+  --muted: #9487a8;
+  --topbar-bg: rgba(15, 9, 24, .74);
+  --accent: #a48fc4;
+  --accent-hi: #c7b6e3;
+  --accent-rgb: 164, 143, 196;
+}
+:root[data-mode="light"][data-theme="truist"] {
+  --bg: #f5f2f8;
+  --bg-rgb: 245, 242, 248;
+  --bg-deep: #ede8f3;
+  --surface: #fcfbfd;
+  --surface-rgb: 252, 251, 253;
+  --surface-2: #efeaf5;
+  --line: #dcd4e6;
+  --line-soft: #e7e1ee;
+  --line-strong: #c4b8d4;
+  --ink: #2e1a47;
+  --ink-rgb: 46, 26, 71;
+  --ink-2: #45325f;
+  --muted: #6c5f80;
+  --topbar-bg: rgba(245, 242, 248, .84);
+  --shadow: rgba(46, 26, 71, .16);
+  --accent: #5d3f8a;
+  --accent-hi: #2e1a47;
+  --accent-rgb: 93, 63, 138;
+}
+
 * { box-sizing: border-box; }
 
 html { background: var(--bg); color: var(--ink); }
@@ -215,6 +257,7 @@ a:hover { color: var(--accent-hi); text-decoration-color: var(--accent-hi); }
 :root[data-mode="light"] .swatch[data-swatch="sage"] { background: #4f6b2c; }
 :root[data-mode="light"] .swatch[data-swatch="lapis"] { background: #2f5c9e; }
 :root[data-mode="light"] .swatch[data-swatch="plum"] { background: #7a3f8c; }
+.swatch[data-swatch="truist"] { background: linear-gradient(135deg, #2e1a47 50%, #7c6992 50%); }
 .topbar nav a {
   color: var(--muted);
   text-decoration: none;

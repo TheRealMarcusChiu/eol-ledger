@@ -938,7 +938,7 @@ function linkRows(table) {
 
 // ---- Settings gear (top bar): appearance mode and accent theme, applied and stored by theme.js ----
 
-var THEME_NAMES = { candle: 'Candle', ember: 'Ember', sage: 'Sage', lapis: 'Lapis', plum: 'Plum' };
+var THEME_NAMES = { candle: 'Candle', ember: 'Ember', sage: 'Sage', lapis: 'Lapis', plum: 'Plum', truist: 'Truist' };
 var MODE_NAMES = { dark: 'Dark', light: 'Light', system: 'System' };
 
 function initSettings(topbar, appearance) {

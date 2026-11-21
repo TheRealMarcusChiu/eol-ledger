@@ -2,7 +2,7 @@
 (function () {
   var KEY = 'eol-ledger.appearance.v1';
   var MODES = ['dark', 'light', 'system'];
-  var THEMES = ['candle', 'ember', 'sage', 'lapis', 'plum'];
+  var THEMES = ['candle', 'ember', 'sage', 'lapis', 'plum', 'truist'];
   var root = document.documentElement;
   var media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
   var prefs = { mode: 'dark', theme: 'candle' };
