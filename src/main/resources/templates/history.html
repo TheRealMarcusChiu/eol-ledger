@@ -47,18 +47,18 @@
 
     <h2>Snapshot timeline</h2>
     <div class="table-wrap" tabindex="0" role="region" aria-label="Snapshot timeline">
-        <table>
+        <table data-noun="snapshots">
             <thead>
             <tr>
-                <th scope="col">Observed</th>
-                <th scope="col" class="num">Packages</th>
+                <th scope="col" data-type="datetime">Observed</th>
+                <th scope="col" data-type="number" class="num">Packages</th>
                 <th scope="col">Changes from previous snapshot</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="s : ${timeline}" th:with="href=@{/repos/{id}/history(id=${b.id()},snapshot=${s.id()})}" th:attr="data-href=${href}"
                 th:classappend="${selected != null and selected.id() == s.id()} ? 'is-selected'">
-                <td class="date"><a th:href="${href}" th:text="${@view.time(s.observedAt())}">time</a>
+                <td class="date" th:attr="data-value=${@view.time(s.observedAt())}"><a th:href="${href}" th:text="${@view.time(s.observedAt())}">time</a>
                     <span th:if="${selected != null and selected.id() == s.id()}" class="muted small">(shown)</span></td>
                 <td class="num" th:text="${s.depCount()}">5</td>
                 <td class="small">

@@ -4,7 +4,7 @@
 <body>
 <header th:replace="~{fragments :: nav('imports')}"></header>
 <main id="main">
-    <div class="page-head">
+    <div class="page-head" data-eyebrow="intake · csv, json and the catalogue">
         <h1>Imports</h1>
     </div>
 
@@ -110,10 +110,10 @@
 
     <h2>Import history</h2>
     <div class="table-wrap" tabindex="0" role="region" aria-label="Import history">
-        <table>
+        <table data-noun="import runs">
             <thead>
-            <tr><th scope="col">When</th><th scope="col">Source</th><th scope="col">Result</th>
-                <th scope="col" class="num">Rows</th><th scope="col" class="num">New snapshots</th><th scope="col">Details</th></tr>
+            <tr><th scope="col" data-type="datetime">When</th><th scope="col">Source</th><th scope="col">Result</th>
+                <th scope="col" data-type="number" class="num">Rows</th><th scope="col" data-type="number" class="num">New snapshots</th><th scope="col">Details</th></tr>
             </thead>
             <tbody>
             <tr th:each="r : ${runs}">

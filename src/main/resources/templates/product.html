@@ -15,20 +15,20 @@
         <table>
             <thead>
             <tr>
-                <th scope="col">Cycle</th>
-                <th scope="col">Latest patch</th>
-                <th scope="col">Released</th>
-                <th scope="col">EoL date</th>
+                <th scope="col" data-type="version">Cycle</th>
+                <th scope="col" data-type="version">Latest patch</th>
+                <th scope="col" data-type="date">Released</th>
+                <th scope="col" data-type="date">EoL date</th>
                 <th scope="col">Status</th>
-                <th scope="col" class="num">Code repos</th>
+                <th scope="col" data-type="number" class="num">Code repos</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="c : ${cycles}" th:with="href=@{/products/{p}(p=${product.name()},cycle=${c.name()})}" th:attr="data-href=${href}">
                 <td><a th:href="${href}" th:text="${c.label() ?: c.name()}">3.10</a></td>
-                <td th:text="${c.latest() ?: 'Unknown'}">3.10.19</td>
-                <td class="date" th:text="${c.releaseDate() ?: 'Unknown'}">2021-10-04</td>
-                <td class="date" th:text="${c.eolFrom() ?: 'Not published'}">2026-10-31</td>
+                <td data-value="" th:attrappend="data-value=${c.latest()}" th:text="${c.latest() ?: 'Unknown'}">3.10.19</td>
+                <td class="date" data-value="" th:attrappend="data-value=${c.releaseDate()}" th:text="${c.releaseDate() ?: 'Unknown'}">2021-10-04</td>
+                <td class="date" data-value="" th:attrappend="data-value=${c.eolFrom()}" th:text="${c.eolFrom() ?: 'Not published'}">2026-10-31</td>
                 <td th:insert="~{fragments :: eol(${eols.get(c.name())})}"></td>
                 <td class="num" th:text="${repoCounts.getOrDefault(c.name(), 0)}">0</td>
             </tr>
