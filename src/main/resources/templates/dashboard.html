@@ -34,13 +34,13 @@
                 th:hidden="${hiddenRows.contains(r.cycle().key())}">
                 <td data-column="dependency" th:attr="data-value=${r.names()}"><a th:href="${href}" th:text="${r.names()}">Python</a></td>
                 <td data-column="version" th:attr="data-value=${r.versions()}" th:text="${r.inventory().isEmpty() ? 'Not installed' : r.versions()}">3.10.5</td>
-                <td data-column="context" th:text="${r.contexts()}"></td>
-                <td data-column="purl" th:text="${r.purls()}"></td>
-                <td data-column="cycle" th:text="${r.cycle().productLabel() + ' ' + (r.cycle().label() ?: r.cycle().name())}"></td>
                 <td data-column="eol" class="date" data-value="" th:attrappend="data-value=${r.cycle().eolFrom()}" th:text="${r.cycle().eolFrom() ?: 'Not published'}">2026-10-31</td>
                 <td data-column="status" th:attr="data-value=${r.eol().text()}" th:insert="~{fragments :: eol(${r.eol()})}"></td>
                 <td data-column="repos" class="num" th:attr="data-value=${r.repos()}" th:text="${r.repos()}">1</td>
                 <td data-column="branches" class="num" th:attr="data-value=${r.branches()}" th:text="${r.branches()}">1</td>
+                <td data-column="context" th:text="${r.contexts()}"></td>
+                <td data-column="purl" th:text="${r.purls()}"></td>
+                <td data-column="cycle" th:text="${r.cycle().productLabel() + ' ' + (r.cycle().label() ?: r.cycle().name())}"></td>
                 <td data-column="evidence" class="small"><span th:text="${r.matching()}"></span>
                     <a th:each="e : ${r.inventory()}" th:href="@{/repos/{b}/deps/{d}(b=${e.branch().id()},d=${e.dep().id()})}" th:text="${e.branch().repoName() + ' / ' + e.branch().branch() + ': Details'}">Details</a></td>
                 <td data-column="source" class="col-source"><th:block th:each="url : ${r.sources()}">

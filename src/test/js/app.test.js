@@ -24,8 +24,9 @@ test('column order normalizes corrupt, duplicate, unknown and missing identities
 const plain = (o) => JSON.parse(JSON.stringify(o));
 const DEFAULTS = {
   dependency: { visible: true, width: 220 }, version: { visible: true, width: 120 },
-  context: { visible: true, width: 240 }, purl: { visible: true, width: 280 }, cycle: { visible: true, width: 200 }, eol: { visible: true, width: 130 },
-  status: { visible: true, width: 210 }, repos: { visible: true, width: 120 }, branches: { visible: true, width: 120 },
+  eol: { visible: true, width: 130 }, status: { visible: true, width: 210 },
+  repos: { visible: true, width: 120 }, branches: { visible: true, width: 120 },
+  context: { visible: true, width: 240 }, purl: { visible: true, width: 280 }, cycle: { visible: true, width: 200 },
   evidence: { visible: true, width: 280 }, source: { visible: true, width: 260 }, sbom: { visible: true, width: 260 },
 };
 

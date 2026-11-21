@@ -74,7 +74,7 @@ class DashboardTest extends WebTestBase {
             // one header cell plus one cell per row (5 used versions)
             assertThat(table.split("data-column=\"" + key + "\"", -1)).as(key).hasSize(1 + 1 + 1 + 5);
         }
-        assertThat(table).contains(">Dependency Name</th>", ">Installed version</th>", ">EoL date</th>", ">Status</th>", ">Code repos</th>", ">Branches</th>")
+        assertThat(table).contains(">Dependency Name</th>", ">Version</th>", ">EOL Date</th>", ">Status</th>", "># Code Repos Using It</th>", "># Code Repo Branches Using It</th>")
                 .doesNotContain(">Product</th>", ">Cycle</th>");
         assertThat(html).contains("role=\"region\" aria-label=\"EoL Dependencies\"", "<details id=\"table-settings\" class=\"help\" hidden>",
                 "<summary>Table settings</summary>", "<button type=\"button\" data-columns-reset>Reset columns</button>");

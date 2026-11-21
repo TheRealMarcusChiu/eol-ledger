@@ -78,14 +78,14 @@ class MinimalUiTest extends WebTestBase {
             assertThat(html).as(url).contains(">EoL Dependencies</a>", ">Code repos</a>")
                     .doesNotContain(">Cycles</a>", "Repositories", "repositories", ">Release cycles</", "EoL Packages");
         }
-        assertThat(page("/")).contains("<title>EoL Dependencies · EoL Ledger</title>", "<h1>EoL Dependencies</h1>", ">Code repos</th>");
+        assertThat(page("/")).contains("<title>EoL Dependencies · EoL Ledger</title>", "<h1>EoL Dependencies</h1>", "># Code Repos Using It</th>");
         assertThat(page("/repos")).contains("<title>Code repos · EoL Ledger</title>", "<h1>Code repos</h1>", "2</span> code repos,",
                 ">Code repo</th>", "aria-label=\"Code repo branches\"");
         for (String url : List.of("/repos/" + main, "/repos/" + main + "/history", "/repos/" + main + "/deps/" + coreId)) {
             assertThat(page(url)).as(url).contains("<a href=\"/repos\">Code repos</a>");
         }
         assertThat(page("/repos/" + main)).contains("<dt>Code repo</dt>");
-        assertThat(page("/dependencies/react")).contains("<a href=\"/\">EoL Dependencies</a> /", "class=\"num\">Code repos</th>");
+        assertThat(page("/dependencies/react")).contains("<a href=\"/\">EoL Dependencies</a> /", "class=\"num\"># Code Repos Using It</th>");
         assertThat(page("/dependencies/react?version=18")).contains("<a href=\"/\">EoL Dependencies</a> /", "<dt>Code repos</dt>", " code repos,",
                 ">Code repo</th>");
         // the product page's own table is still a list of actual release cycles

@@ -19,17 +19,48 @@ class UnifiedDependencyTableTest extends WebTestBase {
         seed();
         long id = branchId("https://gitlab.com/acme/alpha", "main");
         var expected = List.of(
-                " data-column=\"dependency\":Dependency Name", " data-type=\"version\" data-column=\"version\":Installed version",
+                " data-column=\"dependency\":Dependency Name", " data-type=\"version\" data-column=\"version\":Version",
+                " data-type=\"date\" data-column=\"eol\":EOL Date", " data-column=\"status\":Status",
+                " data-type=\"number\" class=\"num\" data-column=\"repos\":# Code Repos Using It",
+                " data-type=\"number\" class=\"num\" data-column=\"branches\":# Code Repo Branches Using It",
                 " data-column=\"context\":Project context", " data-column=\"purl\":Ecosystem / purl",
-                " data-column=\"cycle\":Upstream cycle", " data-type=\"date\" data-column=\"eol\":EoL date",
-                " data-column=\"status\":Status", " data-type=\"number\" class=\"num\" data-column=\"repos\":Code repos",
-                " data-type=\"number\" class=\"num\" data-column=\"branches\":Branches", " data-column=\"evidence\":Matching evidence",
+                " data-column=\"cycle\":Upstream cycle", " data-column=\"evidence\":Matching evidence",
                 " data-column=\"source\":Source control", " data-column=\"sbom\":SBOM");
         assertThat(headers(page("/"))).containsExactlyElementsOf(expected);
         assertThat(headers(page("/repos/" + id))).containsExactlyElementsOf(expected);
         assertThat(headers(AcceptanceRepairTest.depsTable(page("/repos/" + id + "/history")))).containsExactlyElementsOf(expected);
         db.sql("DELETE FROM snapshot_inventory").update();
         assertThat(headers(page("/repos/" + id))).containsExactlyElementsOf(expected);
+    }
+    @Test void serverRenderedOrderAndCellMeaningWorkWithoutJavascript() throws Exception {
+        seed();
+        long id = branchId("https://gitlab.com/acme/alpha", "main");
+        var keys = List.of("dependency", "version", "eol", "status", "repos", "branches",
+                "context", "purl", "cycle", "evidence", "source", "sbom");
+        for (String path : List.of("/", "/repos/" + id, "/repos/" + id + "/history")) {
+            String table = path.equals("/") ? page(path) : AcceptanceRepairTest.depsTable(page(path));
+            assertThat(Pattern.compile("<col data-column=\"([^\"]+)\"").matcher(table).results()
+                    .map(m -> m.group(1)).toList()).as(path + " colgroup").containsExactlyElementsOf(keys);
+            var rows = Pattern.compile("<tr[^>]*>.*?</tr>", Pattern.DOTALL).matcher(table).results()
+                    .map(m -> m.group()).filter(r -> r.contains("<td data-column=")).toList();
+            assertThat(rows).isNotEmpty();
+            for (String row : rows) {
+                assertThat(Pattern.compile("<td data-column=\"([^\"]+)\"").matcher(row).results()
+                        .map(m -> m.group(1)).toList()).as(path + " cells").containsExactlyElementsOf(keys);
+            }
+            String react = rows.stream().filter(r -> r.contains(">react</a>")).findFirst().orElseThrow();
+            var cells = Pattern.compile("<td[^>]*>(.*?)</td>", Pattern.DOTALL).matcher(react).results()
+                    .map(m -> m.group(1)).toList();
+            assertThat(cells.get(0)).contains(">react</a>");
+            assertThat(cells.get(1)).contains("18.2.0");
+            assertThat(cells.get(2)).contains("2025-01-01");
+            assertThat(cells.get(3)).contains("eol-ended", "Ended");
+            assertThat(cells.get(4)).isEqualTo("1");
+            assertThat(cells.get(5)).isEqualTo(path.equals("/") ? "2" : "1");
+            assertThat(cells.get(7)).contains("pkg:npm/react@18.2.0");
+            assertThat(cells.get(8)).contains("React 18");
+            assertThat(cells.get(10)).contains("https://gitlab.com/acme/alpha");
+        }
     }
     @Test void aggregateValuesAreInstalledEvidenceNotCatalogueLatestAndCountsStayScoped() throws Exception {
         seed();
@@ -72,7 +103,7 @@ class UnifiedDependencyTableTest extends WebTestBase {
         int start = html.indexOf("data-row=\"react 18\"");
         String row = html.substring(start, html.indexOf("</tr>", start));
         assertThat(row).contains("backend-maven: prod, direct", "worker-gradle: prod, direct", "data-repos=\"2\" data-branches=\"3\"");
-        String versionCell = row.substring(row.indexOf("data-column=\"version\""), row.indexOf("data-column=\"context\""));
+        String versionCell = row.substring(row.indexOf("data-column=\"version\""), row.indexOf("data-column=\"eol\""));
         assertThat(versionCell).contains("18.2.0; 18.3.0").doesNotContain("18.2.0; 18.2.0");
     }
     @Test void emptySnapshotStillHasTheFullSchemaAndAnHonestEmptyState() throws Exception {
