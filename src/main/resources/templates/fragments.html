@@ -12,9 +12,9 @@
     <a class="skip" href="#main">Skip to content</a>
     <a class="brand" th:href="@{/}"><span class="brand-mark" aria-hidden="true"></span>EoL Ledger</a>
     <nav aria-label="Main">
-        <a th:href="@{/}" th:attr="aria-current=${active == 'dashboard'} ? 'page' : null">Release cycles</a>
+        <a th:href="@{/}" th:attr="aria-current=${active == 'dashboard'} ? 'page' : null">Cycles</a>
         <a th:href="@{/repos}" th:attr="aria-current=${active == 'repos'} ? 'page' : null">Repositories</a>
-        <a th:href="@{/imports}" th:attr="aria-current=${active == 'imports'} ? 'page' : null">Imports &amp; sync</a>
+        <a th:href="@{/imports}" th:attr="aria-current=${active == 'imports'} ? 'page' : null">Imports</a>
     </nav>
 </header>
 
@@ -23,7 +23,7 @@
 <!--/* What a JSON-uploaded snapshot declared about itself; nothing here was fetched. */-->
 <dl th:fragment="inlineFacts(inline)" class="facts">
     <dt>Inventory source</dt>
-    <dd>Inline JSON upload <span class="muted">(dependencies came from the uploaded file; refreshes skip this branch, so re-upload the JSON to update it)</span></dd>
+    <dd>Inline JSON upload <span class="muted">(refresh skips it; re-upload to update)</span></dd>
     <dt>App ID</dt>
     <dd th:text="${inline.appId() ?: 'Not stated'}">APP-1</dd>
     <dt>Projects / modules</dt>
@@ -32,14 +32,14 @@
     <dt>Declared SBOM</dt>
     <dd><span th:if="${inline.declaredSbomUrl() == null}" class="muted">None (inline inventory only)</span>
         <th:block th:if="${inline.declaredSbomUrl() != null}"><a th:if="${inline.declaredSbomLink()}" th:href="${inline.declaredSbomLink()}" th:text="${inline.declaredSbomUrl()}" rel="noopener noreferrer">sbom</a>
-            <span class="muted">(declared by the upload; never fetched by EoL Ledger)</span></th:block></dd>
+            <span class="muted">(declared, never fetched)</span></th:block></dd>
     <dt>Generated</dt>
     <dd th:text="${inline.generatedAt() ?: 'Not stated'}">2026-11-20T10:00:00Z</dd>
     <th:block th:if="${inline.demo() or inline.localRepository() != null}">
         <dt>Demo</dt>
         <dd><span th:if="${inline.demo()}">Fictional synthetic demo repository: its URL is a placeholder and is not remotely hosted.</span>
             <span th:if="${inline.localRepository() != null}">Source: <code th:text="${inline.localRepository()}">sources/x.bundle</code>
-                <span class="muted">(git bundle shipped in the demo download)</span></span></dd>
+                <span class="muted">(git bundle in the demo download)</span></span></dd>
     </th:block>
 </dl>
 
@@ -90,9 +90,9 @@
 </div>
 
 <footer th:fragment="footer" class="footer">
-    EoL dates from <a href="https://endoflife.date">endoflife.date</a>
+    Data: <a href="https://endoflife.date">endoflife.date</a>
     (<a href="https://github.com/endoflife-date/endoflife.date">source, MIT licence</a>).
-    Local single-operator tool: do not expose without authentication.
+    Local tool: do not expose without authentication.
 </footer>
 </body>
 </html>

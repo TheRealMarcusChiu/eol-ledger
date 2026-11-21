@@ -6,11 +6,10 @@
 <main id="main">
     <div class="page-head">
         <p class="crumbs"><a th:href="@{/}">Release cycles</a> / <span th:text="${product.label()}">Python</span></p>
-        <h1 th:text="${product.label()} + ': all release cycles'">Python: all release cycles</h1>
-        <p class="lede">Upstream:
-            <a th:if="${product.link()}" th:href="${product.link()}" th:text="${product.link()}">link</a>
-            <span th:unless="${product.link()}" th:text="'endoflife.date product ' + ${product.name()}">name</span>.
-            Synced <span th:text="${@view.time(product.syncedAt())}">time</span>.</p>
+        <h1 th:text="${product.label()}">Python</h1>
+        <p class="lede"><a th:if="${product.link()}" th:href="${product.link()}" th:text="${product.link()}">link</a>
+            <span th:unless="${product.link()}" th:text="'endoflife.date product ' + ${product.name()}">name</span>,
+            synced <span th:text="${@view.time(product.syncedAt())}">time</span></p>
     </div>
     <div class="table-wrap" tabindex="0" role="region" aria-label="Release cycles">
         <table>

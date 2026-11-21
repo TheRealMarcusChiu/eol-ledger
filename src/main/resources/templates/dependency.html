@@ -36,13 +36,14 @@
             <dd th:text="${d.match().evidence()}">evidence</dd>
         </dl>
     </section>
-    <div class="notice" th:if="${d.cycle() == null}">
+    <details class="help" th:if="${d.cycle() == null}">
+        <summary>How to map this package</summary>
         <p>EoL Ledger only matches a package when its purl is listed as an identifier by exactly one endoflife.date product,
             or when you configure an explicit mapping. It never guesses from generic names or ecosystems.</p>
         <p>If this package does belong to an upstream product, add a mapping such as
             <code th:text="'eol.mappings=' + (${normalizedPurl} ?: ${d.name().toLowerCase()}) + '=<product>'">eol.mappings=...</code>
             (environment variable <code>EOL_MAPPINGS</code>) and restart. Versions whose numbers do not start with a known cycle stay unknown.</p>
-    </div>
+    </details>
 </main>
 <footer th:replace="~{fragments :: footer}"></footer>
 </body>

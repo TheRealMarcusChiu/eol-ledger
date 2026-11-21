@@ -7,9 +7,7 @@
     <div class="page-head">
         <p class="crumbs"><a th:href="@{/repos}">Repositories</a> /
             <a th:href="@{/repos/{id}(id=${b.id()})}" th:text="${b.repoName()} + ' @ ' + ${b.branch()}">repo</a> / history</p>
-        <h1>Dependency history: <span th:text="${b.repoName()}">repo</span> @ <span th:text="${b.branch()}">main</span></h1>
-        <p class="lede">Packages exactly as observed in each SBOM snapshot. Days end at midnight in
-            <span th:text="${zone}">zone</span>.</p>
+        <h1>History: <span th:text="${b.repoName()}">repo</span> @ <span th:text="${b.branch()}">main</span></h1>
     </div>
 
     <form class="filters" method="get" th:action="@{/repos/{id}/history(id=${b.id()})}">
@@ -21,6 +19,10 @@
             <button type="submit">Show snapshot</button>
             <a class="button-quiet" th:href="@{/repos/{id}/history(id=${b.id()})}">Today</a>
         </div>
+        <details class="help">
+            <summary>Help</summary>
+            <p>Packages exactly as observed in each SBOM snapshot. Days end at midnight in <span th:text="${zone}">zone</span>.</p>
+        </details>
     </form>
 
     <div th:if="${error}" class="notice notice-error" role="alert" th:text="${error}">error</div>
@@ -28,14 +30,12 @@
     <th:block th:unless="${error}">
         <div th:if="${selected == null}" class="notice notice-warn" role="status">
             No snapshot had been observed for this branch by the end of <strong th:text="${asOf}">day</strong>.
-            <span th:if="${first != null}">The first snapshot was observed <span th:text="${@view.time(first.observedAt())}">time</span>.</span>
-            Nothing is shown for this day because EoL Ledger does not invent dependencies it had not yet seen.
+            <span th:if="${first != null}">First snapshot: <span th:text="${@view.time(first.observedAt())}">time</span>.</span>
         </div>
 
         <th:block th:if="${selected != null}">
             <h2>Snapshot observed <span th:text="${@view.time(selected.observedAt())}">time</span></h2>
-            <p class="notice">Packages are historical; EoL dates and status below use today's endoflife.date data,
-                not the data that was current on that day.</p>
+            <p class="notice">Historical packages; EoL dates and status use today's endoflife.date data.</p>
             <p class="small muted">SBOM: <span th:if="${inline != null}">Inline JSON upload</span><code th:unless="${inline != null}" th:text="${selected.sbomUrl()}">url</code>.
                 <span th:text="${selected.depCount()}">5</span> packages.</p>
             <section th:if="${inline != null}" class="panel" aria-label="Snapshot provenance">
