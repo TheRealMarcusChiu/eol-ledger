@@ -44,6 +44,11 @@ class ImportsPageTest extends IntegrationTest {
         String html = mvc.perform(get("/imports")).andReturn().getResponse().getContentAsString();
         String upload = html.substring(html.indexOf("aria-labelledby=\"upload-h\""), html.indexOf("</section>", html.indexOf("aria-labelledby=\"upload-h\"")));
         assertThat(upload).contains("href=\"/imports/samples/demo-dependency-inventory.json\"", ">Download demo JSON</a>", ">Import file</button>");
+        // the file chooser lives only in the popup that "Import file" opens (native popover, no script needed)
+        assertThat(upload).contains("<button type=\"button\" popovertarget=\"import-dialog\">Import file</button>");
+        String dialog = upload.substring(upload.indexOf("id=\"import-dialog\""));
+        assertThat(dialog).contains("popover", "type=\"file\"", ">Upload and import</button>", "popovertargetaction=\"hide\"");
+        assertThat(upload.substring(0, upload.indexOf("id=\"import-dialog\""))).doesNotContain("type=\"file\"");
 
         byte[] body = mvc.perform(get("/imports/samples/demo-dependency-inventory.json")).andExpect(status().isOk())
                 .andExpect(header().string("Content-Disposition", containsString("attachment")))

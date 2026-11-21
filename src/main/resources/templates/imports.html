@@ -17,16 +17,25 @@
 
     <section class="panel" aria-labelledby="upload-h">
         <h2 id="upload-h">Upload JSON</h2>
-        <form method="post" th:action="@{/imports}" enctype="multipart/form-data" class="filters filters-bare">
-            <div class="field">
-                <label for="file">Dependency-inventory JSON file</label>
-                <input id="file" name="file" type="file" accept=".json,application/json" required aria-describedby="json-h">
-            </div>
-            <div class="actions">
-                <button type="submit">Import file</button>
-                <a class="button-quiet" th:href="@{/imports/samples/demo-dependency-inventory.json}" download>Download demo JSON</a>
-            </div>
-        </form>
+        <div class="actions">
+            <button type="button" popovertarget="import-dialog">Import file</button>
+            <a class="button-quiet" th:href="@{/imports/samples/demo-dependency-inventory.json}" download>Download demo JSON</a>
+        </div>
+        <!--/* Native popover: opens from the button above with no script; Esc or Cancel closes it. */-->
+        <div id="import-dialog" class="import-dialog" popover role="dialog" aria-labelledby="import-dialog-h">
+            <h3 id="import-dialog-h">Import a dependency-inventory JSON</h3>
+            <form method="post" th:action="@{/imports}" enctype="multipart/form-data">
+                <div class="field">
+                    <label for="file">JSON file</label>
+                    <input id="file" name="file" type="file" accept=".json,application/json" required aria-describedby="json-h">
+                </div>
+                <p class="hint">Branches in the file are added or updated; nothing else changes. If any entry is invalid, nothing is imported.</p>
+                <div class="actions">
+                    <button type="submit">Upload and import</button>
+                    <button type="button" class="button-quiet" popovertarget="import-dialog" popovertargetaction="hide">Cancel</button>
+                </div>
+            </form>
+        </div>
         <details class="help">
             <summary>Format help</summary>
             <p id="json-h"><strong>Dependency-inventory JSON</strong> (a <code>.json</code> file, nothing is fetched): a root array with one object per
