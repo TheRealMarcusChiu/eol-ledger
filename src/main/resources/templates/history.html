@@ -36,7 +36,11 @@
             <h2>Snapshot observed <span th:text="${@view.time(selected.observedAt())}">time</span></h2>
             <p class="notice">Packages are historical; EoL dates and status below use today's endoflife.date data,
                 not the data that was current on that day.</p>
-            <p class="small muted">SBOM: <code th:text="${selected.sbomUrl()}">url</code>. <span th:text="${selected.depCount()}">5</span> packages.</p>
+            <p class="small muted">SBOM: <span th:if="${inline != null}">Inline JSON upload</span><code th:unless="${inline != null}" th:text="${selected.sbomUrl()}">url</code>.
+                <span th:text="${selected.depCount()}">5</span> packages.</p>
+            <section th:if="${inline != null}" class="panel" aria-label="Snapshot provenance">
+                <dl th:replace="~{fragments :: inlineFacts(${inline})}"></dl>
+            </section>
             <div th:replace="~{fragments :: depsTable(${deps}, ${b.id()}, ${b.repoUrl()}, ${b.repoLink()}, ${selected.sbomUrl()}, ${selected.sbomLink()})}"></div>
         </th:block>
     </th:block>
@@ -58,7 +62,7 @@
                     <span th:if="${selected != null and selected.id() == s.id()}" class="muted small">(shown)</span></td>
                 <td class="num" th:text="${s.depCount()}">5</td>
                 <td class="small">
-                    <span th:if="${s.diff().empty()}" class="muted">No package changes (SBOM location changed)</span>
+                    <span th:if="${s.diff().empty()}" class="muted">No package changes (SBOM location, upload metadata or dependency context changed)</span>
                     <ul class="plain">
                         <li th:each="x : ${s.diff().added()}" class="diff-add" th:text="'Added ' + ${x}">added</li>
                         <li th:each="x : ${s.diff().removed()}" class="diff-rem" th:text="'Removed ' + ${x}">removed</li>

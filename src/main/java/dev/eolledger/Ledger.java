@@ -1,8 +1,10 @@
 package dev.eolledger;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Clock;
@@ -15,6 +17,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -85,6 +88,27 @@ public class Ledger {
             String fromPurl = Matcher.purlVersion(purl);
             if (version == null) return fromPurl == null ? "not stated" : fromPurl + " (from purl)";
             return fromPurl == null || fromPurl.equals(version) ? version : version + " (purl: " + fromPurl + ")";
+        }
+    }
+
+    /**
+     * Provenance of a snapshot uploaded as dependency-inventory JSON: what the upload declared (never fetched) plus
+     * each package's graph contexts. contexts: flattened package key -> "project: scope, direct" lines.
+     */
+    public record Inline(String appId, String declaredSbomUrl, String generatedAt, boolean demo, String localRepository,
+                         List<String> projects, Map<String, String> contexts) {
+        public String declaredSbomLink() {
+            return safeLink(declaredSbomUrl);
+        }
+
+        public String context(Dep d) {
+            return contexts.getOrDefault(key(d.purl(), d.name(), d.version()), "");
+        }
+
+        /** Same identity the JSON import flattens on: normalized purl (else name) plus version. */
+        static String key(String purl, String name, String version) {
+            String n = Matcher.normalizePurl(purl);
+            return (n != null ? n : name.trim()) + "\n" + (version == null ? "" : version.trim());
         }
     }
 
@@ -227,6 +251,40 @@ public class Ledger {
                 .params(depId, branchId).query(Long.class).optional().orElse(null);
         if (snap == null) return null;
         return deps(snap).stream().filter(d -> d.id() == depId).findFirst().orElse(null);
+    }
+
+    /** The JSON-upload provenance of a snapshot, or null for SBOM-fetched snapshots. */
+    public Inline inline(long snapshotId) {
+        String payload = db.sql("SELECT payload FROM snapshot_inventory WHERE snapshot_id = ?").param(snapshotId).query(String.class).optional().orElse(null);
+        if (payload == null) return null;
+        JsonNode e;
+        try {
+            e = InventoryJson.JSON.readTree(payload);
+        } catch (IOException ex) {
+            throw new IllegalStateException("stored inventory payload of snapshot " + snapshotId + " is not JSON", ex);
+        }
+        List<String> projects = new ArrayList<>();
+        for (JsonNode p : e.path("projects")) {
+            String tools = String.join(" via ", new LinkedHashSet<>(List.of(p.path("ecosystem").asText(""), p.path("packageManager").asText(""))).stream()
+                    .filter(s -> !s.isEmpty()).toList());
+            String status = p.path("resolution").path("status").asText("");
+            projects.add(p.path("path").asText() + (tools.isEmpty() ? "" : ": " + tools) + (status.isEmpty() ? "" : " (" + status + ")"));
+        }
+        Map<String, TreeSet<String>> contexts = new HashMap<>();
+        for (JsonNode d : e.path("dependencies")) {
+            List<String> parts = new ArrayList<>();
+            for (String f : List.of("scope", "dependencyType")) if (d.hasNonNull(f)) parts.add(d.get(f).asText());
+            String c = String.join(", ", parts);
+            if (d.path("depth").asInt() > 1) c += " (depth " + d.get("depth").asInt() + ")";
+            if (d.path("optional").asBoolean()) c += ", optional";
+            if (d.hasNonNull("projectPath")) c = d.get("projectPath").asText() + (c.isEmpty() ? "" : ": " + c);
+            if (!c.isEmpty()) contexts.computeIfAbsent(Inline.key(d.path("purl").textValue(), d.path("name").asText(), d.path("version").asText()), k -> new TreeSet<>()).add(c);
+        }
+        Map<String, String> joined = new HashMap<>();
+        contexts.forEach((k, v) -> joined.put(k, String.join("; ", v)));
+        String url = e.path("url").asText();
+        return new Inline(e.path("appId").textValue(), e.path("sbom").path("url").textValue(), e.path("sbom").path("generatedAt").textValue(),
+                e.path("demo").asBoolean() || java.net.URI.create(url).getHost().endsWith(".invalid"), e.path("localRepository").textValue(), projects, joined);
     }
 
     static String ecosystem(String purl) {

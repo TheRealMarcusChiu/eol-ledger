@@ -193,6 +193,24 @@ abstract class StorageContractTest extends WebTestBase {
     }
 
     @Test
+    void inlineJsonPayloadRoundTripsLargeAndUnicodeAndIsIdempotent() {
+        StringBuilder deps = new StringBuilder();
+        for (int i = 0; i < 400; i++) {
+            deps.append(i == 0 ? "" : ",").append("{\"name\":\"pkg-").append(i).append("\",\"version\":\"1.0.").append(i)
+                    .append("\",\"purl\":\"pkg:npm/pkg-").append(i).append("@1.0.").append(i).append("\",\"scope\":\"prod ✓\"}");
+        }
+        String json = "[{\"name\":\"Büro\",\"appId\":\"APP-Ω\",\"url\":\"https://example.invalid/x\",\"branch\":\"release/1.x\",\"dependencies\":[" + deps + "]}]";
+        assertThat(imports.importJson(json, "contract").newSnapshots()).isEqualTo(1);
+        CLOCK.now = CLOCK.now.plusSeconds(60);
+        assertThat(imports.importJson(json, "contract").newSnapshots()).isZero();
+
+        String stored = db.sql("SELECT payload FROM snapshot_inventory").query(String.class).single();
+        assertThat(stored).hasSizeGreaterThan(20_000).contains("APP-Ω", "prod ✓", "Büro");
+        assertThat(count("dependency")).isEqualTo(400);
+        assertThat(count("snapshot")).isEqualTo(1);
+    }
+
+    @Test
     void everyPageRendersFromThisDatabase() throws Exception {
         seed();
         long id = branchId("https://gitlab.com/acme/alpha", "main");

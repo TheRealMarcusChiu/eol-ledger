@@ -6,7 +6,8 @@
 <main id="main">
     <div class="page-head">
         <h1>Imports &amp; sync</h1>
-        <p class="lede">Register repositories with a CSV, fetch their SBOMs, and keep the endoflife.date catalogue current.</p>
+        <p class="lede">Register repositories with a CSV and fetch their SBOMs, or upload resolved dependency inventories as JSON,
+            and keep the endoflife.date catalogue current.</p>
     </div>
 
     <div th:if="${message}" class="notice notice-ok" role="status" th:text="${message}">done</div>
@@ -16,16 +17,16 @@
         <ul><li th:each="e : ${errors}" th:text="${e}">line 2: problem</li></ul>
     </div>
 
-    <h2 id="upload-h">Upload a registry CSV</h2>
+    <h2 id="upload-h">Upload a registry CSV or dependency-inventory JSON</h2>
     <section class="panel" aria-labelledby="upload-h">
         <form method="post" th:action="@{/imports}" enctype="multipart/form-data" class="filters filters-bare">
             <div class="field">
-                <label for="file">Registry CSV file</label>
-                <input id="file" name="file" type="file" accept=".csv,text/csv" required>
+                <label for="file">Registry CSV or dependency JSON file</label>
+                <input id="file" name="file" type="file" accept=".csv,.json,text/csv,application/json" required aria-describedby="csv-h json-h">
             </div>
-            <div class="actions"><button type="submit">Import CSV</button></div>
+            <div class="actions"><button type="submit">Import file</button></div>
         </form>
-        <p class="hint">The first line must be exactly <code th:text="${header}">header</code>.
+        <p class="hint" id="csv-h"><strong>Registry CSV</strong> (fetches each branch's SBOM). The first line must be exactly <code th:text="${header}">header</code>.
             One row per repository branch; <code>provider</code> is one of
             <span th:text="${#strings.listJoin(providers, ', ')}">github</span>.
             Listed rows are added or updated; repositories not in the file are left untouched (nothing is deleted).
@@ -34,6 +35,17 @@
             <span th:if="${hosts.isEmpty()}">none configured yet (set <code>eol.sbom.hosts</code>)</span>
             <code th:each="h, s : ${hosts}" th:text="${h} + (${s.last} ? '' : ',')">host</code>.
             Tokens come from server configuration, never from the CSV.</p>
+        <p class="hint" id="json-h"><strong>Dependency-inventory JSON</strong> (a <code>.json</code> file, nothing is fetched): a root array with one object per
+            repository branch: required <code>name</code>, <code>url</code> and <code>branch</code> (no default branch is assumed);
+            optional <code>appId</code>, <code>provider</code>, <code>sbom</code> (<code>url</code> may be null, <code>generatedAt</code>),
+            <code>projects</code> (<code>path</code>, <code>ecosystem</code>, <code>packageManager</code>, <code>resolution</code>);
+            and a required <code>dependencies</code> array (<code>[]</code> for none) with one row per resolved graph edge:
+            <code>name</code>, <code>version</code>, optional <code>purl</code> (its version must equal <code>version</code>),
+            <code>scope</code>, <code>dependencyType</code>, <code>depth</code>, <code>parentCoordinate</code>, <code>projectPath</code> and more.
+            Every row is kept with its snapshot; each distinct package + version is listed once for EoL matching.
+            A branch gets a new snapshot when anything except <code>sbom.generatedAt</code> changed. URLs and evidence paths in the file are
+            recorded as provenance and never fetched; refreshes skip these branches, so re-upload the JSON to update them.
+            See <a th:href="@{/imports/samples/demo-dependency-inventory.json}" download>the format example</a> (hand-written, not resolver output).</p>
     </section>
 
     <h2 id="demo-h">Demo data</h2>
@@ -57,7 +69,8 @@
     <h2 id="refresh-h">Refresh registered repositories</h2>
     <section class="panel" aria-labelledby="refresh-h">
         <p class="small"><span th:text="${registered}">0</span> branches are registered. Refreshing re-fetches every stored SBOM URL;
-            a branch only gets a new snapshot when its packages or SBOM location changed.</p>
+            a branch only gets a new snapshot when its packages or SBOM location changed. Branches uploaded as inline JSON are skipped
+            (the result says how many); re-upload their JSON to update them.</p>
         <form method="post" th:action="@{/imports/refresh}"><button type="submit">Refresh all now</button></form>
         <p class="hint">Scheduled refresh: <code th:text="${refreshCron == '-'} ? 'disabled' : ${refreshCron}">cron</code>
             <span th:if="${refreshCsv != null and !refreshCsv.isBlank()}">from configured CSV file</span>

@@ -96,7 +96,7 @@ final class TestSupport {
         }
         REPLIES.clear();
         AUTH_HEADERS.clear();
-        for (String t : List.of("dependency", "snapshot", "repo_branch", "import_run", "release_cycle", "product_identifier", "product", "sync_status")) {
+        for (String t : List.of("snapshot_inventory", "dependency", "snapshot", "repo_branch", "import_run", "release_cycle", "product_identifier", "product", "sync_status")) {
             db.sql("DELETE FROM " + t).update();
         }
     }

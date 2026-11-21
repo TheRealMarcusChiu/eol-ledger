@@ -17,13 +17,15 @@
             <dt>Branch</dt>
             <dd><code th:text="${b.branch()}">main</code></dd>
             <dt>SBOM</dt>
-            <dd><a th:if="${b.sbomLink()}" th:href="${b.sbomLink()}" th:text="${b.sbomUrl()}" rel="noopener noreferrer">sbom</a>
+            <dd th:if="${b.sbomUrl() == T(dev.eolledger.ImportService).INLINE}">Inline JSON upload (no SBOM is fetched for this branch)</dd>
+            <dd th:unless="${b.sbomUrl() == T(dev.eolledger.ImportService).INLINE}"><a th:if="${b.sbomLink()}" th:href="${b.sbomLink()}" th:text="${b.sbomUrl()}" rel="noopener noreferrer">sbom</a>
                 <span th:unless="${b.sbomLink()}"><code th:text="${b.sbomUrl()}">classpath:samples/x</code>
                     <span class="muted" th:if="${b.sbomUrl().startsWith('classpath:')}">(bundled demo sample)</span></span></dd>
             <dt>Latest snapshot</dt>
             <dd><span th:text="${b.observedAt() != null} ? ${@view.time(b.observedAt())} : 'No snapshot yet'">time</span>
                 <a th:href="@{/repos/{id}/history(id=${b.id()})}">View history</a></dd>
         </dl>
+        <th:block th:if="${inline != null}"><dl th:replace="~{fragments :: inlineFacts(${inline})}"></dl></th:block>
     </section>
     <h2>Dependencies in the latest snapshot</h2>
     <div th:replace="~{fragments :: depsTable(${deps}, ${b.id()}, ${b.repoUrl()}, ${b.repoLink()}, ${b.sbomUrl()}, ${b.sbomLink()})}"></div>

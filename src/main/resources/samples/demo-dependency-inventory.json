@@ -1,0 +1,127 @@
+[
+  {
+    "schemaVersion": 1,
+    "name": "format-example",
+    "appId": "DEMO-0001",
+    "url": "https://example.invalid/eol-demo/format-example",
+    "provider": "other",
+    "branch": "main",
+    "demo": true,
+    "localRepository": null,
+    "sbom": {
+      "url": null,
+      "format": "inline-dependency-inventory",
+      "generatedAt": "2026-11-20T00:00:00Z",
+      "evidence": null
+    },
+    "projects": [
+      {
+        "path": "backend-maven",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "coordinate": "com.example.demo:backend-maven:1.0.0",
+        "resolution": {"status": "format-example", "command": null, "toolVersion": null, "tree": null}
+      },
+      {
+        "path": "frontend-npm",
+        "ecosystem": "npm",
+        "packageManager": "npm",
+        "coordinate": "frontend-npm@1.0.0",
+        "resolution": {"status": "format-example", "command": null, "toolVersion": null, "tree": null}
+      }
+    ],
+    "dependencies": [
+      {
+        "name": "org.springframework.boot:spring-boot-starter-web",
+        "version": "3.3.5",
+        "purl": "pkg:maven/org.springframework.boot/spring-boot-starter-web@3.3.5",
+        "groupId": "org.springframework.boot",
+        "artifactId": "spring-boot-starter-web",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "direct",
+        "optional": false,
+        "depth": 1,
+        "parentCoordinate": "com.example.demo:backend-maven:1.0.0",
+        "projectCoordinate": "com.example.demo:backend-maven:1.0.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "backend-maven",
+        "recordSource": "hand-written-format-example",
+        "verification": {"status": "format-example", "source": null, "context": "Hand-written format example; not produced by a resolver"}
+      },
+      {
+        "name": "org.springframework.boot:spring-boot",
+        "version": "3.3.5",
+        "purl": "pkg:maven/org.springframework.boot/spring-boot@3.3.5",
+        "groupId": "org.springframework.boot",
+        "artifactId": "spring-boot",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "org.springframework.boot:spring-boot-starter-web:3.3.5",
+        "projectCoordinate": "com.example.demo:backend-maven:1.0.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "backend-maven",
+        "recordSource": "hand-written-format-example",
+        "verification": {"status": "format-example", "source": null, "context": "Hand-written format example; not produced by a resolver"}
+      },
+      {
+        "name": "react",
+        "version": "18.3.1",
+        "purl": "pkg:npm/react@18.3.1",
+        "groupId": null,
+        "artifactId": null,
+        "type": "npm",
+        "scope": "prod",
+        "dependencyType": "direct",
+        "optional": false,
+        "depth": 1,
+        "parentCoordinate": "frontend-npm@1.0.0",
+        "projectCoordinate": "frontend-npm@1.0.0",
+        "ecosystem": "npm",
+        "packageManager": "npm",
+        "projectPath": "frontend-npm",
+        "recordSource": "hand-written-format-example",
+        "verification": {"status": "format-example", "source": null, "context": "Hand-written format example; not produced by a resolver"}
+      }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "name": "format-example",
+    "appId": "DEMO-0001",
+    "url": "https://example.invalid/eol-demo/format-example",
+    "provider": "other",
+    "branch": "release/legacy",
+    "demo": true,
+    "localRepository": null,
+    "sbom": {"url": null, "format": "inline-dependency-inventory", "generatedAt": "2026-11-20T00:00:00Z", "evidence": null},
+    "projects": [
+      {"path": "frontend-npm", "ecosystem": "npm", "packageManager": "npm", "coordinate": "frontend-npm@0.9.0",
+       "resolution": {"status": "format-example", "command": null, "toolVersion": null, "tree": null}}
+    ],
+    "dependencies": [
+      {
+        "name": "react",
+        "version": "17.0.2",
+        "purl": "pkg:npm/react@17.0.2",
+        "type": "npm",
+        "scope": "prod",
+        "dependencyType": "direct",
+        "optional": false,
+        "depth": 1,
+        "parentCoordinate": "frontend-npm@0.9.0",
+        "projectCoordinate": "frontend-npm@0.9.0",
+        "ecosystem": "npm",
+        "packageManager": "npm",
+        "projectPath": "frontend-npm",
+        "recordSource": "hand-written-format-example",
+        "verification": {"status": "format-example", "source": null, "context": "Hand-written format example; not produced by a resolver"}
+      }
+    ]
+  }
+]

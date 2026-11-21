@@ -21,9 +21,11 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Imports the repository registry CSV. All rows are validated and every SBOM is fetched and parsed
@@ -50,7 +52,8 @@ public class ImportService {
         }
     }
 
-    private record Fetched(RegistryCsv.Row row, List<SbomParser.Dep> deps, String fingerprint) {
+    /** payload: the canonical JSON entry for inline JSON inventories, null for fetched SBOMs. */
+    private record Fetched(RegistryCsv.Row row, List<SbomParser.Dep> deps, String fingerprint, String payload) {
     }
 
     private static final Logger log = LoggerFactory.getLogger(ImportService.class);
@@ -69,24 +72,40 @@ public class ImportService {
         this.time = time;
     }
 
-    public Result importCsv(String csv, String source) {
-        List<RegistryCsv.Row> rows;
+    /**
+     * SBOM location stored for branches whose inventory came from a JSON upload: not a URL, never fetched. Refreshes
+     * skip these branches; only a new upload (JSON, or an explicit CSV upload re-registering an SBOM URL) changes them.
+     */
+    public static final String INLINE = "inline:json-upload";
+
+    /** Imports a dependency-inventory JSON root array; nothing is fetched, see {@link InventoryJson}. */
+    public Result importJson(String json, String source) {
+        List<InventoryJson.Entry> entries;
         try {
-            rows = RegistryCsv.parse(csv, props.sbom().hosts());
-        } catch (RegistryCsv.InvalidCsvException e) {
+            entries = InventoryJson.parse(json);
+        } catch (ImportFailedException e) {
             recordRun(source, false, 0, 0, String.join("; ", e.errors()));
             throw e;
         }
-        return run(rows, source, 2);
+        return commit(entries.stream().map(e -> new Fetched(e.row(), e.deps(), e.fingerprint(), e.payload())).toList(), source, "");
     }
 
-    /** Re-fetches every registered branch from the stored registry. */
+    public Result importCsv(String csv, String source) {
+        return run(parseCsv(csv, source), source, 2, "");
+    }
+
+    /** Re-fetches every registered branch from the stored registry, skipping inline JSON branches. */
     public Result refreshRegistry(String source) {
         List<RegistryCsv.Row> rows = db.sql("SELECT repo_name, repo_url, provider, branch, sbom_url FROM repo_branch ORDER BY id")
                 .query((rs, i) -> new RegistryCsv.Row(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5)))
                 .list();
         if (rows.isEmpty()) return new Result(0, 0, "No registered branches to refresh");
-        return run(rows, source, 1);
+        return runSkippingInline(rows, source, 1);
+    }
+
+    /** A scheduled CSV import: rows naming a branch whose stored inventory is inline JSON are skipped, not overwritten. */
+    Result refreshCsv(String csv, String source) {
+        return runSkippingInline(parseCsv(csv, source), source, 2);
     }
 
     /** Scheduled refresh: the configured CSV path when set, otherwise the stored registry. */
@@ -94,7 +113,7 @@ public class ImportService {
         String path = props.refreshCsvPath();
         if (path == null || path.isBlank()) return refreshRegistry("scheduled registry refresh");
         try {
-            return importCsv(Files.readString(Path.of(path), StandardCharsets.UTF_8), "scheduled CSV");
+            return refreshCsv(Files.readString(Path.of(path), StandardCharsets.UTF_8), "scheduled CSV");
         } catch (IOException e) {
             String msg = "Could not read eol.refresh-csv-path (" + e.getClass().getSimpleName() + ")";
             recordRun("scheduled CSV", false, 0, 0, msg);
@@ -102,14 +121,38 @@ public class ImportService {
         }
     }
 
-    private synchronized Result run(List<RegistryCsv.Row> rows, String source, int firstLine) {
+    private List<RegistryCsv.Row> parseCsv(String csv, String source) {
+        try {
+            return RegistryCsv.parse(csv, props.sbom().hosts());
+        } catch (RegistryCsv.InvalidCsvException e) {
+            recordRun(source, false, 0, 0, String.join("; ", e.errors()));
+            throw e;
+        }
+    }
+
+    private Result runSkippingInline(List<RegistryCsv.Row> rows, String source, int firstLine) {
+        Set<String> inline = new HashSet<>(db.sql("SELECT repo_url, branch FROM repo_branch WHERE sbom_url = ?").param(INLINE)
+                .query((rs, i) -> rs.getString(1) + "\n" + rs.getString(2)).list());
+        List<RegistryCsv.Row> kept = rows.stream().filter(r -> !inline.contains(r.repoUrl() + "\n" + r.branch())).toList();
+        int skipped = rows.size() - kept.size();
+        if (skipped == 0) return run(rows, source, firstLine, "");
+        String note = "; " + skipped + " inline JSON branch(es) skipped: their inventory came from a JSON upload and is never fetched, so re-upload the JSON to update them";
+        if (kept.isEmpty()) {
+            String msg = "0 row(s) refreshed" + note;
+            recordRun(source, true, 0, 0, msg);
+            return new Result(0, 0, msg);
+        }
+        return run(kept, source, 1, note); // line numbers no longer apply once rows are skipped
+    }
+
+    private synchronized Result run(List<RegistryCsv.Row> rows, String source, int firstLine, String note) {
         List<Fetched> fetched = new ArrayList<>();
         List<String> errors = new ArrayList<>();
         for (int i = 0; i < rows.size(); i++) {
             RegistryCsv.Row row = rows.get(i);
             try {
                 List<SbomParser.Dep> deps = SbomParser.parse(fetch(row.sbomUrl()));
-                fetched.add(new Fetched(row, deps, fingerprint(row.sbomUrl(), deps)));
+                fetched.add(new Fetched(row, deps, fingerprint(row.sbomUrl(), deps), null));
             } catch (IOException | IllegalArgumentException e) {
                 String msg = e.getMessage().startsWith("SBOM") ? e.getMessage() : "SBOM " + e.getMessage();
                 errors.add((firstLine == 2 ? "line " + (i + firstLine) : row.repoUrl() + " @ " + row.branch()) + ": " + msg);
@@ -121,6 +164,11 @@ public class ImportService {
             log.warn("Import from {} rejected: {}", source, msg);
             throw new ImportFailedException(errors);
         }
+        return commit(fetched, source, note);
+    }
+
+    private synchronized Result commit(List<Fetched> fetched, String source, String note) {
+        int rows = fetched.size();
         Instant now = clock.instant();
         int created;
         try {
@@ -133,12 +181,12 @@ public class ImportService {
             // details stay in the server log; the UI and import history get a message without SQL or connection details
             log.warn("Import from {} rolled back", source, e);
             String msg = "Database write failed, so nothing was changed (for example a value longer than the database allows); see the server log";
-            recordRun(source, false, rows.size(), 0, msg);
+            recordRun(source, false, rows, 0, msg);
             throw new ImportFailedException(List.of(msg));
         }
-        String msg = rows.size() + " row(s) imported, " + created + " new snapshot(s), " + (rows.size() - created) + " unchanged";
-        recordRun(source, true, rows.size(), created, msg);
-        return new Result(rows.size(), created, msg);
+        String msg = rows + " row(s) imported, " + created + " new snapshot(s), " + (rows - created) + " unchanged" + note;
+        recordRun(source, true, rows, created, msg);
+        return new Result(rows, created, msg);
     }
 
     private int store(Fetched f, Instant now) {
@@ -166,6 +214,7 @@ public class ImportService {
             db.sql("INSERT INTO dependency (snapshot_id, name, version, purl) VALUES (?, ?, ?, ?)")
                     .params(snapshotId, d.name(), d.version(), d.purl()).update();
         }
+        if (f.payload() != null) db.sql("INSERT INTO snapshot_inventory (snapshot_id, payload) VALUES (?, ?)").params(snapshotId, f.payload()).update();
         return 1;
     }
 
@@ -205,9 +254,12 @@ public class ImportService {
                 .update();
     }
 
-    /** Bundled demo CSV text (only fixed names under classpath:samples/). */
+    /** Downloadable bundled samples: the demo registry CSVs and the dependency-inventory JSON format example. */
+    static final String SAMPLES = "demo-registry(-update)?\\.csv|demo-dependency-inventory\\.json";
+
+    /** Bundled sample text (only fixed names under classpath:samples/). */
     public static String sampleCsv(String name) {
-        if (!name.matches("demo-registry(-update)?\\.csv")) throw new IllegalArgumentException("unknown sample");
+        if (!name.matches(SAMPLES)) throw new IllegalArgumentException("unknown sample");
         try (InputStream in = new ClassPathResource("samples/" + name).getInputStream()) {
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {

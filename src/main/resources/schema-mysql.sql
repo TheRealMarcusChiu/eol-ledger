@@ -71,6 +71,13 @@ CREATE TABLE IF NOT EXISTS dependency (
     CONSTRAINT fk_dependency_snapshot FOREIGN KEY (snapshot_id) REFERENCES snapshot (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
 
+-- Validated JSON-upload entry (canonical form) of an inline-inventory snapshot; CSV/SBOM snapshots have no row here.
+CREATE TABLE IF NOT EXISTS snapshot_inventory (
+    snapshot_id BIGINT NOT NULL PRIMARY KEY,
+    payload LONGTEXT NOT NULL,
+    CONSTRAINT fk_snapshot_inventory_snapshot FOREIGN KEY (snapshot_id) REFERENCES snapshot (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+
 CREATE TABLE IF NOT EXISTS import_run (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     ran_at DATETIME(6) NOT NULL,

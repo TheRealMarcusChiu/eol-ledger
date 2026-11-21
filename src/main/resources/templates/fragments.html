@@ -20,13 +20,38 @@
 
 <span th:fragment="eol(e)" class="eol" th:classappend="${'eol-' + e.css()}" th:text="${e.text()}">status</span>
 
-<!--/* repoUrl/sbomUrl are shown as text; repoLink/sbomLink are their safe http(s) links or null. History passes the snapshot's own SBOM. */-->
+<!--/* What a JSON-uploaded snapshot declared about itself; nothing here was fetched. */-->
+<dl th:fragment="inlineFacts(inline)" class="facts">
+    <dt>Inventory source</dt>
+    <dd>Inline JSON upload <span class="muted">(dependencies came from the uploaded file; refreshes skip this branch, so re-upload the JSON to update it)</span></dd>
+    <dt>App ID</dt>
+    <dd th:text="${inline.appId() ?: 'Not stated'}">APP-1</dd>
+    <dt>Projects / modules</dt>
+    <dd><span th:if="${inline.projects().isEmpty()}" class="muted">None declared</span>
+        <ul class="plain"><li th:each="p : ${inline.projects()}" th:text="${p}">backend: Maven</li></ul></dd>
+    <dt>Declared SBOM</dt>
+    <dd><span th:if="${inline.declaredSbomUrl() == null}" class="muted">None (inline inventory only)</span>
+        <th:block th:if="${inline.declaredSbomUrl() != null}"><a th:if="${inline.declaredSbomLink()}" th:href="${inline.declaredSbomLink()}" th:text="${inline.declaredSbomUrl()}" rel="noopener noreferrer">sbom</a>
+            <span class="muted">(declared by the upload; never fetched by EoL Ledger)</span></th:block></dd>
+    <dt>Generated</dt>
+    <dd th:text="${inline.generatedAt() ?: 'Not stated'}">2026-11-20T10:00:00Z</dd>
+    <th:block th:if="${inline.demo() or inline.localRepository() != null}">
+        <dt>Demo</dt>
+        <dd><span th:if="${inline.demo()}">Fictional synthetic demo repository: its URL is a placeholder and is not remotely hosted.</span>
+            <span th:if="${inline.localRepository() != null}">Source: <code th:text="${inline.localRepository()}">sources/x.bundle</code>
+                <span class="muted">(git bundle shipped in the demo download)</span></span></dd>
+    </th:block>
+</dl>
+
+<!--/* repoUrl/sbomUrl are shown as text; repoLink/sbomLink are their safe http(s) links or null. History passes the snapshot's own SBOM.
+       The project-context column appears only when the page sets ${inline} (a JSON-uploaded snapshot). */-->
 <div th:fragment="depsTable(deps, branchId, repoUrl, repoLink, sbomUrl, sbomLink)" class="table-wrap" tabindex="0" role="region" aria-label="Dependencies">
     <table>
         <thead>
         <tr>
             <th scope="col">Package</th>
             <th scope="col">Installed version</th>
+            <th scope="col" th:if="${inline != null}">Project context</th>
             <th scope="col">Ecosystem / purl</th>
             <th scope="col">Upstream cycle</th>
             <th scope="col">EoL date</th>
@@ -43,6 +68,7 @@
             th:attr="data-href=${href}">
             <td><a th:href="${href}" th:text="${d.name()}">pkg</a></td>
             <td th:text="${d.displayVersion()}">1.0</td>
+            <td class="small" th:if="${inline != null}" th:text="${inline.context(d)}">api: compile, direct</td>
             <td><span th:text="${d.ecosystem() ?: 'n/a'}">npm</span><br><code class="small muted" th:if="${d.purl()}" th:text="${d.purl()}">purl</code></td>
             <td>
                 <span th:if="${d.cycle() != null}" th:text="${d.cycle().productLabel() + ' ' + d.cycle().name()}">React 18</span>
@@ -54,9 +80,11 @@
             <td class="small"><span th:text="${d.match().evidence()}">evidence</span>
                 <a th:href="${detail}" th:if="${d.cycle() != null}">Details</a></td>
             <td class="col-source"><a th:if="${repoLink}" th:href="${repoLink}" th:text="${repoUrl}" rel="noopener noreferrer">repo</a><span th:unless="${repoLink}" th:text="${repoUrl}">repo</span></td>
-            <td class="col-sbom"><a th:if="${sbomLink}" th:href="${sbomLink}" th:text="${sbomUrl}" rel="noopener noreferrer">sbom</a><code th:unless="${sbomLink}" th:text="${sbomUrl}">classpath:samples/x.json</code></td>
+            <td class="col-sbom"><a th:if="${sbomLink}" th:href="${sbomLink}" th:text="${sbomUrl}" rel="noopener noreferrer">sbom</a><span
+                    th:if="${sbomUrl == T(dev.eolledger.ImportService).INLINE}">Inline JSON upload</span><code
+                    th:unless="${sbomLink != null or sbomUrl == T(dev.eolledger.ImportService).INLINE}" th:text="${sbomUrl}">classpath:samples/x.json</code></td>
         </tr>
-        <tr th:if="${deps.isEmpty()}"><td colspan="9" class="empty">No packages in this snapshot.</td></tr>
+        <tr th:if="${deps.isEmpty()}"><td th:attr="colspan=${inline != null} ? 10 : 9" class="empty">No packages in this snapshot.</td></tr>
         </tbody>
     </table>
 </div>

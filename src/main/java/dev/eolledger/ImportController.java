@@ -22,6 +22,7 @@ import org.springframework.web.servlet.view.RedirectView;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Supplier;
 
 @Controller
@@ -71,9 +72,12 @@ public class ImportController {
 
     @PostMapping("/imports")
     Object upload(@RequestParam(required = false) MultipartFile file, Model model, HttpServletResponse response, RedirectAttributes flash) throws IOException {
-        if (file == null || file.isEmpty()) return fail(List.of("Choose a CSV file to upload."), model, response);
+        if (file == null || file.isEmpty()) return fail(List.of("Choose a CSV file or JSON file to upload."), model, response);
         String text = new String(file.getBytes(), StandardCharsets.UTF_8);
-        return run(() -> imports.importCsv(text, "upload " + safeName(file.getOriginalFilename())), model, response, flash);
+        String source = "upload " + safeName(file.getOriginalFilename());
+        // a registry CSV can never start with '[' (its first line is the fixed header)
+        boolean json = safeName(file.getOriginalFilename()).toLowerCase(Locale.ROOT).endsWith(".json") || text.replaceFirst("^﻿", "").stripLeading().startsWith("[");
+        return run(() -> json ? imports.importJson(text, source) : imports.importCsv(text, source), model, response, flash);
     }
 
     @PostMapping("/imports/demo")
@@ -96,9 +100,9 @@ public class ImportController {
 
     @GetMapping("/imports/samples/{name}")
     ResponseEntity<String> sample(@PathVariable String name) {
-        if (!name.matches("demo-registry(-update)?\\.csv")) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        if (!name.matches(ImportService.SAMPLES)) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         return ResponseEntity.ok()
-                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .contentType(name.endsWith(".json") ? MediaType.APPLICATION_JSON : new MediaType("text", "csv", StandardCharsets.UTF_8))
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(name).build().toString())
                 .body(ImportService.sampleCsv(name));
     }

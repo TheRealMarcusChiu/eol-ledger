@@ -13,7 +13,7 @@ class UploadLimitAdvice {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     RedirectView tooLarge(RedirectAttributes flash) {
-        flash.addFlashAttribute("warning", "That file is larger than the 2 MB upload limit. Nothing was changed.");
+        flash.addFlashAttribute("warning", "That file is larger than the 10 MB upload limit. Nothing was changed.");
         RedirectView v = new RedirectView("/imports", true);
         v.setStatusCode(HttpStatus.SEE_OTHER);
         return v;

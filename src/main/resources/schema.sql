@@ -57,6 +57,12 @@ CREATE TABLE IF NOT EXISTS dependency (
     purl VARCHAR(1000)
 );
 
+-- Validated JSON-upload entry (canonical form) of an inline-inventory snapshot; CSV/SBOM snapshots have no row here.
+CREATE TABLE IF NOT EXISTS snapshot_inventory (
+    snapshot_id BIGINT PRIMARY KEY REFERENCES snapshot(id),
+    payload CLOB NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS import_run (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     ran_at TIMESTAMP WITH TIME ZONE NOT NULL,

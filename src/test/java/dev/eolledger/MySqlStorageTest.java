@@ -82,9 +82,9 @@ class MySqlStorageTest extends StorageContractTest {
         assertThat(db.sql("SELECT database()").query(String.class).single()).isEqualTo(SCHEMA);
         assertThat(db.sql("SELECT count(*) FROM information_schema.tables WHERE table_schema = ? AND (engine <> 'InnoDB' OR table_collation <> 'utf8mb4_0900_bin')")
                 .param(SCHEMA).query(Integer.class).single()).isZero();
-        assertThat(db.sql("SELECT count(*) FROM information_schema.tables WHERE table_schema = ?").param(SCHEMA).query(Integer.class).single()).isEqualTo(8);
+        assertThat(db.sql("SELECT count(*) FROM information_schema.tables WHERE table_schema = ?").param(SCHEMA).query(Integer.class).single()).isEqualTo(9);
         assertThat(db.sql("SELECT count(*) FROM information_schema.referential_constraints WHERE constraint_schema = ?").param(SCHEMA)
-                .query(Integer.class).single()).isEqualTo(2);
+                .query(Integer.class).single()).isEqualTo(3);
         assertThatThrownBy(() -> db.sql("INSERT INTO dependency (snapshot_id, name) VALUES (987654321, 'orphan')").update())
                 .isInstanceOf(DataIntegrityViolationException.class);
     }

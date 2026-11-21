@@ -104,6 +104,7 @@ public class PagesController {
         model.addAttribute("b", b);
         model.addAttribute("zone", ledger.zone());
         model.addAttribute("deps", b.snapshotId() == null ? List.of() : ledger.deps(b.snapshotId()));
+        model.addAttribute("inline", b.snapshotId() == null ? null : ledger.inline(b.snapshotId()));
         return "branch";
     }
 
@@ -148,6 +149,7 @@ public class PagesController {
         }
         model.addAttribute("selected", selected);
         model.addAttribute("deps", selected == null ? List.of() : ledger.deps(selected.id()));
+        model.addAttribute("inline", selected == null ? null : ledger.inline(selected.id()));
         model.addAttribute("first", timeline.isEmpty() ? null : timeline.get(0));
         return "history";
     }

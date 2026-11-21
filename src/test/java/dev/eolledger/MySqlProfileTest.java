@@ -39,13 +39,13 @@ class MySqlProfileTest {
         String ddl = text("schema-mysql.sql");
         String upper = ddl.toUpperCase();
         assertThat(upper).doesNotContain("DROP ", "TRUNCATE", "WITH TIME ZONE", "MERGE");
-        assertThat(upper.split("CREATE TABLE IF NOT EXISTS", -1)).hasSize(9);
-        assertThat(upper.split("CREATE TABLE", -1)).hasSize(9);
-        assertThat(upper.split("ENGINE=INNODB", -1)).hasSize(9);
-        assertThat(ddl.split("COLLATE=utf8mb4_0900_bin", -1)).hasSize(9);
+        assertThat(upper.split("CREATE TABLE IF NOT EXISTS", -1)).hasSize(10);
+        assertThat(upper.split("CREATE TABLE", -1)).hasSize(10);
+        assertThat(upper.split("ENGINE=INNODB", -1)).hasSize(10);
+        assertThat(ddl.split("COLLATE=utf8mb4_0900_bin", -1)).hasSize(10);
         // table-level constraints: MySQL silently ignores inline column REFERENCES
-        assertThat(upper.split("FOREIGN KEY", -1)).hasSize(3);
-        assertThat(upper.split("REFERENCES", -1)).hasSize(3);
+        assertThat(upper.split("FOREIGN KEY", -1)).hasSize(4);
+        assertThat(upper.split("REFERENCES", -1)).hasSize(4);
     }
 
     @Test

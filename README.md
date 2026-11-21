@@ -207,6 +207,80 @@ the whole file.
   body is cut off as soon as it exceeds `max-bytes`. `classpath:` is limited to bundled `samples/*.json`. `file:` and other schemes are
   rejected.
 
+## Dependency inventory JSON
+
+Instead of pointing at an SBOM, a `.json` upload on the same Imports page carries each branch's
+resolved dependencies itself. The root is an array with one object per repository branch:
+
+```json
+[
+  {
+    "schemaVersion": 1,
+    "name": "enterprise-suite",
+    "appId": "DEMO-1001",
+    "url": "https://example.invalid/eol-demo/enterprise-suite",
+    "provider": "other",
+    "branch": "main",
+    "demo": true,
+    "localRepository": "sources/enterprise-suite.bundle",
+    "sbom": {"url": null, "format": "inline-dependency-inventory", "generatedAt": "2026-11-20T10:00:00Z", "evidence": "evidence/summary.json"},
+    "projects": [
+      {"path": "backend-maven", "ecosystem": "Maven", "packageManager": "Maven", "coordinate": "com.example:backend-maven:1.0",
+       "resolution": {"status": "resolved", "command": "mvn -B dependency:tree", "toolVersion": "Apache Maven 3.9.9", "tree": "evidence/backend-maven-tree.txt"}}
+    ],
+    "dependencies": [
+      {"name": "com.google.guava:guava", "version": "33.0.0-jre", "purl": "pkg:maven/com.google.guava/guava@33.0.0-jre",
+       "groupId": "com.google.guava", "artifactId": "guava", "type": "jar", "scope": "compile", "dependencyType": "direct",
+       "optional": false, "depth": 1, "parentCoordinate": "com.example:backend-maven:1.0", "projectCoordinate": "com.example:backend-maven:1.0",
+       "ecosystem": "Maven", "packageManager": "Maven", "projectPath": "backend-maven", "recordSource": "resolved-dependency-tree",
+       "verification": {"status": "resolved", "source": "evidence/backend-maven-tree.txt", "context": "compile scope"}}
+    ]
+  }
+]
+```
+
+`Download` on the Imports page offers `demo-dependency-inventory.json`, a small **hand-written format
+example** (not resolver output; its rows say `hand-written-format-example`).
+
+| Field | Rules |
+|---|---|
+| `name`, `url`, `branch` | Required. `url` follows the registry CSV `repo_url` rules and normalization; `branch` has no default (no `main` is assumed) |
+| `provider` | Optional, as in the CSV; default `other` |
+| `appId`, `localRepository`, `schemaVersion` (must be 1), `demo` (boolean) | Optional |
+| `sbom` | Optional object: `url` (null, or an http(s) URL without credentials/query/fragment), `format`, `generatedAt` (ISO-8601 instant), `evidence` |
+| `projects` | Optional array of objects with a unique string `path`; `ecosystem`, `packageManager`, `coordinate`, `resolution{status,command,toolVersion,tree}` are strings |
+| `dependencies` | Required array (`[]` = no packages). One row per resolved graph edge/context; the same package may repeat under different parents or projects |
+| dependency `name`, `version` | Required strings |
+| dependency `purl` | Optional; must be well formed, its `@version` must equal `version` exactly, and its type must match `ecosystem` for Maven/Python/npm/NuGet |
+| dependency `dependencyType`, `depth` | `direct` or `transitive`; `depth` a whole number ≥ 1 (direct = 1, transitive ≥ 2) |
+| dependency `projectPath` | When `projects` are declared, must name one of them |
+| other dependency fields | `groupId`, `artifactId`, `type`, `scope`, `parentCoordinate`, `projectCoordinate`, `ecosystem`, `packageManager`, `recordSource` are strings; `optional` boolean; `verification{status,source,context}` strings |
+
+* **All or nothing, nothing fetched.** Every entry and nested row is validated before anything is
+  saved; one bad entry rejects the file (errors name `entry N` and the row, e.g. `dependencies[3]`).
+  JSON with a repeated key in one object is rejected. `sbom.url`, evidence paths and
+  `localRepository` are recorded as provenance and **never fetched or opened**. Unknown fields are kept.
+* **Storage.** Each new snapshot stores the whole validated entry (keys sorted, `projects` and
+  `dependencies` in a stable order) in `snapshot_inventory`, so App ID, module paths, managers,
+  scopes, depth, parents and verification survive. For dashboards and EoL matching, each distinct
+  package identity (normalized purl, else name) plus version becomes one ordinary dependency row;
+  ecosystem case rules apply (`pkg:pypi/Django` = `pkg:pypi/django`; Maven stays case-sensitive).
+* **Snapshots.** A branch gets a new snapshot when anything in its entry except `sbom.generatedAt`
+  differs from its latest snapshot, including graph context only (a changed scope or parent with the
+  same packages). Reordered keys, rows or entries and a regenerated-but-identical inventory add no
+  snapshot; the stored `generatedAt` is then the first observation of that inventory.
+* **Refresh.** JSON branches are stored with the SBOM location `inline:json-upload` and are marked
+  "Inline JSON upload" in the UI. The registry refresh (button or schedule) skips them and says how
+  many it skipped; a scheduled `eol.refresh-csv-path` CSV naming such a branch is skipped the same way,
+  so a declared `sbom.url` never silently replaces the uploaded inventory. Only an explicit upload
+  (new JSON, or a manual registry CSV upload for that url + branch) changes it.
+* **Pages.** Branch and history pages show App ID, projects/managers, declared SBOM (if any),
+  generated time and demo status, and add a *Project context* column (project: scope, direct or
+  transitive with depth). Synthetic `example.invalid` URLs are labelled as a placeholder demo that is
+  not remotely hosted. CSV-registered branches look exactly as before.
+* **Limits.** Uploads up to 10 MB. Purl-to-name consistency is not checked (only purl syntax,
+  version and ecosystem type).
+
 ### History and "as of"
 
 The history page picks the latest snapshot observed before midnight at the end of the chosen day,
