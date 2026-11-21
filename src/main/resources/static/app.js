@@ -819,6 +819,100 @@ function tableNoun(t) {
   return t.getAttribute('data-noun') || (region ? region.getAttribute('aria-label').toLowerCase() : 'rows');
 }
 
+// ---- Column visibility on every other table (semantic keys, browser-local, independent of widths) ----
+
+function visibilityPrefs(text, keys) {
+  var saved = null;
+  try { saved = JSON.parse(text); } catch (e) { /* all visible */ }
+  var out = Object.create(null);
+  keys.forEach(function (key) {
+    out[key] = !(saved && typeof saved === 'object' && !Array.isArray(saved)
+      && Object.prototype.hasOwnProperty.call(saved, key) && saved[key] === false);
+  });
+  if (!keys.some(function (key) { return out[key]; })) keys.forEach(function (key) { out[key] = true; });
+  return out;
+}
+
+function visibilityKey(table) {
+  // Table roles (not record URLs or DOM order) also share preferences across branch/product detail pages.
+  return 'eol-ledger.table-columns.v1.' + encodeURIComponent(table.id || tableNoun(table));
+}
+
+function visibilityStorage(table, method, value) {
+  try { return window.localStorage[method](visibilityKey(table), value); } catch (e) { return null; }
+}
+
+function rowFocus(table) {
+  table.querySelectorAll('tbody tr[data-href]').forEach(function (row) {
+    var reachable = Array.prototype.some.call(row.cells, function (cell) {
+      return !cell.hidden && cell.querySelector('a[href]:not([tabindex="-1"]), button:not([disabled]), input:not([disabled]), select:not([disabled])');
+    });
+    if (reachable) row.removeAttribute('tabindex'); else row.tabIndex = 0;
+  });
+}
+
+function initVisibility(table, refit) {
+  var cells = Array.prototype.slice.call(table.tHead.rows[0].cells);
+  var keys = cells.map(function (cell) { return cell.getAttribute('data-label') || cellText(cell); });
+  var prefs = visibilityPrefs(visibilityStorage(table, 'getItem'), keys);
+  var settings = document.createElement('details');
+  settings.className = 'help table-settings';
+  settings.setAttribute('aria-label', 'Table settings: ' + tableNoun(table));
+  var summary = document.createElement('summary');
+  summary.textContent = 'Table settings';
+  var list = document.createElement('div');
+  list.className = 'col-settings';
+  var boxes = [];
+  var rows = Array.prototype.slice.call(table.tBodies[0].rows);
+
+  function apply() {
+    var shown = keys.filter(function (key) { return prefs[key]; }).length;
+    cells.forEach(function (cell, i) {
+      cell.hidden = !prefs[keys[i]];
+      boxes[i].checked = !cell.hidden;
+      boxes[i].disabled = !cell.hidden && shown === 1;
+    });
+    rows.forEach(function (row) {
+      if (row.querySelector('td.empty')) { row.cells[0].colSpan = shown; return; }
+      Array.prototype.forEach.call(row.cells, function (cell, i) { cell.hidden = !prefs[keys[i]]; });
+    });
+    rowFocus(table);
+    refit();
+  }
+
+  keys.forEach(function (key, i) {
+    var row = document.createElement('div');
+    row.className = 'col-setting';
+    var label = document.createElement('label');
+    var box = document.createElement('input');
+    box.type = 'checkbox';
+    box.setAttribute('data-column-toggle', key);
+    box.addEventListener('change', function () {
+      prefs[key] = box.checked;
+      if (!keys.some(function (k) { return prefs[k]; })) prefs[key] = true;
+      apply();
+      visibilityStorage(table, 'setItem', JSON.stringify(prefs));
+    });
+    boxes[i] = box;
+    label.append(box, ' ' + key);
+    row.appendChild(label);
+    list.appendChild(row);
+  });
+  var reset = document.createElement('button');
+  reset.type = 'button';
+  reset.className = 'button-quiet';
+  reset.textContent = 'Reset columns';
+  reset.setAttribute('data-columns-reset', '');
+  reset.addEventListener('click', function () {
+    visibilityStorage(table, 'removeItem');
+    prefs = visibilityPrefs(null, keys);
+    apply();
+  });
+  settings.append(summary, list, reset);
+  (table.closest('.table-wrap') || table).before(settings);
+  apply();
+}
+
 // ---- Resizable columns on every other table (widths remembered per table in this browser) ----
 
 var WIDTHS_KEY = 'eol-ledger.table-widths.v1';
@@ -856,7 +950,7 @@ function initResize(table) {
       drawn[i] = w;
       c.style.width = w + 'px';
       handles[i].setAttribute('aria-valuenow', w);
-      total += w;
+      if (!c.hidden) total += w;
     });
     table.style.width = total + 'px';
   }
@@ -884,6 +978,7 @@ function initResize(table) {
 
   table.classList.add('cols-sized');
   apply();
+  initVisibility(table, apply);
   return apply;
 }
 

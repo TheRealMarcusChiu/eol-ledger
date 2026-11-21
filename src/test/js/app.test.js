@@ -72,6 +72,41 @@ test('blocked or throwing localStorage returns null instead of throwing', () => 
   for (const m of ['getItem', 'setItem', 'removeItem']) assert.strictEqual(ctx.tableStorage(m, '{}'), null, m);
 });
 
+test('semantic visibility preferences ignore malformed, unknown and unsafe values; all-hidden recovers', () => {
+  const { visibilityPrefs } = load();
+  const keys = ['Package', 'Project context', 'EoL date'];
+  const defaults = { Package: true, 'Project context': true, 'EoL date': true };
+  for (const text of [null, '', 'bad', 'null', '[]', 'false', '{"Package":"false"}', '{"unknown":false}']) {
+    assert.deepStrictEqual(plain(visibilityPrefs(text, keys)), defaults);
+  }
+  assert.deepStrictEqual(plain(visibilityPrefs('{"Package":false,"Project context":false,"EoL date":false}', keys)), defaults);
+  assert.deepStrictEqual(plain(visibilityPrefs('{"Package":false,"unknown":false,"__proto__":{"visible":false}}', keys)),
+    { Package: false, 'Project context': true, 'EoL date': true });
+  assert.deepStrictEqual(plain(visibilityPrefs('{"EoL date":false}', ['Package', 'EoL date'])),
+    { Package: true, 'EoL date': false }, 'optional context column does not shift a saved preference');
+});
+
+test('visibility storage is scoped by stable table role and tolerates blocked storage', () => {
+  const table = (id, noun) => ({ id, getAttribute: () => noun });
+  const writes = [];
+  const ctx = load({ localStorage: {
+    getItem: key => key, setItem: (key, value) => writes.push([key, value]), removeItem: key => writes.push([key]),
+  } });
+  const repos = table('code-repos-table', 'code repo branches');
+  const deps = table('', 'dependencies');
+  assert.notStrictEqual(ctx.visibilityKey(repos), ctx.visibilityKey(deps));
+  assert.strictEqual(ctx.visibilityKey(deps), ctx.visibilityKey(table('', 'dependencies')));
+  assert.strictEqual(ctx.visibilityStorage(deps, 'getItem'), ctx.visibilityKey(deps));
+  ctx.visibilityStorage(deps, 'setItem', '{}');
+  ctx.visibilityStorage(deps, 'removeItem');
+  assert.deepStrictEqual(writes, [[ctx.visibilityKey(deps), '{}'], [ctx.visibilityKey(deps)]]);
+  const blocked = {};
+  Object.defineProperty(blocked, 'localStorage', { get() { throw new Error('SecurityError'); } });
+  for (const method of ['getItem', 'setItem', 'removeItem']) {
+    assert.strictEqual(load(blocked).visibilityStorage(deps, method, '{}'), null);
+  }
+});
+
 // ---- header sort and filters ----
 
 const order = (ctx, values, type, dir) => Array.from(ctx.sortOrder(values, type, dir)).map((i) => values[i]);
