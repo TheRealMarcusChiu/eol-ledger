@@ -47,12 +47,33 @@ public class ImportService {
     private final TransactionTemplate tx;
     private final Clock clock;
     private final DbTime time;
+    private final CatalogService catalog;
 
-    public ImportService(JdbcClient db, TransactionTemplate tx, Clock clock, DbTime time) {
+    public ImportService(JdbcClient db, TransactionTemplate tx, Clock clock, DbTime time, CatalogService catalog) {
         this.db = db;
         this.tx = tx;
         this.clock = clock;
         this.time = time;
+        this.catalog = catalog;
+    }
+
+    /** Children before parents, so the foreign keys hold at every step. */
+    private static final List<String> DATA_TABLES = List.of("dependency", "snapshot_inventory", "snapshot", "repo_branch", "import_run",
+            "product_identifier", "release_cycle", "product", "sync_status");
+
+    /**
+     * Deletes every imported row and the synced catalogue in one transaction; schema and configuration stay.
+     * Holds this service's monitor (imports) and then the catalogue's (sync), so neither can interleave with the clear.
+     */
+    public synchronized void clearAll() {
+        synchronized (catalog) {
+            try {
+                tx.executeWithoutResult(s -> DATA_TABLES.forEach(t -> db.sql("DELETE FROM " + t).update()));
+            } catch (DataAccessException e) {
+                log.warn("Clear all data rolled back", e);
+                throw new ImportFailedException(List.of("Database write failed, so nothing was cleared; see the server log"));
+            }
+        }
     }
 
     /**

@@ -102,6 +102,18 @@
             </tbody>
         </table>
     </div>
+
+    <section class="panel" aria-labelledby="clear-h">
+        <h2 id="clear-h">Clear all data</h2>
+        <p class="notice notice-warn" id="clear-warning">Permanently deletes all code repos, dependency inventories and snapshots, import history, and the synced endoflife.date catalogue and its sync status. This cannot be undone. App configuration and appearance preferences are kept.</p>
+        <form method="post" th:action="@{/imports/clear}">
+            <div class="field field-check">
+                <input type="checkbox" id="clear-confirm" name="confirm" value="true" required aria-describedby="clear-warning">
+                <label for="clear-confirm">I understand all imported data and the catalogue will be deleted</label>
+            </div>
+            <button type="submit">Clear all imported data</button>
+        </form>
+    </section>
 </main>
 <footer th:replace="~{fragments :: footer}"></footer>
 </body>

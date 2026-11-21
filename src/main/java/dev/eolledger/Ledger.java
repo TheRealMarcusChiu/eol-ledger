@@ -223,6 +223,10 @@ public class Ledger {
         return db.sql("SELECT count(*) FROM product").query(Integer.class).single() == 0;
     }
 
+    public boolean noBranches() {
+        return db.sql("SELECT count(*) FROM repo_branch").query(Integer.class).single() == 0;
+    }
+
     // ---- branches & dependencies ----------------------------------------------------------
 
     private static final String LATEST_SNAPSHOT = "SELECT s2.id FROM snapshot s2 WHERE s2.branch_id = b.id ORDER BY s2.observed_at DESC, s2.id DESC LIMIT 1";

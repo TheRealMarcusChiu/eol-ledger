@@ -194,6 +194,10 @@ and `source` paths name ship in the separate demo archive, not in the app.
   JSON with a repeated key in one object, or anything after the root array, is rejected. `sbom.url`, evidence paths and
   `localRepository` are recorded as provenance and **never fetched or opened**. Unknown fields are kept.
 * **Upsert, never delete.** Listed branches are added or updated. Branches left out of the file are untouched.
+* **Clear all imported data** (bottom of Imports; needs the confirmation checkbox, checked on the server too)
+  deletes in one transaction every code repo, snapshot, dependency inventory, import history row and the synced
+  catalogue with its sync status. Schema, configuration and browser preferences stay. It waits for any running
+  import or catalogue sync in this process to finish first.
 * **Storage.** Each new snapshot stores the whole validated entry (keys sorted, `projects` and
   `dependencies` in a stable order) in `snapshot_inventory`, so App ID, module paths, managers,
   scopes, depth, parents and verification survive. For dashboards and EoL matching, each distinct
@@ -233,6 +237,9 @@ catalogue sync; the app ships no EoL dates.
 * Every tracked dependency version (release cycle used by at least one branch) is listed with no date
   cutoff: EoL dates in the past, in the future and not published, earliest EoL date first (unknown last).
   There is no filter form above the table.
+* With no code repos imported (for example right after a sync on an empty or cleared database), every
+  synced catalogue release cycle is listed instead, each with 0 code repos and 0 branches, under a note
+  saying so. No inventory is invented; once a repo is imported the used-only default returns.
 * **Header sort and filters** (need JavaScript; page-local, nothing stored, so a reload starts blank):
   click a header name to sort ascending, again for descending. Versions and text sort naturally (3.9
   before 3.10), counts as numbers, dates as ISO dates; blank/unknown values stay last both ways. Each

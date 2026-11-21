@@ -49,6 +49,9 @@ public class PagesController {
         model.addAttribute("legacy", !startText.isEmpty() || !endText.isEmpty() || desc || unused);
         model.addAttribute("status", catalog.status());
         model.addAttribute("catalogEmpty", ledger.catalogEmpty());
+        // with no code repos imported every cycle is unused, so the used-only default would hide the whole synced catalogue
+        boolean catalogOnly = ledger.noBranches();
+        model.addAttribute("catalogOnly", catalogOnly);
         LocalDate from;
         LocalDate to;
         try {
@@ -63,7 +66,7 @@ public class PagesController {
             model.addAttribute("rows", java.util.List.of());
             return "dashboard";
         }
-        Ledger.Dashboard dash = ledger.dashboard(null, null, desc, unused);
+        Ledger.Dashboard dash = ledger.dashboard(null, null, desc, unused || catalogOnly);
         List<Ledger.DashRow> rows = dash.rows();
         model.addAttribute("rows", rows);
         model.addAttribute("hiddenRows", rows.stream().filter(r -> !Ledger.inRange(r.cycle().eolFrom(), from, to))

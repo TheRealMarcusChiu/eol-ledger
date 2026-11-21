@@ -77,6 +77,21 @@ public class ImportController {
         return seeOther();
     }
 
+    @PostMapping("/imports/clear")
+    RedirectView clear(@RequestParam(required = false) String confirm, RedirectAttributes flash) {
+        if (!"true".equals(confirm)) {
+            flash.addFlashAttribute("warning", "Nothing was cleared: tick the confirmation box first.");
+            return seeOther();
+        }
+        try {
+            imports.clearAll();
+            flash.addFlashAttribute("message", "All imported data and the synced catalogue were cleared.");
+        } catch (ImportService.ImportFailedException e) {
+            flash.addFlashAttribute("warning", e.getMessage());
+        }
+        return seeOther();
+    }
+
     @GetMapping("/imports/samples/{name}")
     ResponseEntity<String> sample(@PathVariable String name) {
         if (!ImportService.SAMPLE.equals(name)) throw new ResponseStatusException(HttpStatus.NOT_FOUND);

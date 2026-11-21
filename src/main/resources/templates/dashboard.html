@@ -13,6 +13,10 @@
     <div th:if="${catalogEmpty}" class="notice">
         The endoflife.date catalogue has not been synced yet. <a th:href="@{/imports}">Sync it</a>.
     </div>
+    <div th:if="${catalogOnly and !catalogEmpty}" class="notice" role="status">
+        No code repos imported yet, so every synced catalogue release cycle is listed, each used by 0 code repos.
+        <a th:href="@{/imports}">Import dependency inventories</a> to list only the versions in use.
+    </div>
     <div th:if="${status != null and !status.ok()}" class="notice notice-warn" role="status">
         Last catalogue sync had problems; previous data still in use. <a th:href="@{/imports}">See sync status</a>.
     </div>
