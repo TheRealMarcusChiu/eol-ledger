@@ -16,7 +16,7 @@
     </div>
 
     <section class="panel" aria-labelledby="upload-h">
-        <h2 id="upload-h">Code repos &amp; dependencies</h2>
+        <h2 id="upload-h">Code Repo &amp; dependency Data</h2>
         <div class="actions">
             <button type="button" popovertarget="import-dialog">Import file</button>
             <a class="button-quiet" th:href="@{/imports/samples/demo-dependency-inventory.json}" download>Download demo JSON</a>
@@ -59,7 +59,7 @@
     </section>
 
     <section class="panel" aria-labelledby="sync-h">
-        <h2 id="sync-h">endoflife.date catalogue</h2>
+        <h2 id="sync-h">endoflife.date Catalogue</h2>
         <dl class="facts">
             <dt>Source</dt>
             <dd><span th:text="${T(dev.eolledger.Ledger).safeLink(catalogBase) ?: '(invalid base URL)'}">url</span>,
