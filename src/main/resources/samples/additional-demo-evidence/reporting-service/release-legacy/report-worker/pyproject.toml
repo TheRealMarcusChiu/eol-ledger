@@ -1,0 +1,8 @@
+[project]
+name = "report-worker"
+version = "1.4.0"
+requires-python = ">=3.11"
+dependencies = ["requests==2.32.5"]
+
+[tool.uv]
+package = false

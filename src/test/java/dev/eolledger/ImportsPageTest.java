@@ -82,8 +82,8 @@ class ImportsPageTest extends IntegrationTest {
                 .andReturn().getResponse().getContentAsByteArray();
         mvc.perform(multipart("/imports").file(json(new String(body, StandardCharsets.UTF_8))).with(csrf()))
                 .andExpect(status().isSeeOther()).andExpect(redirectedUrl("/imports"));
-        assertThat(count("repo_branch")).isEqualTo(4);
-        assertThat(count("snapshot")).isEqualTo(4);
+        assertThat(count("repo_branch")).isEqualTo(8);
+        assertThat(count("snapshot")).isEqualTo(8);
     }
 
     @Test
@@ -120,7 +120,7 @@ class ImportsPageTest extends IntegrationTest {
         mvc.perform(multipart("/imports").file(csv).with(csrf())).andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("not valid JSON")))
                 .andExpect(content().string(containsString("Nothing was changed")));
-        assertThat(count("repo_branch")).isEqualTo(4);
+        assertThat(count("repo_branch")).isEqualTo(8);
     }
 
     @Test

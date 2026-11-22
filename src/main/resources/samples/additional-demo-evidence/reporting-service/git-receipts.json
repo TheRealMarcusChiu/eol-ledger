@@ -1,0 +1,259 @@
+[
+  {
+    "command": "/usr/bin/git init -q -b main",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:08Z",
+    "finishedAt": "2026-11-22T06:18:08Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git config --local user.name 'EOL Ledger Demo'",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:08Z",
+    "finishedAt": "2026-11-22T06:18:08Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git config --local user.email eol-demo@example.invalid",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:08Z",
+    "finishedAt": "2026-11-22T06:18:08Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git config --local commit.gpgsign false",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:08Z",
+    "finishedAt": "2026-11-22T06:18:08Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "module": "report-api",
+    "command": "/root/.local/bin/uv lock --python 3.11",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service/report-api",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:08Z",
+    "finishedAt": "2026-11-22T06:18:08Z",
+    "stdout": "",
+    "stderr": "Using CPython 3.11.15\nResolved 5 packages in 498ms\n"
+  },
+  {
+    "branch": "release/legacy",
+    "module": "report-worker",
+    "command": "/root/.local/bin/uv lock --python 3.11",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service/report-worker",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:08Z",
+    "finishedAt": "2026-11-22T06:18:09Z",
+    "stdout": "",
+    "stderr": "Using CPython 3.11.15\nResolved 6 packages in 376ms\n"
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git add -A",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:09Z",
+    "finishedAt": "2026-11-22T06:18:09Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git commit -q -m 'reporting-service 1.4.0: Django 3.2.25'",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:09Z",
+    "finishedAt": "2026-11-22T06:18:09Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git rev-parse HEAD",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:09Z",
+    "finishedAt": "2026-11-22T06:18:09Z",
+    "stdout": "2ad170758d8ffd8c19e2cc8c344b403b1688edd9\n",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git branch release/legacy",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:09Z",
+    "finishedAt": "2026-11-22T06:18:09Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git status --porcelain",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:09Z",
+    "finishedAt": "2026-11-22T06:18:09Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "module": "report-api",
+    "command": "/root/.local/bin/uv lock --python 3.11",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service/report-api",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:09Z",
+    "finishedAt": "2026-11-22T06:18:09Z",
+    "stdout": "",
+    "stderr": "Using CPython 3.11.15\nResolved 5 packages in 233ms\nUpdated django v3.2.25 -> v5.2.19\nRemoved pytz v2026.6\nUpdated report-api v1.4.0 -> v2.0.0\nAdded tzdata v2026.6\n"
+  },
+  {
+    "branch": "main",
+    "module": "report-worker",
+    "command": "/root/.local/bin/uv lock --python 3.11",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service/report-worker",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:09Z",
+    "finishedAt": "2026-11-22T06:18:09Z",
+    "stdout": "",
+    "stderr": "Using CPython 3.11.15\nResolved 6 packages in 6ms\nUpdated report-worker v1.4.0 -> v2.0.0\n"
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git add -A",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:09Z",
+    "finishedAt": "2026-11-22T06:18:09Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git commit -q -m 'reporting-service 2.0.0: Django 5.2.19'",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:09Z",
+    "finishedAt": "2026-11-22T06:18:09Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git rev-parse HEAD",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:09Z",
+    "finishedAt": "2026-11-22T06:18:09Z",
+    "stdout": "548f1e94eac796c8722edd1827905be2019877f1\n",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git status --porcelain",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:09Z",
+    "finishedAt": "2026-11-22T06:18:09Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git bundle create /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/sources/reporting-service.bundle --all",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:16Z",
+    "finishedAt": "2026-11-22T06:18:16Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git bundle verify /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/sources/reporting-service.bundle",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:16Z",
+    "finishedAt": "2026-11-22T06:18:16Z",
+    "stdout": "The bundle contains these 3 refs:\n548f1e94eac796c8722edd1827905be2019877f1 refs/heads/main\n2ad170758d8ffd8c19e2cc8c344b403b1688edd9 refs/heads/release/legacy\n548f1e94eac796c8722edd1827905be2019877f1 HEAD\nThe bundle records a complete history.\nThe bundle uses this hash algorithm: sha1\n",
+    "stderr": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/sources/reporting-service.bundle is okay\n"
+  },
+  {
+    "command": "/usr/bin/git bundle list-heads /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/sources/reporting-service.bundle",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:16Z",
+    "finishedAt": "2026-11-22T06:18:16Z",
+    "stdout": "548f1e94eac796c8722edd1827905be2019877f1 refs/heads/main\n2ad170758d8ffd8c19e2cc8c344b403b1688edd9 refs/heads/release/legacy\n548f1e94eac796c8722edd1827905be2019877f1 HEAD\n",
+    "stderr": ""
+  }
+]

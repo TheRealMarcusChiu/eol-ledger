@@ -1,0 +1,93 @@
+{
+  "generator": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/generate.py",
+  "generatorSha256": "00e5027bcdcf1807f81800a6647207fbd955ecb98dfcab35e341ef60b8ab468b",
+  "startedAt": "2026-11-22T06:17:28Z",
+  "finishedAt": "2026-11-22T06:18:16Z",
+  "tools": {
+    "mvn": "Apache Maven 3.8.7\u001b[m",
+    "java": "openjdk version \"21.0.13.1\" 2026-11-17",
+    "uv": "uv 0.11.16 (x86_64-unknown-linux-gnu)",
+    "git": "git version 2.43.0"
+  },
+  "mavenRepoLocal": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2",
+  "mavenRepoLocalSeededFrom": "/root/projects/eol-ledger-ops/demo-links/native/cache/m2",
+  "uvCacheDir": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv",
+  "originalEntrySha256": {
+    "enterprise-suite main": "e47e7ce798d04652e949535fb9960e922e0bbfc52477cf8f14558de2a45875da",
+    "enterprise-suite release/legacy": "7ac42082d57de3bd44c06ebfb22132314ab29ff3e2f080813bbb0e10300350ed",
+    "web-platform main": "e4217d50d3a85edb3b56c335aca3c9283302a1fdc76d4d522e8255768a7de1e2",
+    "web-platform release/legacy": "8896da912333a59c06abf64b839ef410a09588f36c3c6d01fde7e2cf0e5a96c9"
+  },
+  "originalEntrySha256AfterAppend": {
+    "enterprise-suite main": "e47e7ce798d04652e949535fb9960e922e0bbfc52477cf8f14558de2a45875da",
+    "enterprise-suite release/legacy": "7ac42082d57de3bd44c06ebfb22132314ab29ff3e2f080813bbb0e10300350ed",
+    "web-platform main": "e4217d50d3a85edb3b56c335aca3c9283302a1fdc76d4d522e8255768a7de1e2",
+    "web-platform release/legacy": "8896da912333a59c06abf64b839ef410a09588f36c3c6d01fde7e2cf0e5a96c9"
+  },
+  "sampleSha256Before": "f41c19fd260bc662452e3c1fa0d27ee4b30ff65807e8d98c25bc21c96a1f8ad1",
+  "sampleSha256After": "4eef317be7602271ef4586d9c9c24a51b207d8e228bd624c5f0ad023510b7e1b",
+  "entries": [
+    {
+      "name": "payments-service",
+      "appId": "DEMO-1003",
+      "branch": "main",
+      "commit": "d598709bcd97a021260e8270ecbbd42ee9a67431",
+      "receipts": "additional-demo-evidence/payments-service/main/receipts.json",
+      "dependencyRows": 10
+    },
+    {
+      "name": "payments-service",
+      "appId": "DEMO-1003",
+      "branch": "release/legacy",
+      "commit": "847cfd9a2f3d80a873c638b63c1b9f442adc08b8",
+      "receipts": "additional-demo-evidence/payments-service/release-legacy/receipts.json",
+      "dependencyRows": 7
+    },
+    {
+      "name": "reporting-service",
+      "appId": "DEMO-1004",
+      "branch": "main",
+      "commit": "548f1e94eac796c8722edd1827905be2019877f1",
+      "receipts": "additional-demo-evidence/reporting-service/main/receipts.json",
+      "dependencyRows": 9
+    },
+    {
+      "name": "reporting-service",
+      "appId": "DEMO-1004",
+      "branch": "release/legacy",
+      "commit": "2ad170758d8ffd8c19e2cc8c344b403b1688edd9",
+      "receipts": "additional-demo-evidence/reporting-service/release-legacy/receipts.json",
+      "dependencyRows": 9
+    }
+  ],
+  "commits": {
+    "payments-service": {
+      "release/legacy": "847cfd9a2f3d80a873c638b63c1b9f442adc08b8",
+      "main": "d598709bcd97a021260e8270ecbbd42ee9a67431"
+    },
+    "reporting-service": {
+      "release/legacy": "2ad170758d8ffd8c19e2cc8c344b403b1688edd9",
+      "main": "548f1e94eac796c8722edd1827905be2019877f1"
+    }
+  },
+  "bundles": {
+    "payments-service": {
+      "path": "additional-demo-evidence/sources/payments-service.bundle",
+      "sha256": "f61f1499df09961a56c50963cf023d5d7854d50fc72117ccac8ffb500451bd97",
+      "heads": {
+        "refs/heads/main": "d598709bcd97a021260e8270ecbbd42ee9a67431",
+        "refs/heads/release/legacy": "847cfd9a2f3d80a873c638b63c1b9f442adc08b8",
+        "HEAD": "d598709bcd97a021260e8270ecbbd42ee9a67431"
+      }
+    },
+    "reporting-service": {
+      "path": "additional-demo-evidence/sources/reporting-service.bundle",
+      "sha256": "676c33e1f3ab2077bcb8903098379a7b4bfa3d09a22128a2d8b1af7defe4d2f7",
+      "heads": {
+        "refs/heads/main": "548f1e94eac796c8722edd1827905be2019877f1",
+        "refs/heads/release/legacy": "2ad170758d8ffd8c19e2cc8c344b403b1688edd9",
+        "HEAD": "548f1e94eac796c8722edd1827905be2019877f1"
+      }
+    }
+  }
+}

@@ -39,25 +39,33 @@ class DemoLifecycleLinksTest extends WebTestBase {
             "enterprise-suite main", Map.of("spring-framework 7.0", false),
             "enterprise-suite release/legacy", Map.of("spring-framework 5.3", true),
             "web-platform main", Map.of("django 5.2", false),
-            "web-platform release/legacy", Map.of("django 3.2", true));
+            "web-platform release/legacy", Map.of("django 3.2", true),
+            "payments-service main", Map.of("spring-framework 7.0", false),
+            "payments-service release/legacy", Map.of("spring-framework 5.3", true),
+            "reporting-service main", Map.of("django 5.2", false),
+            "reporting-service release/legacy", Map.of("django 3.2", true));
 
     @Test
     void everyBranchLinksToARealCatalogueCycleAndKeepsItsOriginalGraph() throws Exception {
         String body = ImportService.sample(ImportService.SAMPLE);
         JsonNode sample = JSON.readTree(body);
-        assertThat(sample).hasSize(4);
+        assertThat(sample).hasSize(8);
+        int checked = 0;
         for (JsonNode e : sample) {
             String key = e.path("name").asText() + " " + e.path("branch").asText();
+            if (!ORIGINAL.containsKey(key)) continue;
+            checked++;
             ObjectNode original = e.deepCopy();
             original.set("projects", withoutAddedModules(e.path("projects"), "path"));
             original.set("dependencies", withoutAddedModules(e.path("dependencies"), "projectPath"));
             assertThat(sha256(JSON.writeValueAsString(original))).as("original graph of " + key).isEqualTo(ORIGINAL.get(key));
         }
+        assertThat(checked).isEqualTo(4);
 
         TestSupport.REPLIES.put("/api/v1/products/full", TestSupport.Reply.ok(
                 new String(new ClassPathResource("catalogue/demo-linked-products.json").getContentAsByteArray(), StandardCharsets.UTF_8)));
         assertThat(catalog.sync().productsSynced()).isEqualTo(2);
-        assertThat(imports.importJson(body, "test").newSnapshots()).isEqualTo(4);
+        assertThat(imports.importJson(body, "test").newSnapshots()).isEqualTo(8);
         assertThat(imports.importJson(body, "again").newSnapshots()).isZero();
 
         for (JsonNode e : sample) {

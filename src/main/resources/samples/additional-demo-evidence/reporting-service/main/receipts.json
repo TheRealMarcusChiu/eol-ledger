@@ -1,0 +1,256 @@
+[
+  {
+    "repository": "reporting-service",
+    "branch": "main",
+    "commit": "548f1e94eac796c8722edd1827905be2019877f1",
+    "command": "/usr/bin/git clone -q --no-hardlinks --branch main /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/reporting-service /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:09Z",
+    "finishedAt": "2026-11-22T06:18:09Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "repository": "reporting-service",
+    "branch": "main",
+    "commit": "548f1e94eac796c8722edd1827905be2019877f1",
+    "command": "/usr/bin/git rev-parse HEAD",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:09Z",
+    "finishedAt": "2026-11-22T06:18:09Z",
+    "stdout": "548f1e94eac796c8722edd1827905be2019877f1\n",
+    "stderr": ""
+  },
+  {
+    "module": "report-api",
+    "repository": "reporting-service",
+    "branch": "main",
+    "commit": "548f1e94eac796c8722edd1827905be2019877f1",
+    "command": "/root/.local/bin/uv sync --frozen --python 3.11",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-api",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:09Z",
+    "finishedAt": "2026-11-22T06:18:11Z",
+    "stdout": "",
+    "stderr": "Using CPython 3.11.15\nCreating virtual environment at: .venv\nDownloading django (7.9MiB)\n Downloaded django\nPrepared 3 packages in 1.02s\nInstalled 3 packages in 576ms\n + asgiref==3.13.0\n + django==5.2.19\n + sqlparse==0.6.1\n"
+  },
+  {
+    "module": "report-api",
+    "repository": "reporting-service",
+    "branch": "main",
+    "commit": "548f1e94eac796c8722edd1827905be2019877f1",
+    "command": "/root/.local/bin/uv tree --frozen --no-dedupe --python 3.11",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-api",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:11Z",
+    "finishedAt": "2026-11-22T06:18:11Z",
+    "stdout": "report-api v2.0.0\n└── django v5.2.19\n    ├── asgiref v3.13.0\n    └── sqlparse v0.6.1\n",
+    "stderr": ""
+  },
+  {
+    "module": "report-api",
+    "repository": "reporting-service",
+    "branch": "main",
+    "commit": "548f1e94eac796c8722edd1827905be2019877f1",
+    "command": "/root/.local/bin/uv tree --frozen --no-dedupe --universal",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-api",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:11Z",
+    "finishedAt": "2026-11-22T06:18:11Z",
+    "stdout": "report-api v2.0.0\n└── django v5.2.19\n    ├── asgiref v3.13.0\n    ├── sqlparse v0.6.1\n    └── tzdata v2026.6\n",
+    "stderr": ""
+  },
+  {
+    "module": "report-api",
+    "repository": "reporting-service",
+    "branch": "main",
+    "commit": "548f1e94eac796c8722edd1827905be2019877f1",
+    "command": "/root/.local/bin/uv pip list --format json --python /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-api/.venv/bin/python",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-api",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:11Z",
+    "finishedAt": "2026-11-22T06:18:11Z",
+    "stdout": "[{\"name\":\"asgiref\",\"version\":\"3.13.0\"},{\"name\":\"django\",\"version\":\"5.2.19\"},{\"name\":\"sqlparse\",\"version\":\"0.6.1\"}]\n",
+    "stderr": ""
+  },
+  {
+    "module": "report-api",
+    "repository": "reporting-service",
+    "branch": "main",
+    "commit": "548f1e94eac796c8722edd1827905be2019877f1",
+    "command": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-api/.venv/bin/python --version",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-api",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:11Z",
+    "finishedAt": "2026-11-22T06:18:11Z",
+    "stdout": "Python 3.11.15\n",
+    "stderr": ""
+  },
+  {
+    "module": "report-api",
+    "repository": "reporting-service",
+    "branch": "main",
+    "commit": "548f1e94eac796c8722edd1827905be2019877f1",
+    "command": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-api/.venv/bin/python -m compileall -q report_api",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-api",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:11Z",
+    "finishedAt": "2026-11-22T06:18:11Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "module": "report-api",
+    "repository": "reporting-service",
+    "branch": "main",
+    "commit": "548f1e94eac796c8722edd1827905be2019877f1",
+    "command": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-api/.venv/bin/python -c 'import report_api.app as m; print(m.smoke())'",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-api",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:11Z",
+    "finishedAt": "2026-11-22T06:18:12Z",
+    "stdout": "django 5.2.19 200 {\"report\": \"q3\"}\n",
+    "stderr": ""
+  },
+  {
+    "module": "report-worker",
+    "repository": "reporting-service",
+    "branch": "main",
+    "commit": "548f1e94eac796c8722edd1827905be2019877f1",
+    "command": "/root/.local/bin/uv sync --frozen --python 3.11",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-worker",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:12Z",
+    "finishedAt": "2026-11-22T06:18:12Z",
+    "stdout": "",
+    "stderr": "Using CPython 3.11.15\nCreating virtual environment at: .venv\nPrepared 5 packages in 260ms\nInstalled 5 packages in 130ms\n + certifi==2026.11.20\n + charset-normalizer==3.5.2\n + idna==3.20\n + requests==2.32.5\n + urllib3==2.8.0\n"
+  },
+  {
+    "module": "report-worker",
+    "repository": "reporting-service",
+    "branch": "main",
+    "commit": "548f1e94eac796c8722edd1827905be2019877f1",
+    "command": "/root/.local/bin/uv tree --frozen --no-dedupe --python 3.11",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-worker",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:12Z",
+    "finishedAt": "2026-11-22T06:18:12Z",
+    "stdout": "report-worker v2.0.0\n└── requests v2.32.5\n    ├── certifi v2026.11.20\n    ├── charset-normalizer v3.5.2\n    ├── idna v3.20\n    └── urllib3 v2.8.0\n",
+    "stderr": ""
+  },
+  {
+    "module": "report-worker",
+    "repository": "reporting-service",
+    "branch": "main",
+    "commit": "548f1e94eac796c8722edd1827905be2019877f1",
+    "command": "/root/.local/bin/uv tree --frozen --no-dedupe --universal",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-worker",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:12Z",
+    "finishedAt": "2026-11-22T06:18:12Z",
+    "stdout": "report-worker v2.0.0\n└── requests v2.32.5\n    ├── certifi v2026.11.20\n    ├── charset-normalizer v3.5.2\n    ├── idna v3.20\n    └── urllib3 v2.8.0\n",
+    "stderr": ""
+  },
+  {
+    "module": "report-worker",
+    "repository": "reporting-service",
+    "branch": "main",
+    "commit": "548f1e94eac796c8722edd1827905be2019877f1",
+    "command": "/root/.local/bin/uv pip list --format json --python /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-worker/.venv/bin/python",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-worker",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:12Z",
+    "finishedAt": "2026-11-22T06:18:12Z",
+    "stdout": "[{\"name\":\"certifi\",\"version\":\"2026.11.20\"},{\"name\":\"charset-normalizer\",\"version\":\"3.5.2\"},{\"name\":\"idna\",\"version\":\"3.20\"},{\"name\":\"requests\",\"version\":\"2.32.5\"},{\"name\":\"urllib3\",\"version\":\"2.8.0\"}]\n",
+    "stderr": ""
+  },
+  {
+    "module": "report-worker",
+    "repository": "reporting-service",
+    "branch": "main",
+    "commit": "548f1e94eac796c8722edd1827905be2019877f1",
+    "command": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-worker/.venv/bin/python --version",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-worker",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:12Z",
+    "finishedAt": "2026-11-22T06:18:12Z",
+    "stdout": "Python 3.11.15\n",
+    "stderr": ""
+  },
+  {
+    "module": "report-worker",
+    "repository": "reporting-service",
+    "branch": "main",
+    "commit": "548f1e94eac796c8722edd1827905be2019877f1",
+    "command": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-worker/.venv/bin/python -m compileall -q report_worker",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-worker",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:12Z",
+    "finishedAt": "2026-11-22T06:18:12Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "module": "report-worker",
+    "repository": "reporting-service",
+    "branch": "main",
+    "commit": "548f1e94eac796c8722edd1827905be2019877f1",
+    "command": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-worker/.venv/bin/python -c 'import report_worker.client as m; print(m.smoke())'",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/reporting-service/main/report-worker",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:12Z",
+    "finishedAt": "2026-11-22T06:18:12Z",
+    "stdout": "requests 2.32.5 https://example.invalid/eol-demo/reports?id=q3\n",
+    "stderr": ""
+  }
+]

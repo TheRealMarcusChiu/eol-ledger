@@ -3538,5 +3538,1014 @@
         }
       }
     ]
+  },
+  {
+    "schemaVersion": 1,
+    "name": "payments-service",
+    "appId": "DEMO-1003",
+    "url": "https://example.invalid/eol-demo/payments-service",
+    "provider": "other",
+    "branch": "main",
+    "demo": true,
+    "localRepository": "additional-demo-evidence/sources/payments-service.bundle",
+    "sbom": {
+      "url": null,
+      "format": "inline-dependency-inventory",
+      "generatedAt": "2026-11-22T06:17:50Z",
+      "evidence": "additional-demo-evidence/payments-service/main/receipts.json"
+    },
+    "provenance": {
+      "commit": "d598709bcd97a021260e8270ecbbd42ee9a67431",
+      "branch": "main",
+      "bundle": "additional-demo-evidence/sources/payments-service.bundle",
+      "receipts": "additional-demo-evidence/payments-service/main/receipts.json",
+      "run": "additional-demo-evidence/run.json"
+    },
+    "projects": [
+      {
+        "path": "payments-api",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "coordinate": "com.example.payments:payments-api:2.0.0",
+        "resolution": {
+          "status": "resolved",
+          "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 clean package && /usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree -DoutputType=json -DoutputFile=/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/payments-service/main/payments-api/tree.json && /usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree -DoutputFile=/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/payments-service/main/payments-api/tree.txt",
+          "toolVersion": "Apache Maven 3.8.7\u001b[m",
+          "tree": "additional-demo-evidence/payments-service/main/payments-api/tree.json"
+        }
+      },
+      {
+        "path": "payments-common",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "coordinate": "com.example.payments:payments-common:2.0.0",
+        "resolution": {
+          "status": "resolved",
+          "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 clean package && /usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree -DoutputType=json -DoutputFile=/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/payments-service/main/payments-common/tree.json && /usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree -DoutputFile=/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/payments-service/main/payments-common/tree.txt",
+          "toolVersion": "Apache Maven 3.8.7\u001b[m",
+          "tree": "additional-demo-evidence/payments-service/main/payments-common/tree.json"
+        }
+      }
+    ],
+    "dependencies": [
+      {
+        "name": "org.springframework:spring-context",
+        "version": "7.0.11",
+        "purl": "pkg:maven/org.springframework/spring-context@7.0.11",
+        "groupId": "org.springframework",
+        "artifactId": "spring-context",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "direct",
+        "optional": false,
+        "depth": 1,
+        "parentCoordinate": "com.example.payments:payments-api:2.0.0",
+        "projectCoordinate": "com.example.payments:payments-api:2.0.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "payments-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/payments-service/main/payments-api/tree.json",
+          "context": "Maven dependency:tree (all scopes, nearest-wins pruned); scope=compile; main commit d598709bcd97a021260e8270ecbbd42ee9a67431"
+        }
+      },
+      {
+        "name": "org.springframework:spring-aop",
+        "version": "7.0.11",
+        "purl": "pkg:maven/org.springframework/spring-aop@7.0.11",
+        "groupId": "org.springframework",
+        "artifactId": "spring-aop",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "org.springframework:spring-context:7.0.11",
+        "projectCoordinate": "com.example.payments:payments-api:2.0.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "payments-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/payments-service/main/payments-api/tree.json",
+          "context": "Maven dependency:tree (all scopes, nearest-wins pruned); scope=compile; main commit d598709bcd97a021260e8270ecbbd42ee9a67431"
+        }
+      },
+      {
+        "name": "org.springframework:spring-beans",
+        "version": "7.0.11",
+        "purl": "pkg:maven/org.springframework/spring-beans@7.0.11",
+        "groupId": "org.springframework",
+        "artifactId": "spring-beans",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "org.springframework:spring-context:7.0.11",
+        "projectCoordinate": "com.example.payments:payments-api:2.0.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "payments-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/payments-service/main/payments-api/tree.json",
+          "context": "Maven dependency:tree (all scopes, nearest-wins pruned); scope=compile; main commit d598709bcd97a021260e8270ecbbd42ee9a67431"
+        }
+      },
+      {
+        "name": "org.springframework:spring-core",
+        "version": "7.0.11",
+        "purl": "pkg:maven/org.springframework/spring-core@7.0.11",
+        "groupId": "org.springframework",
+        "artifactId": "spring-core",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "org.springframework:spring-context:7.0.11",
+        "projectCoordinate": "com.example.payments:payments-api:2.0.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "payments-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/payments-service/main/payments-api/tree.json",
+          "context": "Maven dependency:tree (all scopes, nearest-wins pruned); scope=compile; main commit d598709bcd97a021260e8270ecbbd42ee9a67431"
+        }
+      },
+      {
+        "name": "commons-logging:commons-logging",
+        "version": "1.3.5",
+        "purl": "pkg:maven/commons-logging/commons-logging@1.3.5",
+        "groupId": "commons-logging",
+        "artifactId": "commons-logging",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 3,
+        "parentCoordinate": "org.springframework:spring-core:7.0.11",
+        "projectCoordinate": "com.example.payments:payments-api:2.0.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "payments-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/payments-service/main/payments-api/tree.json",
+          "context": "Maven dependency:tree (all scopes, nearest-wins pruned); scope=compile; main commit d598709bcd97a021260e8270ecbbd42ee9a67431"
+        }
+      },
+      {
+        "name": "org.jspecify:jspecify",
+        "version": "1.0.1",
+        "purl": "pkg:maven/org.jspecify/jspecify@1.0.1",
+        "groupId": "org.jspecify",
+        "artifactId": "jspecify",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 3,
+        "parentCoordinate": "org.springframework:spring-core:7.0.11",
+        "projectCoordinate": "com.example.payments:payments-api:2.0.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "payments-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/payments-service/main/payments-api/tree.json",
+          "context": "Maven dependency:tree (all scopes, nearest-wins pruned); scope=compile; main commit d598709bcd97a021260e8270ecbbd42ee9a67431"
+        }
+      },
+      {
+        "name": "org.springframework:spring-expression",
+        "version": "7.0.11",
+        "purl": "pkg:maven/org.springframework/spring-expression@7.0.11",
+        "groupId": "org.springframework",
+        "artifactId": "spring-expression",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "org.springframework:spring-context:7.0.11",
+        "projectCoordinate": "com.example.payments:payments-api:2.0.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "payments-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/payments-service/main/payments-api/tree.json",
+          "context": "Maven dependency:tree (all scopes, nearest-wins pruned); scope=compile; main commit d598709bcd97a021260e8270ecbbd42ee9a67431"
+        }
+      },
+      {
+        "name": "io.micrometer:micrometer-observation",
+        "version": "1.16.9",
+        "purl": "pkg:maven/io.micrometer/micrometer-observation@1.16.9",
+        "groupId": "io.micrometer",
+        "artifactId": "micrometer-observation",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "org.springframework:spring-context:7.0.11",
+        "projectCoordinate": "com.example.payments:payments-api:2.0.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "payments-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/payments-service/main/payments-api/tree.json",
+          "context": "Maven dependency:tree (all scopes, nearest-wins pruned); scope=compile; main commit d598709bcd97a021260e8270ecbbd42ee9a67431"
+        }
+      },
+      {
+        "name": "io.micrometer:micrometer-commons",
+        "version": "1.16.9",
+        "purl": "pkg:maven/io.micrometer/micrometer-commons@1.16.9",
+        "groupId": "io.micrometer",
+        "artifactId": "micrometer-commons",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 3,
+        "parentCoordinate": "io.micrometer:micrometer-observation:1.16.9",
+        "projectCoordinate": "com.example.payments:payments-api:2.0.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "payments-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/payments-service/main/payments-api/tree.json",
+          "context": "Maven dependency:tree (all scopes, nearest-wins pruned); scope=compile; main commit d598709bcd97a021260e8270ecbbd42ee9a67431"
+        }
+      },
+      {
+        "name": "org.apache.commons:commons-lang3",
+        "version": "3.17.0",
+        "purl": "pkg:maven/org.apache.commons/commons-lang3@3.17.0",
+        "groupId": "org.apache.commons",
+        "artifactId": "commons-lang3",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "direct",
+        "optional": false,
+        "depth": 1,
+        "parentCoordinate": "com.example.payments:payments-common:2.0.0",
+        "projectCoordinate": "com.example.payments:payments-common:2.0.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "payments-common",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/payments-service/main/payments-common/tree.json",
+          "context": "Maven dependency:tree (all scopes, nearest-wins pruned); scope=compile; main commit d598709bcd97a021260e8270ecbbd42ee9a67431"
+        }
+      }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "name": "payments-service",
+    "appId": "DEMO-1003",
+    "url": "https://example.invalid/eol-demo/payments-service",
+    "provider": "other",
+    "branch": "release/legacy",
+    "demo": true,
+    "localRepository": "additional-demo-evidence/sources/payments-service.bundle",
+    "sbom": {
+      "url": null,
+      "format": "inline-dependency-inventory",
+      "generatedAt": "2026-11-22T06:18:08Z",
+      "evidence": "additional-demo-evidence/payments-service/release-legacy/receipts.json"
+    },
+    "provenance": {
+      "commit": "847cfd9a2f3d80a873c638b63c1b9f442adc08b8",
+      "branch": "release/legacy",
+      "bundle": "additional-demo-evidence/sources/payments-service.bundle",
+      "receipts": "additional-demo-evidence/payments-service/release-legacy/receipts.json",
+      "run": "additional-demo-evidence/run.json"
+    },
+    "projects": [
+      {
+        "path": "payments-api",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "coordinate": "com.example.payments:payments-api:1.4.0",
+        "resolution": {
+          "status": "resolved",
+          "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 clean package && /usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree -DoutputType=json -DoutputFile=/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/payments-service/release-legacy/payments-api/tree.json && /usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree -DoutputFile=/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/payments-service/release-legacy/payments-api/tree.txt",
+          "toolVersion": "Apache Maven 3.8.7\u001b[m",
+          "tree": "additional-demo-evidence/payments-service/release-legacy/payments-api/tree.json"
+        }
+      },
+      {
+        "path": "payments-common",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "coordinate": "com.example.payments:payments-common:1.4.0",
+        "resolution": {
+          "status": "resolved",
+          "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 clean package && /usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree -DoutputType=json -DoutputFile=/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/payments-service/release-legacy/payments-common/tree.json && /usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree -DoutputFile=/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/payments-service/release-legacy/payments-common/tree.txt",
+          "toolVersion": "Apache Maven 3.8.7\u001b[m",
+          "tree": "additional-demo-evidence/payments-service/release-legacy/payments-common/tree.json"
+        }
+      }
+    ],
+    "dependencies": [
+      {
+        "name": "org.springframework:spring-context",
+        "version": "5.3.39",
+        "purl": "pkg:maven/org.springframework/spring-context@5.3.39",
+        "groupId": "org.springframework",
+        "artifactId": "spring-context",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "direct",
+        "optional": false,
+        "depth": 1,
+        "parentCoordinate": "com.example.payments:payments-api:1.4.0",
+        "projectCoordinate": "com.example.payments:payments-api:1.4.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "payments-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/payments-service/release-legacy/payments-api/tree.json",
+          "context": "Maven dependency:tree (all scopes, nearest-wins pruned); scope=compile; release/legacy commit 847cfd9a2f3d80a873c638b63c1b9f442adc08b8"
+        }
+      },
+      {
+        "name": "org.springframework:spring-aop",
+        "version": "5.3.39",
+        "purl": "pkg:maven/org.springframework/spring-aop@5.3.39",
+        "groupId": "org.springframework",
+        "artifactId": "spring-aop",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "org.springframework:spring-context:5.3.39",
+        "projectCoordinate": "com.example.payments:payments-api:1.4.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "payments-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/payments-service/release-legacy/payments-api/tree.json",
+          "context": "Maven dependency:tree (all scopes, nearest-wins pruned); scope=compile; release/legacy commit 847cfd9a2f3d80a873c638b63c1b9f442adc08b8"
+        }
+      },
+      {
+        "name": "org.springframework:spring-beans",
+        "version": "5.3.39",
+        "purl": "pkg:maven/org.springframework/spring-beans@5.3.39",
+        "groupId": "org.springframework",
+        "artifactId": "spring-beans",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "org.springframework:spring-context:5.3.39",
+        "projectCoordinate": "com.example.payments:payments-api:1.4.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "payments-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/payments-service/release-legacy/payments-api/tree.json",
+          "context": "Maven dependency:tree (all scopes, nearest-wins pruned); scope=compile; release/legacy commit 847cfd9a2f3d80a873c638b63c1b9f442adc08b8"
+        }
+      },
+      {
+        "name": "org.springframework:spring-core",
+        "version": "5.3.39",
+        "purl": "pkg:maven/org.springframework/spring-core@5.3.39",
+        "groupId": "org.springframework",
+        "artifactId": "spring-core",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "org.springframework:spring-context:5.3.39",
+        "projectCoordinate": "com.example.payments:payments-api:1.4.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "payments-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/payments-service/release-legacy/payments-api/tree.json",
+          "context": "Maven dependency:tree (all scopes, nearest-wins pruned); scope=compile; release/legacy commit 847cfd9a2f3d80a873c638b63c1b9f442adc08b8"
+        }
+      },
+      {
+        "name": "org.springframework:spring-jcl",
+        "version": "5.3.39",
+        "purl": "pkg:maven/org.springframework/spring-jcl@5.3.39",
+        "groupId": "org.springframework",
+        "artifactId": "spring-jcl",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 3,
+        "parentCoordinate": "org.springframework:spring-core:5.3.39",
+        "projectCoordinate": "com.example.payments:payments-api:1.4.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "payments-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/payments-service/release-legacy/payments-api/tree.json",
+          "context": "Maven dependency:tree (all scopes, nearest-wins pruned); scope=compile; release/legacy commit 847cfd9a2f3d80a873c638b63c1b9f442adc08b8"
+        }
+      },
+      {
+        "name": "org.springframework:spring-expression",
+        "version": "5.3.39",
+        "purl": "pkg:maven/org.springframework/spring-expression@5.3.39",
+        "groupId": "org.springframework",
+        "artifactId": "spring-expression",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "org.springframework:spring-context:5.3.39",
+        "projectCoordinate": "com.example.payments:payments-api:1.4.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "payments-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/payments-service/release-legacy/payments-api/tree.json",
+          "context": "Maven dependency:tree (all scopes, nearest-wins pruned); scope=compile; release/legacy commit 847cfd9a2f3d80a873c638b63c1b9f442adc08b8"
+        }
+      },
+      {
+        "name": "org.apache.commons:commons-lang3",
+        "version": "3.17.0",
+        "purl": "pkg:maven/org.apache.commons/commons-lang3@3.17.0",
+        "groupId": "org.apache.commons",
+        "artifactId": "commons-lang3",
+        "type": "jar",
+        "scope": "compile",
+        "dependencyType": "direct",
+        "optional": false,
+        "depth": 1,
+        "parentCoordinate": "com.example.payments:payments-common:1.4.0",
+        "projectCoordinate": "com.example.payments:payments-common:1.4.0",
+        "ecosystem": "Maven",
+        "packageManager": "Maven",
+        "projectPath": "payments-common",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/payments-service/release-legacy/payments-common/tree.json",
+          "context": "Maven dependency:tree (all scopes, nearest-wins pruned); scope=compile; release/legacy commit 847cfd9a2f3d80a873c638b63c1b9f442adc08b8"
+        }
+      }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "name": "reporting-service",
+    "appId": "DEMO-1004",
+    "url": "https://example.invalid/eol-demo/reporting-service",
+    "provider": "other",
+    "branch": "main",
+    "demo": true,
+    "localRepository": "additional-demo-evidence/sources/reporting-service.bundle",
+    "sbom": {
+      "url": null,
+      "format": "inline-dependency-inventory",
+      "generatedAt": "2026-11-22T06:18:12Z",
+      "evidence": "additional-demo-evidence/reporting-service/main/receipts.json"
+    },
+    "provenance": {
+      "commit": "548f1e94eac796c8722edd1827905be2019877f1",
+      "branch": "main",
+      "bundle": "additional-demo-evidence/sources/reporting-service.bundle",
+      "receipts": "additional-demo-evidence/reporting-service/main/receipts.json",
+      "run": "additional-demo-evidence/run.json"
+    },
+    "projects": [
+      {
+        "path": "report-api",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "coordinate": "report-api==2.0.0",
+        "resolution": {
+          "status": "resolved",
+          "command": "/root/.local/bin/uv sync --frozen --python 3.11 && /root/.local/bin/uv tree --frozen --no-dedupe --python 3.11 && /root/.local/bin/uv tree --frozen --no-dedupe --universal",
+          "toolVersion": "uv 0.11.16 (x86_64-unknown-linux-gnu)",
+          "tree": "additional-demo-evidence/reporting-service/main/report-api/uv-tree-universal.txt"
+        }
+      },
+      {
+        "path": "report-worker",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "coordinate": "report-worker==2.0.0",
+        "resolution": {
+          "status": "resolved",
+          "command": "/root/.local/bin/uv sync --frozen --python 3.11 && /root/.local/bin/uv tree --frozen --no-dedupe --python 3.11 && /root/.local/bin/uv tree --frozen --no-dedupe --universal",
+          "toolVersion": "uv 0.11.16 (x86_64-unknown-linux-gnu)",
+          "tree": "additional-demo-evidence/reporting-service/main/report-worker/uv-tree-universal.txt"
+        }
+      }
+    ],
+    "dependencies": [
+      {
+        "name": "django",
+        "version": "5.2.19",
+        "purl": "pkg:pypi/django@5.2.19",
+        "groupId": null,
+        "artifactId": null,
+        "type": "wheel",
+        "scope": "project.dependencies (runtime)",
+        "dependencyType": "direct",
+        "optional": false,
+        "depth": 1,
+        "parentCoordinate": "report-api==2.0.0",
+        "projectCoordinate": "report-api==2.0.0",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "projectPath": "report-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/reporting-service/main/report-api/uv.lock",
+          "context": "main commit 548f1e94eac796c8722edd1827905be2019877f1; universal uv.lock edge, marker none; installed in active env (Python 3.11.15, linux); matches uv tree --universal --no-dedupe"
+        }
+      },
+      {
+        "name": "asgiref",
+        "version": "3.13.0",
+        "purl": "pkg:pypi/asgiref@3.13.0",
+        "groupId": null,
+        "artifactId": null,
+        "type": "wheel",
+        "scope": "project.dependencies (runtime)",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "django==5.2.19",
+        "projectCoordinate": "report-api==2.0.0",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "projectPath": "report-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/reporting-service/main/report-api/uv.lock",
+          "context": "main commit 548f1e94eac796c8722edd1827905be2019877f1; universal uv.lock edge, marker none; installed in active env (Python 3.11.15, linux); matches uv tree --universal --no-dedupe"
+        }
+      },
+      {
+        "name": "sqlparse",
+        "version": "0.6.1",
+        "purl": "pkg:pypi/sqlparse@0.6.1",
+        "groupId": null,
+        "artifactId": null,
+        "type": "wheel",
+        "scope": "project.dependencies (runtime)",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "django==5.2.19",
+        "projectCoordinate": "report-api==2.0.0",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "projectPath": "report-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/reporting-service/main/report-api/uv.lock",
+          "context": "main commit 548f1e94eac796c8722edd1827905be2019877f1; universal uv.lock edge, marker none; installed in active env (Python 3.11.15, linux); matches uv tree --universal --no-dedupe"
+        }
+      },
+      {
+        "name": "tzdata",
+        "version": "2026.6",
+        "purl": "pkg:pypi/tzdata@2026.6",
+        "groupId": null,
+        "artifactId": null,
+        "type": "wheel",
+        "scope": "project.dependencies (runtime)",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "django==5.2.19",
+        "projectCoordinate": "report-api==2.0.0",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "projectPath": "report-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/reporting-service/main/report-api/uv.lock",
+          "context": "main commit 548f1e94eac796c8722edd1827905be2019877f1; universal uv.lock edge, marker sys_platform == 'win32'; not installed (marker excludes it) in active env (Python 3.11.15, linux); matches uv tree --universal --no-dedupe"
+        }
+      },
+      {
+        "name": "requests",
+        "version": "2.32.5",
+        "purl": "pkg:pypi/requests@2.32.5",
+        "groupId": null,
+        "artifactId": null,
+        "type": "wheel",
+        "scope": "project.dependencies (runtime)",
+        "dependencyType": "direct",
+        "optional": false,
+        "depth": 1,
+        "parentCoordinate": "report-worker==2.0.0",
+        "projectCoordinate": "report-worker==2.0.0",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "projectPath": "report-worker",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/reporting-service/main/report-worker/uv.lock",
+          "context": "main commit 548f1e94eac796c8722edd1827905be2019877f1; universal uv.lock edge, marker none; installed in active env (Python 3.11.15, linux); matches uv tree --universal --no-dedupe"
+        }
+      },
+      {
+        "name": "certifi",
+        "version": "2026.11.20",
+        "purl": "pkg:pypi/certifi@2026.11.20",
+        "groupId": null,
+        "artifactId": null,
+        "type": "wheel",
+        "scope": "project.dependencies (runtime)",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "requests==2.32.5",
+        "projectCoordinate": "report-worker==2.0.0",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "projectPath": "report-worker",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/reporting-service/main/report-worker/uv.lock",
+          "context": "main commit 548f1e94eac796c8722edd1827905be2019877f1; universal uv.lock edge, marker none; installed in active env (Python 3.11.15, linux); matches uv tree --universal --no-dedupe"
+        }
+      },
+      {
+        "name": "charset-normalizer",
+        "version": "3.5.2",
+        "purl": "pkg:pypi/charset-normalizer@3.5.2",
+        "groupId": null,
+        "artifactId": null,
+        "type": "wheel",
+        "scope": "project.dependencies (runtime)",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "requests==2.32.5",
+        "projectCoordinate": "report-worker==2.0.0",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "projectPath": "report-worker",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/reporting-service/main/report-worker/uv.lock",
+          "context": "main commit 548f1e94eac796c8722edd1827905be2019877f1; universal uv.lock edge, marker none; installed in active env (Python 3.11.15, linux); matches uv tree --universal --no-dedupe"
+        }
+      },
+      {
+        "name": "idna",
+        "version": "3.20",
+        "purl": "pkg:pypi/idna@3.20",
+        "groupId": null,
+        "artifactId": null,
+        "type": "wheel",
+        "scope": "project.dependencies (runtime)",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "requests==2.32.5",
+        "projectCoordinate": "report-worker==2.0.0",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "projectPath": "report-worker",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/reporting-service/main/report-worker/uv.lock",
+          "context": "main commit 548f1e94eac796c8722edd1827905be2019877f1; universal uv.lock edge, marker none; installed in active env (Python 3.11.15, linux); matches uv tree --universal --no-dedupe"
+        }
+      },
+      {
+        "name": "urllib3",
+        "version": "2.8.0",
+        "purl": "pkg:pypi/urllib3@2.8.0",
+        "groupId": null,
+        "artifactId": null,
+        "type": "wheel",
+        "scope": "project.dependencies (runtime)",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "requests==2.32.5",
+        "projectCoordinate": "report-worker==2.0.0",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "projectPath": "report-worker",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/reporting-service/main/report-worker/uv.lock",
+          "context": "main commit 548f1e94eac796c8722edd1827905be2019877f1; universal uv.lock edge, marker none; installed in active env (Python 3.11.15, linux); matches uv tree --universal --no-dedupe"
+        }
+      }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "name": "reporting-service",
+    "appId": "DEMO-1004",
+    "url": "https://example.invalid/eol-demo/reporting-service",
+    "provider": "other",
+    "branch": "release/legacy",
+    "demo": true,
+    "localRepository": "additional-demo-evidence/sources/reporting-service.bundle",
+    "sbom": {
+      "url": null,
+      "format": "inline-dependency-inventory",
+      "generatedAt": "2026-11-22T06:18:16Z",
+      "evidence": "additional-demo-evidence/reporting-service/release-legacy/receipts.json"
+    },
+    "provenance": {
+      "commit": "2ad170758d8ffd8c19e2cc8c344b403b1688edd9",
+      "branch": "release/legacy",
+      "bundle": "additional-demo-evidence/sources/reporting-service.bundle",
+      "receipts": "additional-demo-evidence/reporting-service/release-legacy/receipts.json",
+      "run": "additional-demo-evidence/run.json"
+    },
+    "projects": [
+      {
+        "path": "report-api",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "coordinate": "report-api==1.4.0",
+        "resolution": {
+          "status": "resolved",
+          "command": "/root/.local/bin/uv sync --frozen --python 3.11 && /root/.local/bin/uv tree --frozen --no-dedupe --python 3.11 && /root/.local/bin/uv tree --frozen --no-dedupe --universal",
+          "toolVersion": "uv 0.11.16 (x86_64-unknown-linux-gnu)",
+          "tree": "additional-demo-evidence/reporting-service/release-legacy/report-api/uv-tree-universal.txt"
+        }
+      },
+      {
+        "path": "report-worker",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "coordinate": "report-worker==1.4.0",
+        "resolution": {
+          "status": "resolved",
+          "command": "/root/.local/bin/uv sync --frozen --python 3.11 && /root/.local/bin/uv tree --frozen --no-dedupe --python 3.11 && /root/.local/bin/uv tree --frozen --no-dedupe --universal",
+          "toolVersion": "uv 0.11.16 (x86_64-unknown-linux-gnu)",
+          "tree": "additional-demo-evidence/reporting-service/release-legacy/report-worker/uv-tree-universal.txt"
+        }
+      }
+    ],
+    "dependencies": [
+      {
+        "name": "django",
+        "version": "3.2.25",
+        "purl": "pkg:pypi/django@3.2.25",
+        "groupId": null,
+        "artifactId": null,
+        "type": "wheel",
+        "scope": "project.dependencies (runtime)",
+        "dependencyType": "direct",
+        "optional": false,
+        "depth": 1,
+        "parentCoordinate": "report-api==1.4.0",
+        "projectCoordinate": "report-api==1.4.0",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "projectPath": "report-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/reporting-service/release-legacy/report-api/uv.lock",
+          "context": "release/legacy commit 2ad170758d8ffd8c19e2cc8c344b403b1688edd9; universal uv.lock edge, marker none; installed in active env (Python 3.11.15, linux); matches uv tree --universal --no-dedupe"
+        }
+      },
+      {
+        "name": "asgiref",
+        "version": "3.13.0",
+        "purl": "pkg:pypi/asgiref@3.13.0",
+        "groupId": null,
+        "artifactId": null,
+        "type": "wheel",
+        "scope": "project.dependencies (runtime)",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "django==3.2.25",
+        "projectCoordinate": "report-api==1.4.0",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "projectPath": "report-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/reporting-service/release-legacy/report-api/uv.lock",
+          "context": "release/legacy commit 2ad170758d8ffd8c19e2cc8c344b403b1688edd9; universal uv.lock edge, marker none; installed in active env (Python 3.11.15, linux); matches uv tree --universal --no-dedupe"
+        }
+      },
+      {
+        "name": "pytz",
+        "version": "2026.6",
+        "purl": "pkg:pypi/pytz@2026.6",
+        "groupId": null,
+        "artifactId": null,
+        "type": "wheel",
+        "scope": "project.dependencies (runtime)",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "django==3.2.25",
+        "projectCoordinate": "report-api==1.4.0",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "projectPath": "report-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/reporting-service/release-legacy/report-api/uv.lock",
+          "context": "release/legacy commit 2ad170758d8ffd8c19e2cc8c344b403b1688edd9; universal uv.lock edge, marker none; installed in active env (Python 3.11.15, linux); matches uv tree --universal --no-dedupe"
+        }
+      },
+      {
+        "name": "sqlparse",
+        "version": "0.6.1",
+        "purl": "pkg:pypi/sqlparse@0.6.1",
+        "groupId": null,
+        "artifactId": null,
+        "type": "wheel",
+        "scope": "project.dependencies (runtime)",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "django==3.2.25",
+        "projectCoordinate": "report-api==1.4.0",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "projectPath": "report-api",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/reporting-service/release-legacy/report-api/uv.lock",
+          "context": "release/legacy commit 2ad170758d8ffd8c19e2cc8c344b403b1688edd9; universal uv.lock edge, marker none; installed in active env (Python 3.11.15, linux); matches uv tree --universal --no-dedupe"
+        }
+      },
+      {
+        "name": "requests",
+        "version": "2.32.5",
+        "purl": "pkg:pypi/requests@2.32.5",
+        "groupId": null,
+        "artifactId": null,
+        "type": "wheel",
+        "scope": "project.dependencies (runtime)",
+        "dependencyType": "direct",
+        "optional": false,
+        "depth": 1,
+        "parentCoordinate": "report-worker==1.4.0",
+        "projectCoordinate": "report-worker==1.4.0",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "projectPath": "report-worker",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/reporting-service/release-legacy/report-worker/uv.lock",
+          "context": "release/legacy commit 2ad170758d8ffd8c19e2cc8c344b403b1688edd9; universal uv.lock edge, marker none; installed in active env (Python 3.11.15, linux); matches uv tree --universal --no-dedupe"
+        }
+      },
+      {
+        "name": "certifi",
+        "version": "2026.11.20",
+        "purl": "pkg:pypi/certifi@2026.11.20",
+        "groupId": null,
+        "artifactId": null,
+        "type": "wheel",
+        "scope": "project.dependencies (runtime)",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "requests==2.32.5",
+        "projectCoordinate": "report-worker==1.4.0",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "projectPath": "report-worker",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/reporting-service/release-legacy/report-worker/uv.lock",
+          "context": "release/legacy commit 2ad170758d8ffd8c19e2cc8c344b403b1688edd9; universal uv.lock edge, marker none; installed in active env (Python 3.11.15, linux); matches uv tree --universal --no-dedupe"
+        }
+      },
+      {
+        "name": "charset-normalizer",
+        "version": "3.5.2",
+        "purl": "pkg:pypi/charset-normalizer@3.5.2",
+        "groupId": null,
+        "artifactId": null,
+        "type": "wheel",
+        "scope": "project.dependencies (runtime)",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "requests==2.32.5",
+        "projectCoordinate": "report-worker==1.4.0",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "projectPath": "report-worker",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/reporting-service/release-legacy/report-worker/uv.lock",
+          "context": "release/legacy commit 2ad170758d8ffd8c19e2cc8c344b403b1688edd9; universal uv.lock edge, marker none; installed in active env (Python 3.11.15, linux); matches uv tree --universal --no-dedupe"
+        }
+      },
+      {
+        "name": "idna",
+        "version": "3.20",
+        "purl": "pkg:pypi/idna@3.20",
+        "groupId": null,
+        "artifactId": null,
+        "type": "wheel",
+        "scope": "project.dependencies (runtime)",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "requests==2.32.5",
+        "projectCoordinate": "report-worker==1.4.0",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "projectPath": "report-worker",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/reporting-service/release-legacy/report-worker/uv.lock",
+          "context": "release/legacy commit 2ad170758d8ffd8c19e2cc8c344b403b1688edd9; universal uv.lock edge, marker none; installed in active env (Python 3.11.15, linux); matches uv tree --universal --no-dedupe"
+        }
+      },
+      {
+        "name": "urllib3",
+        "version": "2.8.0",
+        "purl": "pkg:pypi/urllib3@2.8.0",
+        "groupId": null,
+        "artifactId": null,
+        "type": "wheel",
+        "scope": "project.dependencies (runtime)",
+        "dependencyType": "transitive",
+        "optional": false,
+        "depth": 2,
+        "parentCoordinate": "requests==2.32.5",
+        "projectCoordinate": "report-worker==1.4.0",
+        "ecosystem": "Python",
+        "packageManager": "uv",
+        "projectPath": "report-worker",
+        "recordSource": "resolved-dependency-tree",
+        "verification": {
+          "status": "resolved",
+          "source": "additional-demo-evidence/reporting-service/release-legacy/report-worker/uv.lock",
+          "context": "release/legacy commit 2ad170758d8ffd8c19e2cc8c344b403b1688edd9; universal uv.lock edge, marker none; installed in active env (Python 3.11.15, linux); matches uv tree --universal --no-dedupe"
+        }
+      }
+    ]
   }
 ]

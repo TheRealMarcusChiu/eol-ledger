@@ -1,0 +1,5 @@
+report-api v1.4.0
+└── django v3.2.25
+    ├── asgiref v3.13.0
+    ├── pytz v2026.6
+    └── sqlparse v0.6.1

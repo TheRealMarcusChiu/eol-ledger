@@ -1,0 +1,192 @@
+[
+  {
+    "repository": "payments-service",
+    "branch": "release/legacy",
+    "commit": "847cfd9a2f3d80a873c638b63c1b9f442adc08b8",
+    "command": "/usr/bin/git clone -q --no-hardlinks --branch release/legacy /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/repos/payments-service /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:17:50Z",
+    "finishedAt": "2026-11-22T06:17:50Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "repository": "payments-service",
+    "branch": "release/legacy",
+    "commit": "847cfd9a2f3d80a873c638b63c1b9f442adc08b8",
+    "command": "/usr/bin/git rev-parse HEAD",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:17:50Z",
+    "finishedAt": "2026-11-22T06:17:50Z",
+    "stdout": "847cfd9a2f3d80a873c638b63c1b9f442adc08b8\n",
+    "stderr": ""
+  },
+  {
+    "module": "payments-api",
+    "repository": "payments-service",
+    "branch": "release/legacy",
+    "commit": "847cfd9a2f3d80a873c638b63c1b9f442adc08b8",
+    "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 clean package",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-api",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:17:50Z",
+    "finishedAt": "2026-11-22T06:17:54Z",
+    "stdout": "[INFO] Scanning for projects...\n[INFO] \n[INFO] -----------------< com.example.payments:payments-api >------------------\n[INFO] Building payments-api 1.4.0\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- maven-clean-plugin:3.4.0:clean (default-clean) @ payments-api ---\n[INFO] \n[INFO] --- maven-resources-plugin:3.3.1:resources (default-resources) @ payments-api ---\n[INFO] skip non existing resourceDirectory /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-api/src/main/resources\n[INFO] \n[INFO] --- maven-compiler-plugin:3.13.0:compile (default-compile) @ payments-api ---\n[INFO] Recompiling the module because of changed dependency.\n[INFO] Compiling 1 source file with javac [debug release 17] to target/classes\n[INFO] \n[INFO] --- maven-resources-plugin:3.3.1:testResources (default-testResources) @ payments-api ---\n[INFO] skip non existing resourceDirectory /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-api/src/test/resources\n[INFO] \n[INFO] --- maven-compiler-plugin:3.13.0:testCompile (default-testCompile) @ payments-api ---\n[INFO] No sources to compile\n[INFO] \n[INFO] --- maven-surefire-plugin:3.5.2:test (default-test) @ payments-api ---\n[INFO] No tests to run.\n[INFO] \n[INFO] --- maven-jar-plugin:3.4.2:jar (default-jar) @ payments-api ---\n[INFO] Building jar: /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-api/target/payments-api-1.4.0.jar\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  2.626 s\n[INFO] Finished at: 2026-11-22T00:17:54-06:00\n[INFO] ------------------------------------------------------------------------\n",
+    "stderr": ""
+  },
+  {
+    "module": "payments-api",
+    "repository": "payments-service",
+    "branch": "release/legacy",
+    "commit": "847cfd9a2f3d80a873c638b63c1b9f442adc08b8",
+    "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree -DoutputType=json -DoutputFile=/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/payments-service/release-legacy/payments-api/tree.json",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-api",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:17:54Z",
+    "finishedAt": "2026-11-22T06:17:56Z",
+    "stdout": "[INFO] Scanning for projects...\n[INFO] \n[INFO] -----------------< com.example.payments:payments-api >------------------\n[INFO] Building payments-api 1.4.0\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- maven-dependency-plugin:3.8.1:tree (default-cli) @ payments-api ---\n[INFO] Wrote dependency tree to: /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/payments-service/release-legacy/payments-api/tree.json\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  0.903 s\n[INFO] Finished at: 2026-11-22T00:17:56-06:00\n[INFO] ------------------------------------------------------------------------\n",
+    "stderr": ""
+  },
+  {
+    "module": "payments-api",
+    "repository": "payments-service",
+    "branch": "release/legacy",
+    "commit": "847cfd9a2f3d80a873c638b63c1b9f442adc08b8",
+    "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree -DoutputFile=/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/payments-service/release-legacy/payments-api/tree.txt",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-api",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:17:56Z",
+    "finishedAt": "2026-11-22T06:17:58Z",
+    "stdout": "[INFO] Scanning for projects...\n[INFO] \n[INFO] -----------------< com.example.payments:payments-api >------------------\n[INFO] Building payments-api 1.4.0\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- maven-dependency-plugin:3.8.1:tree (default-cli) @ payments-api ---\n[INFO] Wrote dependency tree to: /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/payments-service/release-legacy/payments-api/tree.txt\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  0.845 s\n[INFO] Finished at: 2026-11-22T00:17:58-06:00\n[INFO] ------------------------------------------------------------------------\n",
+    "stderr": ""
+  },
+  {
+    "module": "payments-api",
+    "repository": "payments-service",
+    "branch": "release/legacy",
+    "commit": "847cfd9a2f3d80a873c638b63c1b9f442adc08b8",
+    "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:build-classpath -Dmdep.outputFile=/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-api/target/classpath.txt",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-api",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:17:58Z",
+    "finishedAt": "2026-11-22T06:18:00Z",
+    "stdout": "[INFO] Scanning for projects...\n[INFO] \n[INFO] -----------------< com.example.payments:payments-api >------------------\n[INFO] Building payments-api 1.4.0\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- maven-dependency-plugin:3.8.1:build-classpath (default-cli) @ payments-api ---\n[INFO] Wrote classpath file '/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-api/target/classpath.txt'.\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  0.847 s\n[INFO] Finished at: 2026-11-22T00:18:00-06:00\n[INFO] ------------------------------------------------------------------------\n",
+    "stderr": ""
+  },
+  {
+    "module": "payments-api",
+    "repository": "payments-service",
+    "branch": "release/legacy",
+    "commit": "847cfd9a2f3d80a873c638b63c1b9f442adc08b8",
+    "command": "/usr/bin/java -cp /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-api/target/payments-api-1.4.0.jar:/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2/org/springframework/spring-context/5.3.39/spring-context-5.3.39.jar:/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2/org/springframework/spring-aop/5.3.39/spring-aop-5.3.39.jar:/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2/org/springframework/spring-beans/5.3.39/spring-beans-5.3.39.jar:/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2/org/springframework/spring-core/5.3.39/spring-core-5.3.39.jar:/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2/org/springframework/spring-jcl/5.3.39/spring-jcl-5.3.39.jar:/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2/org/springframework/spring-expression/5.3.39/spring-expression-5.3.39.jar com.example.payments.api.PaymentsApi",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-api",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:00Z",
+    "finishedAt": "2026-11-22T06:18:00Z",
+    "stdout": "settlement currency EUR\n",
+    "stderr": ""
+  },
+  {
+    "module": "payments-common",
+    "repository": "payments-service",
+    "branch": "release/legacy",
+    "commit": "847cfd9a2f3d80a873c638b63c1b9f442adc08b8",
+    "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 clean package",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-common",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:00Z",
+    "finishedAt": "2026-11-22T06:18:03Z",
+    "stdout": "[INFO] Scanning for projects...\n[INFO] \n[INFO] ----------------< com.example.payments:payments-common >----------------\n[INFO] Building payments-common 1.4.0\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- maven-clean-plugin:3.4.0:clean (default-clean) @ payments-common ---\n[INFO] \n[INFO] --- maven-resources-plugin:3.3.1:resources (default-resources) @ payments-common ---\n[INFO] skip non existing resourceDirectory /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-common/src/main/resources\n[INFO] \n[INFO] --- maven-compiler-plugin:3.13.0:compile (default-compile) @ payments-common ---\n[INFO] Recompiling the module because of changed source code.\n[INFO] Compiling 1 source file with javac [debug release 17] to target/classes\n[INFO] \n[INFO] --- maven-resources-plugin:3.3.1:testResources (default-testResources) @ payments-common ---\n[INFO] skip non existing resourceDirectory /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-common/src/test/resources\n[INFO] \n[INFO] --- maven-compiler-plugin:3.13.0:testCompile (default-testCompile) @ payments-common ---\n[INFO] No sources to compile\n[INFO] \n[INFO] --- maven-surefire-plugin:3.5.2:test (default-test) @ payments-common ---\n[INFO] No tests to run.\n[INFO] \n[INFO] --- maven-jar-plugin:3.4.2:jar (default-jar) @ payments-common ---\n[INFO] Building jar: /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-common/target/payments-common-1.4.0.jar\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  1.475 s\n[INFO] Finished at: 2026-11-22T00:18:02-06:00\n[INFO] ------------------------------------------------------------------------\n",
+    "stderr": ""
+  },
+  {
+    "module": "payments-common",
+    "repository": "payments-service",
+    "branch": "release/legacy",
+    "commit": "847cfd9a2f3d80a873c638b63c1b9f442adc08b8",
+    "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree -DoutputType=json -DoutputFile=/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/payments-service/release-legacy/payments-common/tree.json",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-common",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:03Z",
+    "finishedAt": "2026-11-22T06:18:04Z",
+    "stdout": "[INFO] Scanning for projects...\n[INFO] \n[INFO] ----------------< com.example.payments:payments-common >----------------\n[INFO] Building payments-common 1.4.0\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- maven-dependency-plugin:3.8.1:tree (default-cli) @ payments-common ---\n[INFO] Wrote dependency tree to: /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/payments-service/release-legacy/payments-common/tree.json\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  0.704 s\n[INFO] Finished at: 2026-11-22T00:18:04-06:00\n[INFO] ------------------------------------------------------------------------\n",
+    "stderr": ""
+  },
+  {
+    "module": "payments-common",
+    "repository": "payments-service",
+    "branch": "release/legacy",
+    "commit": "847cfd9a2f3d80a873c638b63c1b9f442adc08b8",
+    "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree -DoutputFile=/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/payments-service/release-legacy/payments-common/tree.txt",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-common",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:04Z",
+    "finishedAt": "2026-11-22T06:18:06Z",
+    "stdout": "[INFO] Scanning for projects...\n[INFO] \n[INFO] ----------------< com.example.payments:payments-common >----------------\n[INFO] Building payments-common 1.4.0\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- maven-dependency-plugin:3.8.1:tree (default-cli) @ payments-common ---\n[INFO] Wrote dependency tree to: /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/stage/payments-service/release-legacy/payments-common/tree.txt\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  0.778 s\n[INFO] Finished at: 2026-11-22T00:18:06-06:00\n[INFO] ------------------------------------------------------------------------\n",
+    "stderr": ""
+  },
+  {
+    "module": "payments-common",
+    "repository": "payments-service",
+    "branch": "release/legacy",
+    "commit": "847cfd9a2f3d80a873c638b63c1b9f442adc08b8",
+    "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:build-classpath -Dmdep.outputFile=/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-common/target/classpath.txt",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-common",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:06Z",
+    "finishedAt": "2026-11-22T06:18:08Z",
+    "stdout": "[INFO] Scanning for projects...\n[INFO] \n[INFO] ----------------< com.example.payments:payments-common >----------------\n[INFO] Building payments-common 1.4.0\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- maven-dependency-plugin:3.8.1:build-classpath (default-cli) @ payments-common ---\n[INFO] Wrote classpath file '/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-common/target/classpath.txt'.\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  0.780 s\n[INFO] Finished at: 2026-11-22T00:18:08-06:00\n[INFO] ------------------------------------------------------------------------\n",
+    "stderr": ""
+  },
+  {
+    "module": "payments-common",
+    "repository": "payments-service",
+    "branch": "release/legacy",
+    "commit": "847cfd9a2f3d80a873c638b63c1b9f442adc08b8",
+    "command": "/usr/bin/java -cp /root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-common/target/payments-common-1.4.0.jar:/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2/org/apache/commons/commons-lang3/3.17.0/commons-lang3-3.17.0.jar com.example.payments.common.Money",
+    "cwd": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/work/build/payments-service/release-legacy/payments-common",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/uv"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T06:18:08Z",
+    "finishedAt": "2026-11-22T06:18:08Z",
+    "stdout": "EUR 12.34\n",
+    "stderr": ""
+  }
+]

@@ -1,0 +1,2 @@
+com.example.payments:payments-common:jar:1.4.0
+\- org.apache.commons:commons-lang3:jar:3.17.0:compile

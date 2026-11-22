@@ -1,0 +1,8 @@
+[project]
+name = "report-api"
+version = "2.0.0"
+requires-python = ">=3.11"
+dependencies = ["Django==5.2.19"]
+
+[tool.uv]
+package = false
