@@ -393,7 +393,7 @@ function initColumnOrder(table) {
   apply();
 }
 
-// ---- Header sort and filters for EVERY table: page-local state, nothing stored. Pure helpers first (tested in Node). ----
+// ---- Header sort and filters for EVERY table: mirrored in the URL (see Shareable views), never stored. Pure helpers first (tested in Node). ----
 // A column's key is its th[data-column] (else its position), its type th[data-type]: text | version | number | date | datetime.
 // A cell's value is its td[data-value] when present (e.g. a blank EoL date shown as "Not published"), else its visible text.
 
@@ -572,6 +572,86 @@ function pageRange(n, page, size) {
   return { page: p, pages: pages, start: (p - 1) * size, end: Math.min(n, p * size) };
 }
 
+// ---- Shareable views: a table's sort, filters and page live in ?view.<table id>={"v":1,...}; widths/visibility/order never do ----
+
+var VIEW_DERIVED = { start: true, end: true, error: true }; // recomputed from startText/endText by checkRange
+
+/**
+ * One table's view as versioned JSON holding only what differs from the defaults; null when it is all defaults.
+ * domains: {key: the table's distinct values}; a values selection is written as the shorter of selected and excluded.
+ * shortcut: an arbitrary selection near half of a huge domain stays long either way; a server 400 is possible there.
+ */
+function encodeView(view, keys, defaultSort, domains) {
+  var out = { v: 1 }, filters = {}, blank = emptyFilter();
+  keys.forEach(function (k) {
+    var f = view.filters[k], diff = {};
+    Object.keys(blank).forEach(function (n) {
+      if (!VIEW_DERIVED[n] && JSON.stringify(f[n]) !== JSON.stringify(blank[n])) diff[n] = f[n];
+    });
+    var domain = domains && domains[k];
+    if (f.selected && domain) {
+      var picked = {};
+      f.selected.forEach(function (v) { picked['=' + v] = true; });
+      var excluded = domain.filter(function (v) { return !picked['=' + v]; });
+      if (JSON.stringify(excluded).length < JSON.stringify(f.selected).length) { delete diff.selected; diff.excluded = excluded; }
+    }
+    // An invalid draft keeps the last valid bounds applied: carry them so the URL matches the same rows.
+    if (f.error && (f.start !== null || f.end !== null)) { diff.start = f.start; diff.end = f.end; }
+    if (Object.keys(diff).length) filters[k] = diff;
+  });
+  if (Object.keys(filters).length) out.filters = filters;
+  if (JSON.stringify(view.sort) !== JSON.stringify(defaultSort)) out.sort = view.sort;
+  if (view.page > 1) out.page = view.page;
+  if (view.size !== PAGE_SIZES[0]) out.size = view.size;
+  return Object.keys(out).length > 1 ? JSON.stringify(out) : null;
+}
+
+/** Untrusted URL text to a full view: anything missing, malformed, unknown or of another version falls back to its default. */
+function decodeView(text, keys, types, defaultSort, domains) {
+  var v = null;
+  try { v = JSON.parse(text); } catch (e) { /* defaults */ }
+  var view = clearedState(null, null, keys, defaultSort);
+  view.page = 1;
+  view.size = PAGE_SIZES[0];
+  function has(o, n) { return !!o && typeof o === 'object' && !Array.isArray(o) && Object.prototype.hasOwnProperty.call(o, n); }
+  function strings(a) { return Array.isArray(a) && a.every(function (x) { return typeof x === 'string'; }); }
+  function bound(x) { return x === null || typeof x === 'string'; }
+  if (!has(v, 'v') || v.v !== 1) return view;
+  keys.forEach(function (k) {
+    if (!has(v.filters, k)) return;
+    var s = v.filters[k], f = view.filters[k], domain = domains && domains[k];
+    if (has(s, 'mode') && ['values', 'text', 'range'].indexOf(s.mode) >= 0) f.mode = s.mode;
+    if (has(s, 'selected') && (s.selected === null || strings(s.selected))) f.selected = s.selected && s.selected.slice();
+    else if (has(s, 'excluded') && strings(s.excluded) && domain) {
+      var out = {};
+      s.excluded.forEach(function (x) { out['=' + x] = true; });
+      var kept = domain.filter(function (x) { return !out['=' + x]; });
+      f.selected = kept.length === domain.length ? null : kept;
+    }
+    if (has(s, 'searchOp') && ['contains', 'exact', 'fuzzy'].indexOf(s.searchOp) >= 0) f.searchOp = s.searchOp;
+    if (has(s, 'op') && has(TEXT_OPS, s.op)) f.op = s.op;
+    ['search', 'text', 'startText', 'endText'].forEach(function (n) { if (has(s, n) && typeof s[n] === 'string') f[n] = s[n]; });
+    var type = types[k] || 'text', c = checkRange(type, f.startText, f.endText);
+    if (!c.error) { f.start = c.start; f.end = c.end; return; }
+    f.error = c.error;
+    // An invalid draft carries the bounds it kept applied; they must pass the same validators.
+    var applied = has(s, 'start') && has(s, 'end') && bound(s.start) && bound(s.end) ? checkRange(type, s.start, s.end) : { error: true };
+    if (!applied.error) { f.start = applied.start; f.end = applied.end; }
+  });
+  if (has(v, 'sort') && v.sort === null) view.sort = null;
+  else if (has(v.sort, 'key') && keys.indexOf(v.sort.key) >= 0 && (v.sort.dir === 'asc' || v.sort.dir === 'desc')) view.sort = { key: v.sort.key, dir: v.sort.dir };
+  if (Number.isInteger(v.page) && v.page > 1) view.page = v.page;
+  if (PAGE_SIZES.indexOf(v.size) >= 0) view.size = v.size;
+  return view;
+}
+
+/** href with one query param set, or removed for null; every other param and the fragment kept. */
+function withParam(href, name, value) {
+  var u = new URL(href);
+  if (value === null) u.searchParams.delete(name); else u.searchParams.set(name, value);
+  return u.href;
+}
+
 var tableSeq = 0;
 
 /**
@@ -619,6 +699,18 @@ function initTable(table, opts) {
     where.textContent = 'Page ' + p.page + ' of ' + p.pages;
     prev.disabled = p.page <= 1;
     next.disabled = p.page >= p.pages;
+    writeView();
+  }
+
+  // The address bar mirrors this table's view under its real id; tables without one keep page-local state.
+  var param = table.id ? 'view.' + table.id : null, viewReady = false;
+  function writeView() {
+    if (!viewReady) return;
+    var text = encodeView({ filters: filters, sort: sort, page: page, size: size }, keys, defaultSort, distinct);
+    // Defaults on a legacy start/end/sort link still need a param, or a reload would bring the legacy bounds back.
+    if (!text && legacyView) text = '{"v":1}';
+    var href = withParam(window.location.href, param, text);
+    if (href !== window.location.href) window.history.replaceState(window.history.state, '', href);
   }
 
   function turn(by, button, other) {
@@ -822,7 +914,7 @@ function initTable(table, opts) {
     search.type = 'search';
     search.placeholder = 'Search values';
     // Searching only narrows the list; rows change when a checkbox does.
-    function narrow() { f().search = search.value; f().searchOp = searchOp.value; sync(k); }
+    function narrow() { f().search = search.value; f().searchOp = searchOp.value; sync(k); writeView(); }
     search.addEventListener('input', narrow);
     searchOp.addEventListener('change', narrow);
     var all = button('data-filter-select-all', k, 'Select all');
@@ -954,25 +1046,50 @@ function initTable(table, opts) {
   }, true);
 
   clearAll.addEventListener('click', function () {
-    // A legacy ?unused=true dashboard page holds rows the default omits: reload the default view (column prefs are stored, so they stay).
-    if (opts.legacy && table.getAttribute('data-legacy') === 'true') { window.location.assign(window.location.pathname); return; }
+    // A legacy start/end/sort or ?unused=false dashboard link: reload the default view (column prefs are stored, so they stay),
+    // dropping only the legacy params and this table's view; other params and the fragment stay.
+    if (opts.legacy && table.getAttribute('data-legacy') === 'true') {
+      window.location.assign(['start', 'end', 'sort', 'unused', param].filter(Boolean).reduce(function (href, n) { return withParam(href, n, null); }, window.location.href));
+      return;
+    }
     close(false);
     reset();
     keys.forEach(sync);
     render();
   });
 
-  reset();
-  if (opts.legacy) {
-    // Legacy ?start=&end=&sort= links (validated by the server) become the initial header state.
-    var legacy = checkRange('date', table.getAttribute('data-start'), table.getAttribute('data-end'));
-    if (!legacy.error && (legacy.start || legacy.end) && filters.eol) {
-      filters.eol = Object.assign(emptyFilter(), { mode: 'range', start: legacy.start, end: legacy.end, startText: legacy.start || '', endText: legacy.end || '' });
+  var legacyView = !!(opts.legacy && param && (table.getAttribute('data-start') || table.getAttribute('data-end') || table.getAttribute('data-sort') === 'desc'));
+
+  // Explicit URL state wins; without it, the defaults (or a legacy link's bounds). Page and size go last: render() starts on page 1.
+  function applyView() {
+    var text = param ? new URL(window.location.href).searchParams.get(param) : null;
+    var v = decodeView(text, keys, types, defaultSort, distinct);
+    viewReady = false;
+    if (text !== null) {
+      filters = v.filters;
+      sort = v.sort;
+    } else {
+      reset();
+      if (opts.legacy) {
+        // Legacy ?start=&end=&sort= links (validated by the server) become the initial header state.
+        var legacy = checkRange('date', table.getAttribute('data-start'), table.getAttribute('data-end'));
+        if (!legacy.error && (legacy.start || legacy.end) && filters.eol) {
+          filters.eol = Object.assign(emptyFilter(), { mode: 'range', start: legacy.start, end: legacy.end, startText: legacy.start || '', endText: legacy.end || '' });
+        }
+        if (table.getAttribute('data-sort') === 'desc' && sort) sort = { key: sort.key, dir: 'desc' };
+      }
     }
-    if (table.getAttribute('data-sort') === 'desc' && sort) sort.dir = 'desc';
+    keys.forEach(sync);
+    render();
+    size = v.size;
+    sizeSelect.value = String(size);
+    page = v.page;
+    viewReady = !!param;
+    draw();
   }
-  keys.forEach(sync);
-  render();
+
+  if (param) window.addEventListener('popstate', function () { close(false); applyView(); });
+  applyView();
 }
 
 /** "3 of 4 code repo branches": the table's data-noun, else its region label in lower case, else "rows". */

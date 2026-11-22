@@ -42,6 +42,26 @@ class MinimalUiTest extends WebTestBase {
                 .contains("How to map this package").doesNotContain("eol.mappings");
     }
 
+    /** app.js mirrors each table's sort/filter/page into a URL param named after its id, so every table needs a stable one. */
+    @Test
+    void everyTableHasAStableIdForItsShareableUrlState() throws Exception {
+        long main = branchId("https://gitlab.com/acme/alpha", "main");
+        java.util.Map<String, List<String>> expected = java.util.Map.of(
+                "/", List.of("dependencies-table"),
+                "/imports", List.of("import-history-table"),
+                "/repos", List.of("code-repos-table"),
+                "/repos/" + main, List.of("latest-dependencies-table"),
+                "/repos/" + main + "/history", List.of("latest-dependencies-table", "snapshot-timeline-table"),
+                "/dependencies/react", List.of("release-cycles-table"),
+                "/dependencies/react?version=18", List.of("affected-branches-table"));
+        expected.forEach((url, ids) -> {
+            String html;
+            try { html = page(url); } catch (Exception e) { throw new AssertionError(url, e); }
+            assertThat(java.util.regex.Pattern.compile("<table(?:\\s[^>]*)?>").matcher(html).results()
+                    .map(m -> m.group().replaceAll("(?s).*\\sid=\"([^\"]*)\".*", "$1")).toList()).as(url).isEqualTo(ids);
+        });
+    }
+
     @Test
     void dashboardHasNoTopControlsOnlyTheTable() throws Exception {
         String html = page("/");

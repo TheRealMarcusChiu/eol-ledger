@@ -8,7 +8,8 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '../../main/resources/static/app.js'), 'utf8');
 
 function load(window, document) {
-  const ctx = vm.createContext({ window: window || {}, document: document || { addEventListener() {}, getElementById() { return null; } } });
+  const ctx = vm.createContext({ window: window || {}, document: document || { addEventListener() {}, getElementById() { return null; } },
+    URL, Option: window && window.Option });
   vm.runInContext(source, ctx);
   return ctx;
 }
@@ -833,4 +834,450 @@ test('header title is the first own non-blank text node, ignoring elements and w
   assert.strictEqual(headerTitle({ childNodes: [text('\n  '), el, title, text('Other')] }), title);
   assert.strictEqual(headerTitle({ childNodes: [text(' '), el] }), undefined);
   assert.strictEqual(headerTitle({ childNodes: [] }), undefined);
+});
+
+// ---- Shareable table views: each table's sort/filters/page mirrored into ?view.<table id>=<versioned JSON> ----
+
+const VIEW_KEYS = ['name', 'version', 'count', 'eol'];
+const VIEW_TYPES = { name: 'text', version: 'version', count: 'number', eol: 'date' };
+const EOL_ASC = { key: 'eol', dir: 'asc' };
+
+test('view state: versioned JSON round-trips every mode, [] apart from null, a null sort, page and size; defaults encode to nothing', () => {
+  const { encodeView, decodeView, emptyFilter } = load();
+  const base = decodeView(null, VIEW_KEYS, VIEW_TYPES, EOL_ASC);
+  assert.deepStrictEqual(plain(base), { filters: Object.fromEntries(VIEW_KEYS.map(k => [k, plain(emptyFilter())])), sort: EOL_ASC, page: 1, size: 20 });
+  assert.strictEqual(encodeView(base, VIEW_KEYS, EOL_ASC), null);
+  const view = decodeView(null, VIEW_KEYS, VIEW_TYPES, EOL_ASC);
+  view.filters.name = Object.assign(emptyFilter(), { selected: [] });
+  view.filters.version = Object.assign(emptyFilter(), { mode: 'text', op: 'starts-with', text: '1.' });
+  view.filters.count = Object.assign(emptyFilter(), { mode: 'range', startText: '2', endText: '10', start: '2', end: '10' });
+  view.filters.eol = Object.assign(emptyFilter(), { selected: ['2026-01-02', ''], search: '01', searchOp: 'exact' });
+  Object.assign(view, { sort: null, page: 3, size: 50 });
+  const text = encodeView(view, VIEW_KEYS, EOL_ASC);
+  assert.deepStrictEqual(JSON.parse(text), { v: 1, filters: { name: { selected: [] }, version: { mode: 'text', op: 'starts-with', text: '1.' },
+    count: { mode: 'range', startText: '2', endText: '10' }, eol: { selected: ['2026-01-02', ''], search: '01', searchOp: 'exact' } }, sort: null, page: 3, size: 50 });
+  assert.deepStrictEqual(plain(decodeView(text, VIEW_KEYS, VIEW_TYPES, EOL_ASC)), plain(view));
+  // selected: null is "every value" (the default), [] is "no value": distinct in both directions
+  assert.strictEqual(decodeView('{"v":1,"filters":{"name":{"selected":null}}}', VIEW_KEYS, VIEW_TYPES, EOL_ASC).filters.name.selected, null);
+  assert.deepStrictEqual(plain(decodeView('{"v":1,"filters":{"name":{"selected":[]}}}', VIEW_KEYS, VIEW_TYPES, EOL_ASC).filters.name.selected), []);
+  // a table whose default is source order writes a real sort, and reads an absent one as source order
+  const plainTable = decodeView('{"v":1,"sort":{"key":"name","dir":"desc"}}', VIEW_KEYS, VIEW_TYPES, null);
+  assert.deepStrictEqual(plain(plainTable.sort), { key: 'name', dir: 'desc' });
+  assert.strictEqual(decodeView(null, VIEW_KEYS, VIEW_TYPES, null).sort, null);
+  assert.strictEqual(encodeView(decodeView(null, VIEW_KEYS, VIEW_TYPES, null), VIEW_KEYS, null), null);
+});
+
+test('view state: malformed, other-version, unknown and hostile input falls back field by field, never reaching a prototype', () => {
+  const ctx = load();
+  const defaults = plain(ctx.decodeView(null, VIEW_KEYS, VIEW_TYPES, EOL_ASC));
+  for (const text of [undefined, '', 'x', 'null', '[]', '42', '"v"', '{}', '{"v":2,"sort":null,"page":2}', '{"v":"1","page":2}', '{"sort":null}',
+    '{"v":1,"filters":[1],"sort":"name","page":"2","size":"50"}', '{"v":1,"page":0,"size":30}', '{"v":1,"page":2.5,"size":-20}', '{"v":1,"page":-1}',
+    '{"v":1,"sort":{"key":"nope","dir":"asc"}}', '{"v":1,"sort":{"key":"name","dir":"up"}}', '{"v":1,"sort":{"key":"__proto__","dir":"asc"}}',
+    '{"v":1,"filters":{"nope":{"mode":"text","text":"a"},"name":{"mode":"regex","op":"matches","searchOp":"near","selected":[1,"a"],"text":5,"search":{}}}}',
+    '{"v":1,"filters":{"name":{"op":"__proto__","selected":"a"},"__proto__":{"mode":"text"},"constructor":{"mode":"text"}},"__proto__":{"page":3}}']) {
+    assert.deepStrictEqual(plain(ctx.decodeView(text, VIEW_KEYS, VIEW_TYPES, EOL_ASC)), defaults, String(text));
+  }
+  assert.strictEqual(vm.runInContext('({}).mode === undefined && ({}).page === undefined', ctx), true);
+  // valid fields survive next to invalid ones
+  const mixed = ctx.decodeView('{"v":1,"filters":{"name":{"mode":"text","op":"bogus","text":"py"}},"page":2,"size":30}', VIEW_KEYS, VIEW_TYPES, EOL_ASC);
+  assert.deepStrictEqual(plain(mixed.filters.name), Object.assign(plain(ctx.emptyFilter()), { mode: 'text', text: 'py' }));
+  assert.deepStrictEqual([mixed.page, mixed.size], [2, 20]);
+});
+
+test('view state: range bounds go through the same validators; invalid ones show their error and constrain nothing', () => {
+  const { decodeView, filterPredicate } = load();
+  const v = decodeView(JSON.stringify({ v: 1, filters: {
+    eol: { mode: 'range', startText: '2026-02-30' }, count: { mode: 'range', startText: '9', endText: '2' },
+    version: { mode: 'range', startText: 'abc', endText: 'zzz' }, name: { mode: 'range', startText: 'b', endText: '' } } }), VIEW_KEYS, { ...VIEW_TYPES, version: 'number' }, EOL_ASC);
+  assert.strictEqual(v.filters.eol.error, 'From: Enter a real date as YYYY-MM-DD.');
+  assert.strictEqual(v.filters.count.error, 'From must be on or before To.');
+  assert.strictEqual(v.filters.version.error, 'From: Enter a number. To: Enter a number.');
+  for (const k of ['eol', 'count', 'version']) {
+    assert.deepStrictEqual([v.filters[k].start, v.filters[k].end, filterPredicate(v.filters[k], 'text')], [null, null, null], k);
+  }
+  assert.deepStrictEqual([v.filters.name.start, v.filters.name.end, v.filters.name.error], ['b', null, '']);
+  assert.deepStrictEqual(plain(v.filters.eol).startText, '2026-02-30', 'the invalid draft is kept for the menu');
+});
+
+test('view state: an invalid range draft keeps its last valid applied bounds through encode and decode, so the same rows match', () => {
+  const { encodeView, decodeView, checkRange, emptyFilter, visibleRows } = load();
+  const rows = ['2026-01-01', '2026-01-05', '2026-01-09', ''].map(eol => ({ eol }));
+  const view = decodeView(null, ['eol'], { eol: 'date' }, null);
+  const f = view.filters.eol = Object.assign(emptyFilter(), { mode: 'range' });
+  // what the menu does: a valid bound is applied, then an invalid draft keeps it applied
+  for (const text of ['2026-01-05', '2026-01-5x']) {
+    const c = checkRange('date', text, '');
+    f.startText = text;
+    f.error = c.error || '';
+    if (!c.error) { f.start = c.start; f.end = c.end; }
+  }
+  const before = plain(visibleRows(rows, view.filters, { eol: 'date' }));
+  assert.deepStrictEqual(before, [false, true, true, false]);
+  const text = encodeView(view, ['eol'], null);
+  assert.deepStrictEqual(JSON.parse(text).filters.eol, { mode: 'range', startText: '2026-01-5x', start: '2026-01-05', end: null });
+  const back = decodeView(text, ['eol'], { eol: 'date' }, null);
+  assert.deepStrictEqual(plain(visibleRows(rows, back.filters, { eol: 'date' })), before);
+  assert.deepStrictEqual([back.filters.eol.startText, back.filters.eol.error], ['2026-01-5x', 'From: Enter a real date as YYYY-MM-DD.']);
+  // applied bounds from the URL are untrusted too: invalid, reversed or non-string ones apply nothing
+  for (const bad of [{ start: '2026-02-30' }, { start: '2026-02-01', end: '2026-01-01' }, { start: 5 }, { start: {} }, { end: ['2026-01-01'] }]) {
+    const d = decodeView(JSON.stringify({ v: 1, filters: { eol: { mode: 'range', startText: 'x', ...bad } } }), ['eol'], { eol: 'date' }, null);
+    assert.deepStrictEqual([d.filters.eol.start, d.filters.eol.end], [null, null], JSON.stringify(bad));
+  }
+  // without an error the applied bounds always come from the texts
+  const valid = decodeView('{"v":1,"filters":{"eol":{"mode":"range","startText":"2026-01-02","start":"2026-01-09"}}}', ['eol'], { eol: 'date' }, null);
+  assert.deepStrictEqual([valid.filters.eol.start, valid.filters.eol.end], ['2026-01-02', null]);
+});
+
+test('view state: values selections use the shorter of selected and excluded over the table\'s stable distinct values', () => {
+  const { encodeView, decodeView, emptyFilter } = load();
+  const domain = Array.from({ length: 9440 }, (_, i) => 'product-' + String(i).padStart(5, '0') + ' cycle ' + i);
+  const domains = { cycle: domain };
+  const types = { cycle: 'text' };
+  const view = decodeView(null, ['cycle'], types, null, domains);
+  const allButOne = domain.filter(v => v !== domain[17]);
+  view.filters.cycle = Object.assign(emptyFilter(), { selected: allButOne });
+  const text = encodeView(view, ['cycle'], null, domains);
+  assert.deepStrictEqual(JSON.parse(text).filters.cycle, { excluded: [domain[17]] });
+  assert.ok(encodeURIComponent(text).length < 200, 'all-but-one of 9440 values is a short URL');
+  assert.deepStrictEqual(plain(decodeView(text, ['cycle'], types, null, domains).filters.cycle.selected), allButOne, 'domain order, stable');
+  // a small selection stays an include list; [] and null keep their meanings
+  const some = [domain[3], domain[1]];
+  for (const [selected, expected] of [[some, { selected: some }], [[], { selected: [] }], [null, null]]) {
+    view.filters.cycle = Object.assign(emptyFilter(), { selected });
+    const t = encodeView(view, ['cycle'], null, domains);
+    assert.deepStrictEqual(t && JSON.parse(t).filters.cycle, expected);
+    const d = decodeView(t, ['cycle'], types, null, domains).filters.cycle.selected;
+    assert.deepStrictEqual(d && plain(d), selected && selected.slice());
+  }
+  // excluded input is validated against the domain: unknown values drop out, nothing excluded is every value (null)
+  const dec = (filter) => decodeView(JSON.stringify({ v: 1, filters: { cycle: filter } }), ['cycle'], types, null, domains).filters.cycle.selected;
+  assert.strictEqual(dec({ excluded: [] }), null);
+  assert.strictEqual(dec({ excluded: ['not a value'] }), null);
+  assert.deepStrictEqual(plain(dec({ excluded: [domain[0], 'not a value'] })), domain.slice(1));
+  for (const bad of [{ excluded: 'x' }, { excluded: [1] }, { excluded: null }, { excluded: {} }]) assert.strictEqual(dec(bad), null, JSON.stringify(bad));
+  assert.deepStrictEqual(plain(dec({ selected: [domain[2]], excluded: [domain[2]] })), [domain[2]], 'a valid include list wins');
+  // without a known domain (no rows) an excluded list cannot be resolved and constrains nothing
+  assert.strictEqual(decodeView('{"v":1,"filters":{"cycle":{"excluded":["a"]}}}', ['cycle'], types, null).filters.cycle.selected, null);
+});
+
+test('one view param is set or removed; every other param and the fragment stay', () => {
+  const { withParam } = load();
+  const href = 'https://x.test/dependencies/react?version=18&snapshot=3&asOf=2026-01-01&start=2026-01-01&end=&unused=true&view.other=%7B%7D#frag';
+  const set = new URL(withParam(href, 'view.t', '{"v":1,"page":2}'));
+  const removed = new URL(withParam(set.href, 'view.t', null));
+  for (const u of [set, removed]) {
+    assert.deepStrictEqual([...u.searchParams].filter(([k]) => k !== 'view.t'), [...new URL(href).searchParams]);
+    assert.strictEqual(u.hash, '#frag');
+  }
+  assert.strictEqual(set.searchParams.get('view.t'), '{"v":1,"page":2}');
+  assert.strictEqual(removed.searchParams.has('view.t'), false);
+  assert.strictEqual(withParam('https://x.test/repos?view.t=1#a', 'view.t', null), 'https://x.test/repos#a');
+});
+
+// A small DOM: just what initTable touches, so the real shared code runs against real-shaped nodes.
+function selectorMatches(n, selector) {
+  return n.nodeType === 1 && selector.split(',').some(s => {
+    const m = /^([a-z]*)((?:\.[\w-]+)*)((?:\[[\w-]+(?:="[^"]*")?\])*)(?::not\(\.([\w-]+)\))?$/.exec(s.trim());
+    if (!m || (m[1] && n.tagName !== m[1])) return false;
+    const cls = n.className.split(/\s+/);
+    if (!m[2].split('.').filter(Boolean).every(c => cls.includes(c)) || (m[4] && cls.includes(m[4]))) return false;
+    return (m[3].match(/\[[^\]]+\]/g) || []).every(a => {
+      const [, name, value] = /^\[([\w-]+)(?:="([^"]*)")?\]$/.exec(a);
+      return n.hasAttribute(name) && (value === undefined || n.getAttribute(name) === value);
+    });
+  });
+}
+class FakeNode {
+  remove() { if (this.parentNode) { this.parentNode.childNodes.splice(this.parentNode.childNodes.indexOf(this), 1); this.parentNode = null; } }
+  before(...ns) { ns.forEach(n => this.parentNode.insertBefore(n, this)); }
+  after(...ns) { const p = this.parentNode, ref = p.childNodes[p.childNodes.indexOf(this) + 1] || null; ns.forEach(n => p.insertBefore(n, ref)); }
+  replaceWith(...ns) { this.before(...ns); this.remove(); }
+}
+class FakeText extends FakeNode { constructor(t) { super(); this.nodeType = 3; this.textContent = String(t); this.parentNode = null; } }
+class FakeEl extends FakeNode {
+  constructor(tag) {
+    super();
+    Object.assign(this, { nodeType: 1, tagName: tag, attrs: new Map(), childNodes: [], parentNode: null, hidden: false, style: {}, events: {}, className: '', id: '', offsetHeight: 0, offsetWidth: 0 });
+  }
+  get textContent() { return this.childNodes.map(c => c.textContent).join(''); }
+  set textContent(t) { this.childNodes.slice().forEach(c => c.remove()); this.append(String(t)); }
+  get lastChild() { return this.childNodes[this.childNodes.length - 1] || null; }
+  get cells() { return this.childNodes.filter(c => c.tagName === 'td' || c.tagName === 'th'); }
+  get rows() { return this.childNodes.filter(c => c.tagName === 'tr'); }
+  get tHead() { return this.childNodes.find(c => c.tagName === 'thead') || null; }
+  get tBodies() { return this.childNodes.filter(c => c.tagName === 'tbody'); }
+  insertBefore(n, ref) {
+    if (typeof n === 'string') n = new FakeText(n);
+    n.remove();
+    const i = ref ? this.childNodes.indexOf(ref) : -1;
+    this.childNodes.splice(i < 0 ? this.childNodes.length : i, 0, n);
+    n.parentNode = this;
+    return n;
+  }
+  appendChild(n) { return this.insertBefore(n, null); }
+  append(...ns) { ns.forEach(n => this.appendChild(n)); }
+  prepend(...ns) { const first = this.childNodes[0] || null; ns.forEach(n => this.insertBefore(n, first)); }
+  add(option) { this.appendChild(option); }
+  hasAttribute(n) { return this.attrs.has(n); }
+  getAttribute(n) { return this.attrs.has(n) ? this.attrs.get(n) : null; }
+  setAttribute(n, v) { this.attrs.set(n, String(v)); }
+  removeAttribute(n) { this.attrs.delete(n); }
+  contains(n) { for (; n; n = n.parentNode) if (n === this) return true; return false; }
+  closest(s) { for (let n = this; n && n.nodeType === 1; n = n.parentNode) if (selectorMatches(n, s)) return n; return null; }
+  querySelectorAll(s) {
+    const out = [];
+    const walk = n => n.childNodes.forEach(c => { if (c.nodeType === 1) { if (selectorMatches(c, s)) out.push(c); walk(c); } });
+    walk(this);
+    return out;
+  }
+  querySelector(s) { return this.querySelectorAll(s)[0] || null; }
+  addEventListener(t, fn) { (this.events[t] ||= []).push(fn); }
+  emit(t, e = {}) { (this.events[t] || []).slice().forEach(fn => fn({ target: this, preventDefault() {}, ...e })); }
+  focus() {}
+  getBoundingClientRect() { return { top: 0, bottom: 20, left: 0, right: 100 }; }
+}
+
+function viewDom(href, stored = {}) {
+  const win = new FakeEl('window');
+  const storage = new Map(Object.entries(stored));
+  Object.assign(win, { innerHeight: 800, innerWidth: 1200, storage, writes: [], assigned: null,
+    localStorage: { getItem: k => storage.get(k) ?? null, setItem: (k, v) => storage.set(k, v), removeItem: k => storage.delete(k) },
+    Option: function (text, value) { const o = new FakeEl('option'); o.textContent = text; o.value = value; return o; } });
+  win.location = { href, assign(u) { win.assigned = u; } };
+  win.history = { state: { keep: true }, replaceState(state, title, u) { win.writes.push(state); win.location.href = new URL(u, win.location.href).href; },
+    pushState() { throw new Error('view changes must not add history entries'); } };
+  const docEvents = new FakeEl('document');
+  const doc = { addEventListener: docEvents.addEventListener.bind(docEvents), activeElement: null, getElementById() { return null; },
+    createElement: t => new FakeEl(t), createElementNS: (ns, t) => new FakeEl(t) };
+  return { win, ctx: load(win, doc) };
+}
+
+/** 25 rows: pkg01..pkg25, version 1.N, count N, eol 2026-01-NN; row 25 has no EoL date. */
+function viewTable(id, attrs = {}) {
+  const main = new FakeEl('main'), wrap = new FakeEl('div'), table = new FakeEl('table'), thead = new FakeEl('thead'), head = new FakeEl('tr'), tbody = new FakeEl('tbody');
+  wrap.className = 'table-wrap';
+  table.id = id;
+  Object.entries(attrs).forEach(([k, v]) => table.setAttribute(k, v));
+  VIEW_KEYS.forEach(k => { const th = new FakeEl('th'); th.setAttribute('data-column', k); th.setAttribute('data-type', VIEW_TYPES[k]); th.append(k.toUpperCase()); head.append(th); });
+  for (let i = 1; i <= 25; i++) {
+    const tr = new FakeEl('tr'), n = String(i).padStart(2, '0');
+    ['pkg' + n, '1.' + i, String(i), i < 25 ? '2026-01-' + n : ''].forEach(v => { const td = new FakeEl('td'); td.append(v); tr.append(td); });
+    tbody.append(tr);
+  }
+  thead.append(head);
+  table.append(thead, tbody);
+  wrap.append(table);
+  main.append(wrap);
+  const q = s => main.querySelector(s);
+  return { table, q, th: k => head.cells[VIEW_KEYS.indexOf(k)], status: () => q('[data-page-status]').textContent,
+    shown: () => tbody.rows.filter(tr => !tr.hidden && !tr.hasAttribute('data-empty')).map(tr => tr.cells[0].textContent) };
+}
+const range = (from, to) => Array.from({ length: Math.abs(to - from) + 1 }, (_, i) => 'pkg' + String(from + (to > from ? i : -i)).padStart(2, '0'));
+const viewOf = (win, param) => { const t = new URL(win.location.href).searchParams.get(param); return t === null ? null : JSON.parse(t); };
+
+test('a table opens on the rows, order and page its URL param holds, whatever localStorage says; nothing else in the URL changes', () => {
+  const state = { v: 1, filters: { count: { mode: 'range', startText: '3', endText: '24' } }, sort: { key: 'count', dir: 'desc' }, page: 2 };
+  const href = 'https://x.test/repos/7/history?asOf=2026-01-01&snapshot=4&start=2026-01-01&unused=true&view.other-table=%7B%22v%22%3A1%7D&view.snap='
+    + encodeURIComponent(JSON.stringify(state)) + '#deps';
+  const { win, ctx } = viewDom(href, { 'eol-ledger.table-columns.v1.snap': '{"NAME":false}', 'view.snap': '{"v":1,"page":1}',
+    'eol-ledger.dependencies-table.v1': '{"columns":{}}' });
+  const t = viewTable('snap');
+  ctx.initTable(t.table);
+  assert.deepStrictEqual(t.shown(), ['pkg04', 'pkg03']);
+  assert.strictEqual(t.status(), 'Page 2 of 2');
+  assert.strictEqual(t.th('count').getAttribute('aria-sort'), 'descending');
+  assert.strictEqual(t.th('count').getAttribute('data-filter-active'), 'true');
+  assert.strictEqual(t.q('[data-filter-start="count"]').value, '3');
+  assert.deepStrictEqual(viewOf(win, 'view.snap'), state);
+  const after = new URL(win.location.href);
+  assert.deepStrictEqual([...after.searchParams].filter(([k]) => k !== 'view.snap'), [...new URL(href).searchParams].filter(([k]) => k !== 'view.snap'));
+  assert.strictEqual(after.hash, '#deps');
+  assert.strictEqual(win.storage.get('view.snap'), '{"v":1,"page":1}', 'view state is never stored');
+  assert.strictEqual(win.storage.size, 3);
+});
+
+test('every sort, filter and page change mirrors the address bar; clearing removes the param; history entries are replaced, not added', () => {
+  const href = 'https://x.test/dependencies/react?version=18&end=&view.other=1#top';
+  const { win, ctx } = viewDom(href);
+  const t = viewTable('release-cycles-table');
+  ctx.initTable(t.table);
+  assert.strictEqual(win.location.href, href, 'a default view writes nothing');
+  assert.deepStrictEqual(t.shown(), range(1, 20));
+  const p = 'view.release-cycles-table';
+
+  t.th('count').emit('click');
+  t.th('count').emit('click');
+  assert.deepStrictEqual(viewOf(win, p), { v: 1, sort: { key: 'count', dir: 'desc' } });
+  assert.deepStrictEqual(t.shown(), range(25, 6));
+
+  const mode = t.q('[data-filter-mode="eol"]');
+  mode.value = 'range';
+  mode.emit('change');
+  const start = t.q('[data-filter-start="eol"]');
+  start.value = '2026-01-05';
+  start.emit('input');
+  assert.deepStrictEqual(viewOf(win, p).filters, { eol: { mode: 'range', startText: '2026-01-05' } });
+  assert.deepStrictEqual(t.shown(), range(24, 5));
+  start.value = '2026-01-5x';
+  start.emit('input');
+  assert.deepStrictEqual(viewOf(win, p).filters.eol, { mode: 'range', startText: '2026-01-5x', start: '2026-01-05', end: null },
+    'the draft is mirrored next to the last valid bounds, which stay applied');
+  assert.deepStrictEqual(t.shown(), range(24, 5));
+
+  const op = t.q('[data-filter-operator="name"]'), text = t.q('[data-filter-text="name"]');
+  t.q('[data-filter-mode="name"]').value = 'text';
+  t.q('[data-filter-mode="name"]').emit('change');
+  op.value = 'ends-with';
+  op.emit('change');
+  text.value = '1';
+  text.emit('input');
+  assert.deepStrictEqual(viewOf(win, p).filters.name, { mode: 'text', op: 'ends-with', text: '1' });
+  assert.deepStrictEqual(t.shown(), ['pkg21', 'pkg11'], 'eol >= 2026-01-05 and name ends with 1, count descending');
+
+  const size = t.q('[data-page-size]');
+  size.value = '50';
+  size.emit('change');
+  assert.strictEqual(viewOf(win, p).size, 50);
+  t.q('[data-filters-clear-all]').emit('click');
+  assert.deepStrictEqual(viewOf(win, p), { v: 1, size: 50 }, 'clear all keeps the page size, like the pager does');
+  t.q('[data-page-next]').emit('click');
+  size.value = '20';
+  size.emit('change');
+  t.q('[data-page-next]').emit('click');
+  assert.deepStrictEqual(viewOf(win, p), { v: 1, page: 2 });
+  assert.deepStrictEqual(t.shown(), range(21, 25));
+  t.q('[data-page-prev]').emit('click');
+  assert.strictEqual(win.location.href, href, 'back to defaults: the param is gone, the rest is untouched');
+  assert.ok(win.writes.length > 0 && win.writes.every(s => s === win.history.state), 'replaceState keeps the entry\'s own state');
+});
+
+test('values mode: none selected ([]) and a partial selection round-trip through the URL; select all is null again', () => {
+  const { win, ctx } = viewDom('https://x.test/repos');
+  const t = viewTable('code-repos-table');
+  ctx.initTable(t.table);
+  t.q('[data-filter-select-none="version"]').emit('click');
+  assert.deepStrictEqual(viewOf(win, 'view.code-repos-table'), { v: 1, filters: { version: { selected: [] } } });
+  assert.deepStrictEqual(t.shown(), []);
+  const boxes = t.th('version').querySelectorAll('[data-filter-value="version"]');
+  const three = boxes.find(b => b.value === '1.3');
+  three.checked = true;
+  three.emit('change');
+  assert.deepStrictEqual(viewOf(win, 'view.code-repos-table').filters.version, { selected: ['1.3'] });
+  assert.deepStrictEqual(t.shown(), ['pkg03']);
+
+  // reopening the shared URL in a fresh page restores the same selection and checkboxes
+  const again = viewDom(win.location.href), u = viewTable('code-repos-table');
+  again.ctx.initTable(u.table);
+  assert.deepStrictEqual(u.shown(), ['pkg03']);
+  assert.deepStrictEqual(u.th('version').querySelectorAll('[data-filter-value="version"]').filter(b => b.checked).map(b => b.value), ['1.3']);
+  t.q('[data-filter-select-all="version"]').emit('click');
+  assert.strictEqual(viewOf(win, 'view.code-repos-table'), null);
+
+  // all but one value: the table's own distinct values make it a short exclusion, and it reads back the same
+  const seven = boxes.find(b => b.value === '1.7');
+  seven.checked = false;
+  seven.emit('change');
+  assert.deepStrictEqual(viewOf(win, 'view.code-repos-table').filters.version, { excluded: ['1.7'] });
+  const third = viewDom(win.location.href), w = viewTable('code-repos-table');
+  third.ctx.initTable(w.table);
+  assert.deepStrictEqual(w.shown(), range(1, 21).filter(n => n !== 'pkg07'));
+  assert.deepStrictEqual(w.th('version').querySelectorAll('[data-filter-value="version"]').filter(b => !b.checked).map(b => b.value), ['1.7']);
+});
+
+test('values-list search and its match mode reach the address bar at once and hydrate, without changing rows or page', () => {
+  const { win, ctx } = viewDom('https://x.test/repos?x=1#h');
+  const t = viewTable('code-repos-table');
+  ctx.initTable(t.table);
+  t.q('[data-page-next]').emit('click');
+  const search = t.q('[data-filter-search="name"]'), searchOp = t.q('[data-filter-search-op="name"]');
+  search.value = 'pkg1';
+  search.emit('input');
+  assert.deepStrictEqual(viewOf(win, 'view.code-repos-table'), { v: 1, filters: { name: { search: 'pkg1' } }, page: 2 });
+  searchOp.value = 'exact';
+  searchOp.emit('change');
+  assert.deepStrictEqual(viewOf(win, 'view.code-repos-table'), { v: 1, filters: { name: { search: 'pkg1', searchOp: 'exact' } }, page: 2 });
+  assert.deepStrictEqual(t.shown(), range(21, 25), 'search only narrows the checklist');
+  assert.strictEqual(new URL(win.location.href).hash, '#h');
+
+  const again = viewDom(win.location.href), u = viewTable('code-repos-table');
+  again.ctx.initTable(u.table);
+  assert.deepStrictEqual([u.q('[data-filter-search="name"]').value, u.q('[data-filter-search-op="name"]').value], ['pkg1', 'exact']);
+  assert.deepStrictEqual(u.shown(), range(21, 25));
+  assert.strictEqual(u.status(), 'Page 2 of 2');
+});
+
+test('tables keep separate stable namespaces: a later (lazy) table never clobbers another, and an id-less table writes nothing', () => {
+  const first = { v: 1, sort: { key: 'name', dir: 'desc' } };
+  const { win, ctx } = viewDom('https://x.test/imports?view.import-history-table=' + encodeURIComponent(JSON.stringify(first)) + '#history');
+  const a = viewTable('import-history-table');
+  ctx.initTable(a.table);
+  a.q('[data-page-next]').emit('click');
+  const b = viewTable('snapshot-timeline-table');
+  ctx.initTable(b.table);
+  assert.deepStrictEqual(viewOf(win, 'view.import-history-table'), { ...first, page: 2 });
+  b.th('count').emit('click');
+  assert.deepStrictEqual(viewOf(win, 'view.import-history-table'), { ...first, page: 2 });
+  assert.deepStrictEqual(viewOf(win, 'view.snapshot-timeline-table'), { v: 1, sort: { key: 'count', dir: 'asc' } });
+  assert.deepStrictEqual(a.shown(), range(5, 1));
+  assert.strictEqual(new URL(win.location.href).hash, '#history');
+
+  const before = win.location.href;
+  const anonymous = viewTable('');
+  ctx.initTable(anonymous.table);
+  anonymous.th('name').emit('click');
+  assert.strictEqual(win.location.href, before);
+  assert.ok(![...new URL(win.location.href).searchParams.keys()].some(k => /^view\.t\d/.test(k)), 'never a DOM counter');
+});
+
+test('popstate reapplies the URL: a removed param restores the defaults, a present one its state', () => {
+  const { win, ctx } = viewDom('https://x.test/repos?x=1');
+  const t = viewTable('code-repos-table');
+  ctx.initTable(t.table);
+  t.th('count').emit('click');
+  t.th('count').emit('click');
+  t.q('[data-filter-select-none="name"]').emit('click');
+  assert.deepStrictEqual(t.shown(), []);
+
+  win.location.href = 'https://x.test/repos?x=1';
+  win.emit('popstate');
+  assert.deepStrictEqual(t.shown(), range(1, 20));
+  assert.strictEqual(t.th('count').getAttribute('aria-sort'), null);
+  assert.strictEqual(t.th('name').getAttribute('data-filter-active'), 'false');
+  assert.strictEqual(win.location.href, 'https://x.test/repos?x=1');
+
+  win.location.href = 'https://x.test/repos?x=1&view.code-repos-table=' + encodeURIComponent('{"v":1,"sort":{"key":"count","dir":"desc"},"page":2}');
+  win.emit('popstate');
+  assert.deepStrictEqual(t.shown(), range(5, 1));
+  assert.strictEqual(t.status(), 'Page 2 of 2');
+
+  win.location.href = 'https://x.test/repos?x=1&view.code-repos-table=%7Bbroken';
+  win.emit('popstate');
+  assert.deepStrictEqual(t.shown(), range(1, 20));
+  assert.strictEqual(win.location.href, 'https://x.test/repos?x=1', 'malformed state is dropped from the address bar');
+});
+
+test('dashboard: legacy start/end/sort seed the view when it has no param; an explicit param wins; clear all reloads without them', () => {
+  const legacy = { 'data-start': '2026-01-03', 'data-end': '2026-01-04', 'data-sort': 'desc', 'data-legacy': 'true' };
+  const opts = { noun: 'dependencies', defaultSort: EOL_ASC, legacy: true };
+  const base = 'https://x.test/?start=2026-01-03&end=2026-01-04&sort=desc&unused=false&keep=1';
+  const { win, ctx } = viewDom(base + '#main');
+  const t = viewTable('dependencies-table', legacy);
+  ctx.initTable(t.table, opts);
+  assert.deepStrictEqual(t.shown(), ['pkg04', 'pkg03']);
+  assert.deepStrictEqual(viewOf(win, 'view.dependencies-table'),
+    { v: 1, filters: { eol: { mode: 'range', startText: '2026-01-03', endText: '2026-01-04' } }, sort: { key: 'eol', dir: 'desc' } });
+  t.q('[data-filter-clear="eol"]').emit('click');
+  t.th('eol').emit('click');
+  assert.deepStrictEqual(viewOf(win, 'view.dependencies-table'), { v: 1 }, 'back to defaults still overrides the legacy bounds on reload');
+
+  const explicit = viewDom(base + '&view.dependencies-table=' + encodeURIComponent('{"v":1}'));
+  const u = viewTable('dependencies-table', legacy);
+  explicit.ctx.initTable(u.table, opts);
+  assert.deepStrictEqual(u.shown(), range(1, 20));
+  assert.strictEqual(u.th('eol').getAttribute('aria-sort'), 'ascending');
+
+  u.q('[data-filters-clear-all]').emit('click');
+  const reload = new URL(explicit.win.assigned);
+  assert.deepStrictEqual([...reload.searchParams], [['keep', '1']]);
+  assert.strictEqual(reload.pathname, '/');
 });

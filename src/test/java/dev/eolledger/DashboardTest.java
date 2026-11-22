@@ -21,12 +21,16 @@ class DashboardTest extends WebTestBase {
     }
 
     @Test
-    void defaultListsAllTrackedVersionsWithNoDateCutoffAndHidesUnused() throws Exception {
+    void defaultListsEveryCatalogueCycleWithNoDateCutoffIncludingUnused() throws Exception {
         String html = page("/");
-        // past, today, future and unknown EoL dates alike; unused versions only on request
-        assertThat(html).contains("data-row=\"react 18\"", "data-row=\"python 3.1\"", "data-row=\"python 3.10\"", "data-row=\"django 4.2\"", "data-row=\"python 2.7\"")
-                .doesNotContain("data-row=\"react 19\"", "data-row=\"python 3.9\"");
-        assertThat(shown(html)).isEqualTo(rows(html)).hasSize(5);
+        // past, today, future and unknown EoL dates alike; unused catalogue cycles too, at honest zero counts
+        assertThat(html).contains("data-row=\"react 18\"", "data-row=\"python 3.1\"", "data-row=\"python 3.10\"", "data-row=\"django 4.2\"", "data-row=\"python 2.7\"",
+                "data-row=\"react 19\" data-repos=\"0\" data-branches=\"0\"", "data-row=\"python 3.9\" data-repos=\"0\" data-branches=\"0\"");
+        // every catalogue cycle, never the installed package without one (it stays a count in the hint)
+        assertThat(shown(html)).isEqualTo(rows(html)).hasSize(7);
+        assertThat(html).doesNotContain("data-row=\"core").contains("installed packages have no release cycle");
+        assertThat(rows(html)).isEqualTo(rows(page("/?unused=true")));
+        assertThat(html).doesNotContain("release cycles in use");
         // blank initial state: no bounds, no today, empty row hidden
         assertThat(html).contains("<table id=\"dependencies-table\" data-sort=\"asc\" data-legacy=\"false\" data-dependency-table=\"dashboard\">", "<tr data-empty hidden=\"hidden\">")
                 .doesNotContain(" value=\"2026-11-20\"");
@@ -69,10 +73,13 @@ class DashboardTest extends WebTestBase {
     void dependencyTableHasTheColumnContractAndProgressiveSettings() throws Exception {
         String html = page("/");
         String table = html.substring(html.indexOf("<table id=\"dependencies-table\""), html.indexOf("</table>"));
+        String usedOnly = page("/?unused=false");
+        String usedTable = usedOnly.substring(usedOnly.indexOf("<table id=\"dependencies-table\""), usedOnly.indexOf("</table>"));
         for (String key : java.util.List.of("dependency", "version", "context", "purl", "ecosystem", "cycle", "eol", "status", "repos", "branches", "evidence", "source", "sbom")) {
             assertThat(table).as(key).contains("<col data-column=\"" + key + "\">", "<th scope=\"col\"", "data-column=\"" + key + "\">");
-            // one header cell plus one cell per row (5 used versions)
-            assertThat(table.split("data-column=\"" + key + "\"", -1)).as(key).hasSize(1 + 1 + 1 + 5);
+            // one header cell plus one cell per row: 7 catalogue cycles by default, 5 used ones on the used-only link
+            assertThat(table.split("data-column=\"" + key + "\"", -1)).as(key).hasSize(1 + 1 + 1 + 7);
+            assertThat(usedTable.split("data-column=\"" + key + "\"", -1)).as(key).hasSize(1 + 1 + 1 + 5);
         }
         assertThat(table).contains(">Dependency Name</th>", ">Version</th>", ">EOL Date</th>", ">Status</th>", "># Code Repos Using It</th>", "># Code Repo Branches Using It</th>", ">Ecosystem / Package URL</th>", ">Ecosystem</th>")
                 .doesNotContain(">Product</th>", ">Cycle</th>", "Ecosystem / purl");
@@ -85,17 +92,21 @@ class DashboardTest extends WebTestBase {
 
     @Test
     void emptyTableRowSpansAllColumns() throws Exception {
-        String html = page("/?start=2000-01-01&end=2000-01-02");
+        String html = page("/?start=2000-01-01&end=2000-01-02&unused=false");
         assertThat(html).contains("<tr data-empty>\n                <td colspan=\"13\" class=\"empty\">No dependency versions match.</td>");
         assertThat(shown(html)).isEmpty();
         assertThat(rows(html)).hasSize(5);
+        assertThat(shown(page("/?start=2000-01-01&end=2000-01-02"))).isEmpty();
+        assertThat(rows(page("/?start=2000-01-01&end=2000-01-02"))).hasSize(7);
     }
 
     @Test
     void explicitlyClearedStartMeansAllTimeIncludingUnknownDates() throws Exception {
-        String html = page("/?start=&end=");
+        String html = page("/?start=&end=&unused=false");
         assertThat(shown(html)).containsExactlyInAnyOrder("data-row=\"react 18\"", "data-row=\"python 3.10\"", "data-row=\"python 3.1\"",
                 "data-row=\"python 2.7\"", "data-row=\"django 4.2\"");
+        // by default the zero-use catalogue cycles are listed too
+        assertThat(shown(page("/?start=&end="))).hasSize(7).contains("data-row=\"react 19\"", "data-row=\"python 3.9\"");
     }
 
     @Test
@@ -123,7 +134,16 @@ class DashboardTest extends WebTestBase {
         // hidden, not dropped: app.js turns the bounds into the EoL date header filter and can clear it in place
         assertThat(rows(html)).containsExactlyInAnyOrderElementsOf(rows(page("/")));
         assertThat(html).contains("data-start=\"2026-11-20\" data-end=\"2026-11-20\" data-sort=\"desc\" data-legacy=\"true\"");
-        assertThat(page("/?unused=true")).contains("data-legacy=\"true\"", "data-row=\"react 19\"");
+        // ?unused=true is now the default view; only an explicit used-only link holds fewer rows than the default
+        assertThat(page("/?unused=true")).contains("data-legacy=\"false\"", "data-row=\"react 19\"");
+        assertThat(page("/?unused=false")).contains("data-legacy=\"true\"").doesNotContain("data-row=\"react 19\"");
+    }
+
+    @Test
+    void explicitUsedOnlyLinkHidesUnusedCycles() throws Exception {
+        String html = page("/?unused=false");
+        assertThat(shown(html)).isEqualTo(rows(html)).hasSize(5);
+        assertThat(html).doesNotContain("data-row=\"react 19\"", "data-row=\"python 3.9\"");
     }
 
     @Test
@@ -137,8 +157,8 @@ class DashboardTest extends WebTestBase {
     }
 
     @Test
-    void unusedCyclesCanBeShown() throws Exception {
-        String html = page("/?start=&end=&unused=true");
+    void unusedCyclesAreShownByDefault() throws Exception {
+        String html = page("/?start=&end=");
         assertThat(html).contains("data-row=\"react 19\" data-repos=\"0\"", "data-row=\"python 3.9\" data-repos=\"0\"");
     }
 

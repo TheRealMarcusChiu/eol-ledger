@@ -32,13 +32,14 @@ public class PagesController {
     }
 
     /**
-     * Default view: all tracked versions with no date bounds (past, future and unknown EoL dates), used ones only.
+     * Default view: every synced catalogue release cycle, used or not, with no date bounds (past, future and unknown EoL
+     * dates); installed packages without a cycle stay a count. {@code ?unused=false} lists used cycles only.
      * Legacy start/end/sort links still work: every row is rendered, out-of-range ones carry {@code hidden}, and app.js
      * takes the same bounds as its initial header filter, so clearing it restores the full list without a reload.
      */
     @GetMapping("/")
     String dashboard(@RequestParam(required = false) String start, @RequestParam(required = false) String end,
-                     @RequestParam(defaultValue = "asc") String sort, @RequestParam(defaultValue = "false") boolean unused,
+                     @RequestParam(defaultValue = "asc") String sort, @RequestParam(defaultValue = "true") boolean unused,
                      Model model, HttpServletResponse response) {
         String startText = start == null ? "" : start.trim();
         String endText = end == null ? "" : end.trim();
@@ -46,12 +47,11 @@ public class PagesController {
         model.addAttribute("start", startText);
         model.addAttribute("end", endText);
         model.addAttribute("sort", desc ? "desc" : "asc");
-        model.addAttribute("legacy", !startText.isEmpty() || !endText.isEmpty() || desc || unused);
+        // a used-only page holds fewer rows than the default, so clearing every filter reloads the default view
+        model.addAttribute("legacy", !startText.isEmpty() || !endText.isEmpty() || desc || !unused);
         model.addAttribute("status", catalog.status());
         model.addAttribute("catalogEmpty", ledger.catalogEmpty());
-        // with no code repos imported every cycle is unused, so the used-only default would hide the whole synced catalogue
-        boolean catalogOnly = ledger.noBranches();
-        model.addAttribute("catalogOnly", catalogOnly);
+        model.addAttribute("catalogOnly", ledger.noBranches());
         LocalDate from;
         LocalDate to;
         try {
@@ -66,7 +66,7 @@ public class PagesController {
             model.addAttribute("rows", java.util.List.of());
             return "dashboard";
         }
-        Ledger.Dashboard dash = ledger.dashboard(null, null, desc, unused || catalogOnly);
+        Ledger.Dashboard dash = ledger.dashboard(null, null, desc, unused);
         List<Ledger.DashRow> rows = dash.rows();
         model.addAttribute("rows", rows);
         model.addAttribute("hiddenRows", rows.stream().filter(r -> !Ledger.inRange(r.cycle().eolFrom(), from, to))

@@ -61,10 +61,11 @@ class ClearDataAndSyncTest extends WebTestBase {
         seed();
         assertThat(count("repo_branch")).isEqualTo(3);
         String html = page("/");
-        // repos present again: the used-only default and legacy unused links behave as before
-        assertThat(DashboardTest.shown(html)).hasSize(5);
-        assertThat(html).doesNotContain("No code repos imported yet", "data-row=\"react 19\"");
-        assertThat(page("/?unused=true")).contains("data-legacy=\"true\"", "data-row=\"react 19\" data-repos=\"0\"");
+        // repos present again: every catalogue cycle by default, used-only on an explicit ?unused=false
+        assertThat(DashboardTest.shown(html)).hasSize(7);
+        assertThat(html).doesNotContain("No code repos imported yet").contains("data-row=\"react 19\" data-repos=\"0\"");
+        assertThat(page("/?unused=true")).contains("data-legacy=\"false\"", "data-row=\"react 19\" data-repos=\"0\"");
+        assertThat(DashboardTest.shown(page("/?unused=false"))).hasSize(5);
         assertThat(page("/?start=2026-11-20&end=2026-11-20")).contains("data-row=\"python 3.10\"");
     }
 
@@ -129,6 +130,11 @@ class ClearDataAndSyncTest extends WebTestBase {
         assertThat(DashboardTest.rows(html)).hasSize(7);
         assertThat(DashboardTest.shown(html)).hasSize(7);
         assertThat(html).contains("data-row=\"react 19\" data-repos=\"0\" data-branches=\"0\"",
-                "data-row=\"python 3.9\" data-repos=\"0\" data-branches=\"0\"", "data-legacy=\"false\"", "No code repos imported yet");
+                "data-row=\"python 3.9\" data-repos=\"0\" data-branches=\"0\"", "data-legacy=\"false\"", "No code repos imported yet")
+                .doesNotContain("to list only the versions in use");
+        // an explicit used-only link is honoured even with no branches: no rows, still the same notice
+        String usedOnly = page("/?unused=false");
+        assertThat(DashboardTest.rows(usedOnly)).isEmpty();
+        assertThat(usedOnly).contains("data-legacy=\"true\"", "No code repos imported yet", "<tr data-empty>");
     }
 }
