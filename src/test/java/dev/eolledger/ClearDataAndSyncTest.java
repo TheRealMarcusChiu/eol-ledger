@@ -1,6 +1,7 @@
 package dev.eolledger;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.TestPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -11,6 +12,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /** Clearing all imported data, and the dashboard after a catalogue sync with no code repos imported. */
+// a configured product list must not narrow the public sync: it always fetches the whole catalogue
+@TestPropertySource(properties = "eol.catalog.products=python")
 class ClearDataAndSyncTest extends WebTestBase {
 
     int count(String table) {
@@ -121,10 +124,14 @@ class ClearDataAndSyncTest extends WebTestBase {
     void syncOnlyDashboardListsEveryCatalogueCycleWithHonestZeroCounts() throws Exception {
         TestSupport.REPLIES.put("/api/v1/products/full", TestSupport.Reply.ok(CATALOGUE));
         mvc.perform(post("/catalog/sync").with(csrf())).andExpect(status().isSeeOther());
-        // the sync itself worked: all 7 cycles stored, status OK, no repos
-        assertThat(count("release_cycle")).isEqualTo(7);
+        // the sync itself worked despite products=python: one request (only /products/full has a reply), all 7 cycles stored, status OK, no repos
+        assertThat(TestSupport.AUTH_HEADERS).hasSize(1);
+        assertThat(db.sql("SELECT product || ' ' || name FROM release_cycle").query(String.class).list()).containsExactlyInAnyOrder(
+                "react 19", "react 18", "python 3.10", "python 3.9", "python 3.1", "python 2.7", "django 4.2");
+        assertThat(db.sql("SELECT name FROM product").query(String.class).list()).containsExactlyInAnyOrder("react", "python", "django");
         assertThat(catalog.status().ok()).isTrue();
         assertThat(count("repo_branch")).isZero();
+        assertThat(page("/imports")).contains("whole catalogue").doesNotContain("configured products");
 
         String html = page("/");
         assertThat(DashboardTest.rows(html)).hasSize(7);

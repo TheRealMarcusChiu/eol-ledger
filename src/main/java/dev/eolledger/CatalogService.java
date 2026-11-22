@@ -24,7 +24,8 @@ import java.util.regex.Pattern;
 
 /**
  * Syncs release cycles from the endoflife.date v1 API (generated from github.com/endoflife-date/endoflife.date).
- * Whole catalogue = one GET {base}/products/full; or a configured product list = one GET per product.
+ * The public sync() always fetches the whole catalogue with one GET {base}/products/full; the package-private
+ * sync(List) helper can instead fetch an explicit product list with one GET per product.
  * Each product's cycles and identifiers are replaced in its own transaction, so a failed fetch or
  * a malformed product never wipes previously synced data.
  */
@@ -62,7 +63,7 @@ public class CatalogService {
     }
 
     public SyncResult sync() {
-        return sync(props.catalog().products().stream().map(String::trim).filter(s -> !s.isEmpty()).toList());
+        return sync(List.of());
     }
 
     synchronized SyncResult sync(List<String> products) {
@@ -72,7 +73,14 @@ public class CatalogService {
         try {
             List<JsonNode> nodes = new ArrayList<>();
             if (products.isEmpty()) {
-                fetch("/products/full").path("result").forEach(nodes::add);
+                JsonNode body = fetch("/products/full");
+                JsonNode result = body.path("result"), total = body.path("total");
+                // validate the whole envelope before any product is written, so a truncated catalogue keeps the last good data
+                if (!result.isArray()) throw new Http.FetchException("catalogue response result is not an array");
+                if (!total.isMissingNode() && !(total.isIntegralNumber() && total.canConvertToInt() && total.intValue() == result.size())) {
+                    throw new Http.FetchException("catalogue response total does not match its " + result.size() + " product(s)");
+                }
+                result.forEach(nodes::add);
                 if (nodes.isEmpty()) throw new Http.FetchException("catalogue response has no products");
             } else {
                 for (String p : products) {

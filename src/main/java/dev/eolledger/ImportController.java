@@ -51,8 +51,7 @@ public class ImportController {
         model.addAttribute("providers", InventoryJson.PROVIDERS);
         model.addAttribute("status", catalog.status());
         model.addAttribute("catalogBase", props.catalog().baseUrl());
-        model.addAttribute("catalogMode", props.catalog().products().stream().anyMatch(s -> !s.isBlank())
-                ? "configured products: " + String.join(", ", props.catalog().products()) : "whole catalogue (one request to /products/full)");
+        model.addAttribute("catalogMode", "whole catalogue (one request to /products/full)");
         model.addAttribute("catalogCron", catalogCron);
         model.addAttribute("registered", db.sql("SELECT count(*) FROM repo_branch").query(Integer.class).single());
         model.addAttribute("runs", db.sql("SELECT ran_at, source, ok, rows_total, new_snapshots, message FROM import_run ORDER BY id DESC LIMIT 25")

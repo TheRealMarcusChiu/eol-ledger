@@ -81,6 +81,36 @@ class CatalogSyncTest extends IntegrationTest {
     }
 
     @Test
+    void badCatalogueEnvelopeWritesNothingAndKeepsLastGoodDataAndSuccessTime() {
+        TestSupport.REPLIES.put("/api/v1/products/full", TestSupport.Reply.ok(full(PYTHON)));
+        catalog.sync();
+        CatalogService.Status good = catalog.status();
+        String python317 = PYTHON.replace("\"name\":\"3.16\"", "\"name\":\"3.17\"");
+        List<String> bad = List.of(
+                "{\"schema_version\":\"1.2.1\",\"total\":3,\"result\":[" + python317 + "," + REACT + "]}", // truncated
+                "{\"total\":1,\"result\":{\"python\":" + python317 + "}}", // result not an array
+                "{\"total\":\"2\",\"result\":[" + python317 + "," + REACT + "]}", // textual total
+                "{\"total\":2.5,\"result\":[" + python317 + "," + REACT + "]}", // fractional total
+                "{\"total\":-1,\"result\":[" + python317 + "]}"); // negative total
+        for (String body : bad) {
+            CLOCK.now = CLOCK.now.plusSeconds(60);
+            TestSupport.REPLIES.put("/api/v1/products/full", TestSupport.Reply.ok(body));
+
+            CatalogService.SyncResult r = catalog.sync();
+
+            assertThat(r.ok()).as(body).isFalse();
+            assertThat(r.productsSynced()).as(body).isZero();
+            assertThat(db.sql("SELECT name FROM release_cycle WHERE product='python'").query(String.class).list()).as(body)
+                    .containsExactlyInAnyOrder("3.15", "2.7", "3.16");
+            assertThat(db.sql("SELECT count(*) FROM product WHERE name='react'").query(Integer.class).single()).as(body).isZero();
+            CatalogService.Status s = catalog.status();
+            assertThat(s.ok()).as(body).isFalse();
+            assertThat(s.succeededAt()).as(body).isEqualTo(good.succeededAt());
+            assertThat(s.attemptedAt()).as(body).isAfter(good.attemptedAt());
+        }
+    }
+
+    @Test
     void configuredProductListFetchesEachProduct() {
         TestSupport.REPLIES.put("/api/v1/products/python", TestSupport.Reply.ok("{\"result\":" + PYTHON + "}"));
 
