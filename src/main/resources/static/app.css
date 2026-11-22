@@ -559,8 +559,8 @@ th.num[data-sortable] { padding-right: 1.4rem; }
 .column-reorder { cursor: grab; touch-action: pan-y; user-select: none; }
 .column-reorder .th-sort { cursor: grab; touch-action: pan-y; }
 .column-reorder[data-sortable]:hover .sort-ind { opacity: .45; }
-.column-dragging { opacity: .55; cursor: grabbing; }
-.column-target { box-shadow: inset 3px 0 var(--accent); }
+.column-dragging { opacity: .55; cursor: grabbing; z-index: 1; }
+.column-previewing th, .column-previewing td { transition: transform 140ms ease; }
 .th-sort .sort-ind { margin-left: .4rem; }
 .th-sort:hover, .th-filter:hover { background: none; color: var(--ink); }
 .th-sort .sort-ind { display: inline-block; width: .7em; color: var(--accent); opacity: 0; transition: opacity .15s; letter-spacing: 0; }

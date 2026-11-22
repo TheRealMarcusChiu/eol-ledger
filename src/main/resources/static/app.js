@@ -251,6 +251,7 @@ function initColumnOrder(table) {
       groups.push(nodes);
     }
   });
+  var shifted = groups.slice(); // th/td only: col elements don't render transforms
   table.querySelectorAll('colgroup').forEach(function (group) {
     if (group.children.length === cells.length) groups.push(Array.prototype.slice.call(group.children));
   });
@@ -274,8 +275,34 @@ function initColumnOrder(table) {
   }
   table.columnLayout = { cells: cells, reset: function () { order = keys.slice(); apply(); tableStorage('removeItem', null, storageKey); } };
   var drag = null, suppressClick = false;
+  /** Landing slot (index in order) under the pointer, from the untransformed snapshot; -1 off the header or over a control/overlay. */
+  function landing(e) {
+    var hit = document.elementFromPoint(e.clientX, e.clientY);
+    if (!hit || cells.indexOf(hit.closest('th')) < 0 || headerControl(hit)) return -1;
+    for (var i = 0; i < drag.rects.length; i++) {
+      var r = drag.rects[i];
+      if (r.width && e.clientX >= r.left && e.clientX < r.right && e.clientY >= r.top && e.clientY < r.bottom) return i;
+    }
+    return -1;
+  }
+  /** Shift every column to where the drop at slot `to` would put it: cumulative visible widths, new order minus current. */
+  function preview(to) {
+    var next = order.slice(), from = order.indexOf(keys[cells.indexOf(drag.cell)]);
+    if (to >= 0) next.splice(to, 0, next.splice(from, 1)[0]);
+    function lefts(list) {
+      var x = 0, out = {};
+      list.forEach(function (key) { out[key] = x; x += drag.rects[order.indexOf(key)].width; });
+      return out;
+    }
+    var was = lefts(order), now = lefts(next);
+    shifted.forEach(function (nodes) {
+      keys.forEach(function (key, i) { nodes[i].style.transform = now[key] === was[key] ? '' : 'translateX(' + (now[key] - was[key]) + 'px)'; });
+    });
+  }
   function clear() {
-    cells.forEach(function (cell) { cell.classList.remove('column-dragging', 'column-target'); });
+    table.classList.remove('column-previewing'); // first, so the reset below snaps instead of animating
+    shifted.forEach(function (nodes) { nodes.forEach(function (node) { node.style.transform = ''; }); });
+    cells.forEach(function (cell) { cell.classList.remove('column-dragging'); });
     var old = drag;
     drag = null;
     if (old && old.cell.hasPointerCapture(old.id)) old.cell.releasePointerCapture(old.id);
@@ -297,18 +324,24 @@ function initColumnOrder(table) {
     var dx = Math.abs(e.clientX - drag.x), dy = Math.abs(e.clientY - drag.y);
     if (!drag.active && dy > 6 && dy > dx) { suppressClick = true; clear(); return; }
     if (!drag.active && dx < 6) return;
-    drag.active = true;
+    if (!drag.active) {
+      // geometry before any transform, in saved order: transformed headers never decide the slot
+      drag.rects = order.map(function (key) {
+        var cell = cells[keys.indexOf(key)], r = cell.getBoundingClientRect();
+        return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: cell.hidden ? 0 : r.width };
+      });
+      drag.active = true;
+      drag.cell.classList.add('column-dragging');
+      table.classList.add('column-previewing');
+    }
     suppressClick = true;
     e.preventDefault();
-    drag.cell.classList.add('column-dragging');
-    var hit = document.elementFromPoint(e.clientX, e.clientY);
-    var target = hit && hit.closest('th');
-    drag.target = cells.indexOf(target) >= 0 && !headerControl(hit) ? target : null;
-    cells.forEach(function (cell) { cell.classList.toggle('column-target', cell === drag.target && cell !== drag.cell); });
+    preview(landing(e));
   });
   head.addEventListener('pointerup', function (e) {
     if (!drag || e.pointerId !== drag.id) return;
-    if (drag.active && drag.target) move(drag.cell, drag.target);
+    var to = drag.active ? landing(e) : -1;
+    if (to >= 0) move(drag.cell, cells[keys.indexOf(order[to])]);
     clear();
   });
   head.addEventListener('pointercancel', clear);

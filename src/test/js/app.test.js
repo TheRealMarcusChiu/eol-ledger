@@ -430,7 +430,7 @@ test('full header sorts once for padding or native button, never other controls'
 function columnFixture(saved = new Map()) {
   function node(key) {
     const events = {}, classes = new Set();
-    return { key, hidden: false, style: {}, events, attrs: {},
+    return { key, hidden: false, style: {}, events, attrs: {}, w: 120,
       classList: { add(...names) { names.forEach(n => classes.add(n)); }, remove(...names) { names.forEach(n => classes.delete(n)); }, toggle(n, on) { if (on) classes.add(n); else classes.delete(n); }, contains(n) { return classes.has(n); } },
       addEventListener(name, fn) { (events[name] ||= []).push(fn); },
       emit(name, e = {}) { for (const fn of events[name] || []) fn(e); },
@@ -438,7 +438,12 @@ function columnFixture(saved = new Map()) {
       setAttribute(name, value) { this.attrs[name] = value; }, hasAttribute() { return true; },
       append(...children) { (this.children ||= []).push(...children); },
       appendChild(child) { (this.children ||= []).push(child); },
-      getBoundingClientRect() { return { width: 120 }; },
+      // laid out by current DOM order over visible siblings, ignoring transforms (the untransformed layout)
+      getBoundingClientRect() {
+        let left = 0;
+        for (const c of (this.parentNode && this.parentNode.cells) || []) { if (c === this) break; if (!c.hidden) left += c.w; }
+        return { left, right: left + this.w, width: this.w, top: 0, bottom: 30 };
+      },
       closest(selector) { return selector === 'th' ? this : null; },
       querySelector(selector) { return selector === '.th-sort' ? this.button : null; },
       querySelectorAll() { return []; },
@@ -455,7 +460,9 @@ function columnFixture(saved = new Map()) {
   const heads = ['name', 'version', 'date'].map(node);
   heads.forEach(n => { n.button = node(n.key); n.button.closest = selector => selector === 'th' ? n : null; });
   const head = group(heads.slice()), body = group(['A', '1', '2026'].map(node)), cols = group(['name', 'version', 'date'].map(node));
-  const table = { id: 'fixture', dataset: {}, style: {}, classList: { add() {} }, offsetWidth: 360,
+  const tableClasses = new Set();
+  const table = { id: 'fixture', dataset: {}, style: {}, offsetWidth: 360,
+    classList: { add(n) { tableClasses.add(n); }, remove(n) { tableClasses.delete(n); }, contains(n) { return tableClasses.has(n); } },
     tHead: { rows: [head] }, tBodies: [{ rows: [body] }], rows: [head, body], before(settings) { this.settings = settings; },
     closest() { return null; }, getAttribute() { return null; }, querySelectorAll: selector => selector === 'colgroup' ? [cols] : [], };
   const win = node('window');
@@ -463,7 +470,11 @@ function columnFixture(saved = new Map()) {
   const created = [];
   const docEvents = node('document');
   const doc = { events: docEvents.events, addEventListener: docEvents.addEventListener, emit: docEvents.emit,
-    elementFromPoint: () => heads[2], createElement() { const n = node(''); created.push(n); return n; } };
+    // doc.hit simulates whatever paints on top (overlay, or a transformed header); otherwise the visible header under (x, y)
+    elementFromPoint(x, y) {
+      if ('hit' in this) return this.hit;
+      return heads.find(h => { const r = h.getBoundingClientRect(); return !h.hidden && x >= r.left && x < r.right && y >= r.top && y < r.bottom; }) || null;
+    }, createElement() { const n = node(''); created.push(n); return n; } };
   const ctx = load(win, doc);
   ctx.initColumnOrder(table);
   const pointer = (target, x, y = 0) => ({ target, button: 0, pointerId: 1, clientX: x, clientY: y, preventDefault() {} });
@@ -485,9 +496,9 @@ test('outer popup dialog allows header padding and sort button sorting and point
     assert.strictEqual(sorts, 1, 'outer dialog must not block sorting');
     f.head.emit('pointerdown', f.pointer(target, 0));
     assert.strictEqual(cell.captured, true, 'outer dialog must not block drag start');
-    f.head.emit('pointermove', f.pointer(target, 20));
+    f.head.emit('pointermove', f.pointer(target, 260));
     assert.ok(cell.classList.contains('column-dragging'));
-    f.head.emit('pointerup', f.pointer(target, 20));
+    f.head.emit('pointerup', f.pointer(target, 260));
     assert.deepStrictEqual(f.head.cells.map(n => n.key), ['version', 'date', 'name'], 'outer dialog must not block drop target');
   }
 });
@@ -513,8 +524,8 @@ test('drag moves original header, body and col nodes together without changing v
   const f = columnFixture();
   const original = f.body.cells.slice(); original[0].style.width = '333px'; original[0].hidden = true;
   f.head.emit('pointerdown', f.pointer(f.heads[0], 0));
-  f.head.emit('pointermove', f.pointer(f.heads[0], 20));
-  f.head.emit('pointerup', f.pointer(f.heads[0], 20));
+  f.head.emit('pointermove', f.pointer(f.heads[0], 260));
+  f.head.emit('pointerup', f.pointer(f.heads[0], 260));
   assert.deepStrictEqual(f.head.cells.map(n => n.key), ['version', 'date', 'name']);
   assert.deepStrictEqual(f.cols.cells.map(n => n.key), ['version', 'date', 'name']);
   assert.deepStrictEqual(f.body.cells, [original[1], original[2], original[0]]);
@@ -640,6 +651,89 @@ test('lazy resize and visibility use original identities after restored order; r
   assert.ok(f.body.cells.every(c => !c.hidden));
   assert.strictEqual(f.heads[0].style.width, '333px');
   assert.strictEqual(saved.get('eol-ledger.table-widths.v1'), '{"fixture":{"0":333,"1":222}}');
+});
+
+const shifts = nodes => nodes.map(n => n.style.transform || '');
+
+test('dragging previews whole columns at the landing slot before release; drop commits exactly that layout', () => {
+  const f = columnFixture();
+  const moved = ['translateX(240px)', 'translateX(-120px)', 'translateX(-120px)'];
+  f.head.emit('pointerdown', f.pointer(f.heads[0], 10));
+  f.head.emit('pointermove', f.pointer(f.heads[0], 260));
+  assert.deepStrictEqual(shifts(f.heads), moved);
+  assert.deepStrictEqual(shifts(f.body.cells), moved);
+  assert.deepStrictEqual(shifts(f.cols.cells), ['', '', '']);
+  assert.deepStrictEqual(f.head.cells.map(n => n.key), ['name', 'version', 'date'], 'no DOM moves during preview');
+  assert.deepStrictEqual(f.body.cells.map(n => n.key), ['A', '1', '2026']);
+  assert.strictEqual(f.saved.size, 0, 'no writes during preview');
+  assert.ok(f.table.classList.contains('column-previewing'));
+  f.doc.hit = f.heads[0]; // stationary pointer now over the transformed source header: slot must not change
+  f.head.emit('pointermove', f.pointer(f.heads[0], 260));
+  assert.deepStrictEqual(shifts(f.heads), moved);
+  f.head.emit('pointerup', f.pointer(f.heads[0], 260));
+  assert.deepStrictEqual(f.head.cells.map(n => n.key), ['version', 'date', 'name']);
+  assert.deepStrictEqual(f.body.cells.map(n => n.key), ['1', '2026', 'A']);
+  assert.ok([...f.heads, ...f.body.cells].every(n => !n.style.transform));
+  assert.ok(!f.table.classList.contains('column-previewing') && !f.heads[0].classList.contains('column-dragging'));
+  assert.strictEqual(f.saved.get('eol-ledger.table-order.v1.fixture'), '["version","date","name"]');
+});
+
+test('leftward preview uses unequal widths, hidden columns take no space, invalid release commits nothing', () => {
+  const f = columnFixture();
+  f.heads[0].w = 100; f.heads[2].w = 200; f.heads[1].hidden = f.body.cells[1].hidden = true; // name 0..100, date 100..300
+  f.head.emit('pointerdown', f.pointer(f.heads[2], 150));
+  f.head.emit('pointermove', f.pointer(f.heads[2], 50));
+  assert.deepStrictEqual(shifts(f.heads), ['translateX(200px)', 'translateX(200px)', 'translateX(-100px)']);
+  assert.deepStrictEqual(shifts(f.body.cells), ['translateX(200px)', 'translateX(200px)', 'translateX(-100px)']);
+  f.head.emit('pointermove', f.pointer(f.heads[2], 150));
+  assert.deepStrictEqual(shifts(f.heads), ['', '', ''], 'own slot previews nothing');
+  f.head.emit('pointermove', f.pointer(f.heads[2], 50));
+  f.head.emit('pointermove', f.pointer(f.heads[2], 50, 100));
+  assert.deepStrictEqual(shifts(f.heads), ['', '', ''], 'outside the header previews nothing');
+  f.head.emit('pointermove', f.pointer(f.heads[2], 50));
+  f.head.emit('pointerup', f.pointer(f.heads[2], 50, 100));
+  assert.deepStrictEqual(f.head.cells.map(n => n.key), ['name', 'version', 'date'], 'release outside never commits the stale preview');
+  assert.ok([...f.heads, ...f.body.cells].every(n => !n.style.transform));
+  assert.ok(!f.table.classList.contains('column-previewing'));
+  assert.strictEqual(f.saved.size, 0);
+});
+
+test('overlays and header controls above the landing slot cancel the preview and the drop', () => {
+  for (const kind of ['overlay', 'control']) {
+    const f = columnFixture(), control = { closest: s => s === 'th' ? f.heads[2] : control };
+    f.heads[2].contains = n => n === control;
+    f.head.emit('pointerdown', f.pointer(f.heads[0], 10));
+    f.head.emit('pointermove', f.pointer(f.heads[0], 260));
+    assert.notDeepStrictEqual(shifts(f.heads), ['', '', ''], kind);
+    f.doc.hit = kind === 'overlay' ? { closest: () => null } : control;
+    f.head.emit('pointermove', f.pointer(f.heads[0], 260));
+    assert.deepStrictEqual(shifts(f.heads), ['', '', ''], kind);
+    f.head.emit('pointerup', f.pointer(f.heads[0], 260));
+    assert.deepStrictEqual(f.head.cells.map(n => n.key), ['name', 'version', 'date'], kind);
+    assert.strictEqual(f.saved.size, 0, kind);
+  }
+});
+
+test('every cancellation clears the preview with no DOM moves or writes', () => {
+  for (const cancellation of ['Escape', 'scroll', 'blur', 'pointercancel', 'lostpointercapture']) {
+    const f = columnFixture();
+    f.head.emit('pointerdown', f.pointer(f.heads[0], 10));
+    f.head.emit('pointermove', f.pointer(f.heads[0], 260));
+    if (cancellation === 'Escape') f.doc.emit('keydown', { key: 'Escape' });
+    else if (cancellation === 'scroll' || cancellation === 'blur') f.win.emit(cancellation);
+    else f.head.emit(cancellation);
+    assert.ok([...f.heads, ...f.body.cells].every(n => !n.style.transform), cancellation);
+    assert.ok(!f.table.classList.contains('column-previewing'), cancellation);
+    f.head.emit('pointerup', f.pointer(f.heads[0], 260));
+    assert.deepStrictEqual(f.head.cells.map(n => n.key), ['name', 'version', 'date'], cancellation);
+    assert.strictEqual(f.saved.size, 0, cancellation);
+  }
+});
+
+test('preview cells animate transform, and the global reduced-motion rule turns transitions off', () => {
+  const css = fs.readFileSync(path.join(__dirname, '../../main/resources/static/app.css'), 'utf8');
+  assert.match(css, /\.column-previewing th, \.column-previewing td \{[^}]*transition: transform/);
+  assert.match(css, /prefers-reduced-motion: reduce\)\s*\{\s*\* \{ transition: none !important;/);
 });
 
 test('storage uses only its own key', () => {
