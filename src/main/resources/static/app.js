@@ -31,7 +31,7 @@ document.addEventListener('keydown', function (e) {
 var TABLE_KEY = 'eol-ledger.dependencies-table.v1';
 var MIN_WIDTH = 80;
 var MAX_WIDTH = 1000;
-var TABLE_COLUMNS = { purl: 280, dependency: 220, version: 120, eol: 130, status: 210, repos: 120, branches: 120, context: 240, cycle: 200, evidence: 280, source: 260, sbom: 260 };
+var TABLE_COLUMNS = { purl: 280, ecosystem: 140, dependency: 220, version: 120, eol: 130, status: 210, repos: 120, branches: 120, context: 240, cycle: 200, evidence: 280, source: 260, sbom: 260 };
 var BRANCH_TABLE_KEY = 'eol-ledger.branch-dependencies-table.v1';
 
 function clampWidth(n, fallback) {

@@ -23,14 +23,14 @@ test('column order normalizes corrupt, duplicate, unknown and missing identities
 
 const plain = (o) => JSON.parse(JSON.stringify(o));
 const DEFAULTS = {
-  purl: { visible: true, width: 280 },
+  purl: { visible: true, width: 280 }, ecosystem: { visible: true, width: 140 },
   dependency: { visible: true, width: 220 }, version: { visible: true, width: 120 },
   eol: { visible: true, width: 130 }, status: { visible: true, width: 210 },
   repos: { visible: true, width: 120 }, branches: { visible: true, width: 120 },
   context: { visible: true, width: 240 }, cycle: { visible: true, width: 200 },
   evidence: { visible: true, width: 280 }, source: { visible: true, width: 260 }, sbom: { visible: true, width: 260 },
 };
-const ECOSYSTEM_FIRST = ['purl', 'dependency', 'version', 'eol', 'status', 'repos', 'branches', 'context', 'cycle', 'evidence', 'source', 'sbom'];
+const ECOSYSTEM_FIRST = ['purl', 'ecosystem', 'dependency', 'version', 'eol', 'status', 'repos', 'branches', 'context', 'cycle', 'evidence', 'source', 'sbom'];
 
 test('shared columns default to ecosystem first; fresh order follows it and complete saved orders are kept', () => {
   const { TABLE_COLUMNS, tablePrefs, columnOrder } = load();
@@ -39,9 +39,20 @@ test('shared columns default to ecosystem first; fresh order follows it and comp
   const keys = Object.keys(TABLE_COLUMNS);
   assert.deepStrictEqual(plain(columnOrder(null, keys)), ECOSYSTEM_FIRST);
   const old = ['dependency', 'version', 'eol', 'status', 'repos', 'branches', 'context', 'purl', 'cycle', 'evidence', 'source', 'sbom'];
-  assert.deepStrictEqual(plain(columnOrder(JSON.stringify(old), keys)), old);
+  assert.deepStrictEqual(plain(columnOrder(JSON.stringify(old), keys)), old.concat('ecosystem'), 'saved 12-column order kept, ecosystem appended');
   const custom = ['sbom', 'eol', 'dependency', 'purl', 'version', 'status', 'repos', 'branches', 'context', 'cycle', 'evidence', 'source'];
-  assert.deepStrictEqual(plain(columnOrder(JSON.stringify(custom), keys)), custom);
+  assert.deepStrictEqual(plain(columnOrder(JSON.stringify(custom), keys)), custom.concat('ecosystem'));
+  const withEco = ['ecosystem'].concat(custom);
+  assert.deepStrictEqual(plain(columnOrder(JSON.stringify(withEco), keys)), withEco, 'complete 13-column order kept');
+});
+
+test('saved 12-column prefs keep their widths and visibility; ecosystem joins visible at 140px', () => {
+  const { tablePrefs } = load();
+  const columns = {};
+  for (const key of ECOSYSTEM_FIRST.filter((k) => k !== 'ecosystem')) columns[key] = { visible: key !== 'purl', width: 333 };
+  const p = plain(tablePrefs(JSON.stringify({ columns })));
+  for (const key of Object.keys(columns)) assert.deepStrictEqual(p[key], columns[key]);
+  assert.deepStrictEqual(p.ecosystem, { visible: true, width: 140 });
 });
 
 test('missing or malformed storage falls back to all shared columns visible at default widths', () => {
@@ -305,7 +316,7 @@ test('clear column keeps other filters and the sort; clear all resets every filt
   assert.deepStrictEqual(plain(one.sort), { key: 'repos', dir: 'desc' });
   assert.strictEqual(start.filters.eol.startText, '2025-01-01', 'the previous state is not mutated');
   const all = ctx.clearedState(one);
-  for (const k of Object.keys(DEFAULTS)) assert.deepStrictEqual(plain(all.filters[k]), plain(ctx.emptyFilter()), k);
+  for (const k of Object.keys(ctx.COLUMN_TYPES)) assert.deepStrictEqual(plain(all.filters[k]), plain(ctx.emptyFilter()), k);
   assert.deepStrictEqual(plain(all.sort), { key: 'eol', dir: 'asc' });
 });
 

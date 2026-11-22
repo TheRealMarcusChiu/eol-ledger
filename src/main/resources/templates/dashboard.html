@@ -33,6 +33,7 @@
                 th:attr="data-row=${r.cycle().key()},data-repos=${r.repos()},data-branches=${r.branches()},data-href=${href}"
                 th:hidden="${hiddenRows.contains(r.cycle().key())}">
                 <td data-column="purl" th:text="${r.purls()}"></td>
+                <td data-column="ecosystem" th:text="${r.ecosystems()}"></td>
                 <td data-column="dependency" th:attr="data-value=${r.names()}"><a th:href="${href}" th:text="${r.names()}">Python</a></td>
                 <td data-column="version" th:attr="data-value=${r.versions()}" th:text="${r.inventory().isEmpty() ? 'Not installed' : r.versions()}">3.10.5</td>
                 <td data-column="eol" class="date" data-value="" th:attrappend="data-value=${r.cycle().eolFrom()}" th:text="${r.cycle().eolFrom() ?: 'Not published'}">2026-10-31</td>
@@ -53,7 +54,7 @@
                 </th:block></td>
             </tr>
             <tr data-empty th:hidden="${rows.size() > hiddenRows.size()}">
-                <td colspan="12" class="empty">No dependency versions match.</td>
+                <td colspan="13" class="empty">No dependency versions match.</td>
             </tr>
             </tbody>
     </th:block>

@@ -69,12 +69,12 @@ class DashboardTest extends WebTestBase {
     void dependencyTableHasTheColumnContractAndProgressiveSettings() throws Exception {
         String html = page("/");
         String table = html.substring(html.indexOf("<table id=\"dependencies-table\""), html.indexOf("</table>"));
-        for (String key : java.util.List.of("dependency", "version", "context", "purl", "cycle", "eol", "status", "repos", "branches", "evidence", "source", "sbom")) {
+        for (String key : java.util.List.of("dependency", "version", "context", "purl", "ecosystem", "cycle", "eol", "status", "repos", "branches", "evidence", "source", "sbom")) {
             assertThat(table).as(key).contains("<col data-column=\"" + key + "\">", "<th scope=\"col\"", "data-column=\"" + key + "\">");
             // one header cell plus one cell per row (5 used versions)
             assertThat(table.split("data-column=\"" + key + "\"", -1)).as(key).hasSize(1 + 1 + 1 + 5);
         }
-        assertThat(table).contains(">Dependency Name</th>", ">Version</th>", ">EOL Date</th>", ">Status</th>", "># Code Repos Using It</th>", "># Code Repo Branches Using It</th>", ">Ecosystem / Package URL</th>")
+        assertThat(table).contains(">Dependency Name</th>", ">Version</th>", ">EOL Date</th>", ">Status</th>", "># Code Repos Using It</th>", "># Code Repo Branches Using It</th>", ">Ecosystem / Package URL</th>", ">Ecosystem</th>")
                 .doesNotContain(">Product</th>", ">Cycle</th>", "Ecosystem / purl");
         assertThat(html).contains("role=\"region\" aria-label=\"EoL Dependencies\"", "<details id=\"table-settings\" class=\"help\" hidden>",
                 "<summary>Table settings</summary>", "<button type=\"button\" data-columns-reset>Reset columns</button>");
@@ -86,7 +86,7 @@ class DashboardTest extends WebTestBase {
     @Test
     void emptyTableRowSpansAllColumns() throws Exception {
         String html = page("/?start=2000-01-01&end=2000-01-02");
-        assertThat(html).contains("<tr data-empty>\n                <td colspan=\"12\" class=\"empty\">No dependency versions match.</td>");
+        assertThat(html).contains("<tr data-empty>\n                <td colspan=\"13\" class=\"empty\">No dependency versions match.</td>");
         assertThat(shown(html)).isEmpty();
         assertThat(rows(html)).hasSize(5);
     }

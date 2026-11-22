@@ -131,6 +131,7 @@ public class Ledger {
         public String versions() { return values(e -> e.dep().displayVersion()); }
         public String contexts() { return values(Evidence::context); }
         public String purls() { return values(e -> e.dep().ecosystem() == null ? e.dep().purl() : e.dep().ecosystem() + " / " + e.dep().purl()); }
+        public String ecosystems() { String s = values(e -> e.dep().ecosystem()); return s.isEmpty() ? "Unknown" : s; }
         public String matching() { return values(e -> e.dep().match().evidence()); }
         public List<Source> sources() { return inventory.stream().map(e -> e.branch().repoUrl()).distinct().sorted().map(Source::new).toList(); }
         public List<Source> sboms() { return inventory.stream().map(Evidence::sbom).filter(Objects::nonNull).distinct().sorted().map(Source::new).toList(); }

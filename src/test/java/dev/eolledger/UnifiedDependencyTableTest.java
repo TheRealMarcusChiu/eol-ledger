@@ -19,7 +19,7 @@ class UnifiedDependencyTableTest extends WebTestBase {
         seed();
         long id = branchId("https://gitlab.com/acme/alpha", "main");
         var expected = List.of(
-                " data-column=\"purl\":Ecosystem / Package URL",
+                " data-column=\"purl\":Ecosystem / Package URL", " data-column=\"ecosystem\":Ecosystem",
                 " data-column=\"dependency\":Dependency Name", " data-type=\"version\" data-column=\"version\":Version",
                 " data-type=\"date\" data-column=\"eol\":EOL Date", " data-column=\"status\":Status",
                 " data-type=\"number\" class=\"num\" data-column=\"repos\":# Code Repos Using It",
@@ -40,7 +40,7 @@ class UnifiedDependencyTableTest extends WebTestBase {
     @Test void serverRenderedOrderAndCellMeaningWorkWithoutJavascript() throws Exception {
         seed();
         long id = branchId("https://gitlab.com/acme/alpha", "main");
-        var keys = List.of("purl", "dependency", "version", "eol", "status", "repos", "branches",
+        var keys = List.of("purl", "ecosystem", "dependency", "version", "eol", "status", "repos", "branches",
                 "context", "cycle", "evidence", "source", "sbom");
         for (String path : List.of("/", "/repos/" + id, "/repos/" + id + "/history")) {
             String table = path.equals("/") ? page(path) : AcceptanceRepairTest.depsTable(page(path));
@@ -57,14 +57,15 @@ class UnifiedDependencyTableTest extends WebTestBase {
             var cells = Pattern.compile("<td[^>]*>(.*?)</td>", Pattern.DOTALL).matcher(react).results()
                     .map(m -> m.group(1)).toList();
             assertThat(cells.get(0)).contains("pkg:npm/react@18.2.0");
-            assertThat(cells.get(1)).contains(">react</a>");
-            assertThat(cells.get(2)).contains("18.2.0");
-            assertThat(cells.get(3)).contains("2025-01-01");
-            assertThat(cells.get(4)).contains("eol-ended", "Ended");
-            assertThat(cells.get(5)).isEqualTo("1");
-            assertThat(cells.get(6)).isEqualTo(path.equals("/") ? "2" : "1");
-            assertThat(cells.get(8)).contains("React 18");
-            assertThat(cells.get(10)).contains("https://gitlab.com/acme/alpha");
+            assertThat(cells.get(1)).isEqualTo("npm");
+            assertThat(cells.get(2)).contains(">react</a>");
+            assertThat(cells.get(3)).contains("18.2.0");
+            assertThat(cells.get(4)).contains("2025-01-01");
+            assertThat(cells.get(5)).contains("eol-ended", "Ended");
+            assertThat(cells.get(6)).isEqualTo("1");
+            assertThat(cells.get(7)).isEqualTo(path.equals("/") ? "2" : "1");
+            assertThat(cells.get(9)).contains("React 18");
+            assertThat(cells.get(11)).contains("https://gitlab.com/acme/alpha");
         }
     }
     @Test void aggregateValuesAreInstalledEvidenceNotCatalogueLatestAndCountsStayScoped() throws Exception {
@@ -116,8 +117,8 @@ class UnifiedDependencyTableTest extends WebTestBase {
         long id = branchId("https://gitlab.com/acme/alpha", "main");
         db.sql("DELETE FROM dependency WHERE snapshot_id IN (SELECT id FROM snapshot WHERE branch_id = ?)").param(id).update();
         String table = AcceptanceRepairTest.depsTable(page("/repos/" + id));
-        assertThat(headers(table)).hasSize(12);
-        assertThat(table).contains("colspan=\"12\" class=\"empty\">No packages in this snapshot.").doesNotContain("<tr data-href=");
+        assertThat(headers(table)).hasSize(13);
+        assertThat(table).contains("colspan=\"13\" class=\"empty\">No packages in this snapshot.").doesNotContain("<tr data-href=");
     }
     @Test void noImportsKeepsEveryCatalogueCycleWithoutInventedInstalledVersions() throws Exception {
         TestSupport.REPLIES.put("/api/v1/products/full", TestSupport.Reply.ok(CATALOGUE));
