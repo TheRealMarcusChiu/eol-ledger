@@ -59,6 +59,7 @@ class ImportsPageTest extends IntegrationTest {
         // the demo download is only inside the closed Format help, same endpoint
         String help = upload.substring(upload.indexOf("<summary>Format help</summary>"));
         assertThat(help).contains("<a class=\"button-quiet\" href=\"/imports/samples/demo-dependency-inventory.json\" download>Download demo JSON</a>");
+        assertThat(help).contains("four fictional DEMO code repos");
         assertThat(main.split("Download demo JSON", -1)).hasSize(2);
         // Clear all data stays the last section
         assertThat(main.lastIndexOf("<section")).isEqualTo(main.indexOf("aria-labelledby=\"clear-h\"") - "<section class=\"panel\" ".length());
