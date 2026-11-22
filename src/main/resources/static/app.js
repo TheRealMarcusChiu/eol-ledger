@@ -223,9 +223,11 @@ function columnOrder(text, keys) {
   return order;
 }
 
+var HEADER_CONTROLS = 'a, input, select, textarea, label, summary, [role="dialog"], [data-column-resize], button:not(.th-sort)';
+
 function headerControl(target) {
   var cell = target.closest('th');
-  var control = target.closest('a, input, select, textarea, label, summary, [role="dialog"], [data-column-resize], button:not(.th-sort)');
+  var control = target.closest(HEADER_CONTROLS);
   return cell && control && cell.contains(control) ? control : null;
 }
 
@@ -275,13 +277,20 @@ function initColumnOrder(table) {
   }
   table.columnLayout = { cells: cells, reset: function () { order = keys.slice(); apply(); tableStorage('removeItem', null, storageKey); } };
   var drag = null, suppressClick = false;
-  /** Landing slot (index in order) under the pointer, from the untransformed snapshot; -1 off the header or over a control/overlay. */
+  function inside(r, e) { return e.clientX >= r.left && e.clientX < r.right && e.clientY >= r.top && e.clientY < r.bottom; }
+  /**
+   * Landing slot (index in order) under the pointer, from the untransformed snapshot; -1 off the header, under an overlay,
+   * inside any original control, or over a control that was not there at activation. A known control the preview carried
+   * over a valid point does not count, else the preview would undo itself and flicker.
+   */
   function landing(e) {
     var hit = document.elementFromPoint(e.clientX, e.clientY);
-    if (!hit || cells.indexOf(hit.closest('th')) < 0 || headerControl(hit)) return -1;
+    if (!hit || cells.indexOf(hit.closest('th')) < 0) return -1;
+    if (drag.controls.some(function (c) { return inside(c, e); })) return -1;
+    var control = headerControl(hit);
+    if (control && !drag.controls.some(function (c) { return c.node === control; })) return -1;
     for (var i = 0; i < drag.rects.length; i++) {
-      var r = drag.rects[i];
-      if (r.width && e.clientX >= r.left && e.clientX < r.right && e.clientY >= r.top && e.clientY < r.bottom) return i;
+      if (drag.rects[i].width && inside(drag.rects[i], e)) return i;
     }
     return -1;
   }
@@ -329,6 +338,14 @@ function initColumnOrder(table) {
       drag.rects = order.map(function (key) {
         var cell = cells[keys.indexOf(key)], r = cell.getBoundingClientRect();
         return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: cell.hidden ? 0 : r.width };
+      });
+      drag.controls = [];
+      cells.forEach(function (cell) {
+        if (cell.hidden) return;
+        Array.prototype.forEach.call(cell.querySelectorAll(HEADER_CONTROLS), function (control) {
+          var r = control.getBoundingClientRect();
+          if (r.right > r.left && r.bottom > r.top) drag.controls.push({ node: control, left: r.left, right: r.right, top: r.top, bottom: r.bottom });
+        });
       });
       drag.active = true;
       drag.cell.classList.add('column-dragging');

@@ -728,6 +728,62 @@ test('overlays and header controls above the landing slot cancel the preview and
   }
 });
 
+test('a header control carried by the preview over a valid slot keeps the preview; its original bounds stay invalid', () => {
+  // A/B/C = 220/120/200px; A's visible filter button at local x 180..202, content height y 8..26
+  function filterFixture() {
+    const f = columnFixture(), [a, b, c] = f.heads;
+    a.w = 220; b.w = 120; c.w = 200;
+    const dx = n => Number((/translateX\((-?[\d.]+)px\)/.exec(n.style.transform || '') || [0, 0])[1]);
+    // truthful like a browser: includes the transform its header is painted with
+    const filter = { hidden: false, closest: s => s === 'th' ? a : filter,
+      getBoundingClientRect() { const left = a.getBoundingClientRect().left + 180 + dx(a); return { left, right: left + 22, width: 22, top: 8, bottom: 26 }; } };
+    a.contains = n => n === filter;
+    a.querySelectorAll = () => [filter];
+    // what is painted on top: the filter where it is drawn now, else the header drawn at x
+    f.doc.elementFromPoint = (x, y) => {
+      const r = filter.getBoundingClientRect();
+      if (x >= r.left && x < r.right && y >= r.top && y < r.bottom) return filter;
+      return f.heads.find(h => { const o = h.getBoundingClientRect(); return !h.hidden && x >= o.left + dx(h) && x < o.right + dx(h) && y >= o.top && y < o.bottom; }) || null;
+    };
+    let writes = 0;
+    const set = f.win.localStorage.setItem;
+    f.win.localStorage.setItem = (k, v) => { if (k === 'eol-ledger.table-order.v1.fixture') writes++; set(k, v); };
+    return { f, filter, writes: () => writes };
+  }
+
+  const { f, filter, writes } = filterFixture();
+  assert.strictEqual(f.doc.elementFromPoint(190, 15), filter, 'filter is visible at its original place before activation');
+  assert.strictEqual(f.doc.elementFromPoint(310, 15), f.heads[1], 'x=310 is plain B padding before activation');
+  f.head.emit('pointerdown', f.pointer(f.heads[0], 30, 15));
+  f.head.emit('pointermove', f.pointer(f.heads[0], 310, 15));
+  const landed = ['translateX(120px)', 'translateX(-220px)', ''];
+  assert.deepStrictEqual(shifts(f.heads), landed);
+  assert.strictEqual(f.doc.elementFromPoint(310, 15), filter, 'the preview carries A\'s filter over x=310');
+  for (let i = 0; i < 3; i++) {
+    f.head.emit('pointermove', f.pointer(f.heads[0], 310, 15));
+    assert.deepStrictEqual(shifts(f.heads), landed, `repeat move ${i} keeps the preview`);
+  }
+  assert.deepStrictEqual(f.head.cells.map(n => n.key), ['name', 'version', 'date']);
+  assert.strictEqual(writes(), 0);
+  f.head.emit('pointerup', f.pointer(f.heads[0], 310, 15));
+  assert.deepStrictEqual(f.head.cells.map(n => n.key), ['version', 'name', 'date']);
+  assert.strictEqual(f.saved.get('eol-ledger.table-order.v1.fixture'), '["version","name","date"]');
+  assert.strictEqual(writes(), 1, 'committed exactly once');
+  assert.ok(f.heads.every(n => !n.style.transform));
+
+  // C previews into slot A via A's plain padding, which carries the filter away; its original bounds still reject
+  const g = filterFixture();
+  g.f.head.emit('pointerdown', g.f.pointer(g.f.heads[2], 440, 15));
+  g.f.head.emit('pointermove', g.f.pointer(g.f.heads[2], 30, 15));
+  assert.deepStrictEqual(shifts(g.f.heads), ['translateX(200px)', 'translateX(200px)', 'translateX(-340px)']);
+  assert.notStrictEqual(g.f.doc.elementFromPoint(190, 15), g.filter, 'filter has moved away from x=190');
+  g.f.head.emit('pointermove', g.f.pointer(g.f.heads[2], 190, 15));
+  assert.deepStrictEqual(shifts(g.f.heads), ['', '', ''], 'original filter bounds never accept a drop');
+  g.f.head.emit('pointerup', g.f.pointer(g.f.heads[2], 190, 15));
+  assert.deepStrictEqual(g.f.head.cells.map(n => n.key), ['name', 'version', 'date']);
+  assert.strictEqual(g.writes(), 0);
+});
+
 test('every cancellation clears the preview with no DOM moves or writes', () => {
   for (const cancellation of ['Escape', 'scroll', 'blur', 'pointercancel', 'lostpointercapture']) {
     const f = columnFixture();
