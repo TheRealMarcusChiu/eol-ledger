@@ -206,6 +206,14 @@ test('typed sort: natural versions, real numbers, ISO dates; blanks last both wa
   assert.deepStrictEqual(Array.from(ctx.sortOrder(['x', '', 'x', ''], 'text', 'desc')), [0, 2, 1, 3]);
 });
 
+test('typed sort does not depend on the browser default locale (a Swedish default sorts ä after z)', () => {
+  const swedishDefault = { Collator: function (locales, options) { return new Intl.Collator(locales === undefined ? 'sv' : locales, options); } };
+  const ctx = vm.createContext({ window: {}, document: { addEventListener() {}, getElementById() { return null; } }, URL, Intl: swedishDefault });
+  vm.runInContext(source, ctx);
+  assert.deepStrictEqual(order(ctx, ['ä', 'z'], 'text', 'asc'), ['ä', 'z']);
+  assert.deepStrictEqual(order(ctx, ['ä', 'z'], 'text', 'desc'), ['z', 'ä']);
+});
+
 test('every text operator is literal and case-insensitive, never a regex', () => {
   const { textMatches } = load();
   const cases = [

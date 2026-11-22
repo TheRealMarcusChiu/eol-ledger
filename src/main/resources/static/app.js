@@ -400,7 +400,7 @@ function initColumnOrder(table) {
 var COLUMN_TYPES = { dependency: 'text', version: 'version', context: 'text', purl: 'text', cycle: 'text', eol: 'date', status: 'text', repos: 'number', branches: 'number', evidence: 'text', source: 'text', sbom: 'text' };
 var TEXT_OPS = { 'contains': 'Contains', 'not-contains': 'Does not contain', 'exact': 'Is exactly', 'not-exact': 'Is not exactly',
   'starts-with': 'Starts with', 'ends-with': 'Ends with', 'fuzzy': 'Fuzzy match', 'is-blank': 'Is blank', 'not-blank': 'Is not blank' };
-var natural = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+var natural = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
 
 /**
  * Typed comparison of two non-blank cell values: ISO dates, real numbers, else natural text (3.9 before 3.10).
