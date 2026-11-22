@@ -1,0 +1,2 @@
+com.example.inventory:inventory-store:jar:2.0.0
+\- com.h2database:h2:jar:2.3.232:compile

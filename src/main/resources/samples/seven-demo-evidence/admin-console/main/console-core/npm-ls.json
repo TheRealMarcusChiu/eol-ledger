@@ -1,0 +1,100 @@
+{
+  "version": "2.0.0",
+  "name": "console-core",
+  "private": true,
+  "_id": "console-core@2.0.0",
+  "extraneous": false,
+  "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/main/console-core",
+  "_dependencies": {
+    "@angular/core": "19.2.14"
+  },
+  "devDependencies": {},
+  "peerDependencies": {},
+  "dependencies": {
+    "@angular/core": {
+      "version": "19.2.14",
+      "resolved": "https://registry.npmjs.org/@angular/core/-/core-19.2.14.tgz",
+      "overridden": false,
+      "name": "@angular/core",
+      "integrity": "sha512-EVErpW9tGqJ/wNcAN3G/ErH8pHCJ8mM1E6bsJ8UJIpDTZkpqqYjBMtZS9YWH5n3KwUd1tAkAB2w8FK125AjDUQ==",
+      "license": "MIT",
+      "engines": {
+        "node": "^18.19.1 || ^20.11.1 || >=22.0.0"
+      },
+      "peerDependencies": {
+        "rxjs": "^6.5.3 || ^7.4.0",
+        "zone.js": "~0.15.0"
+      },
+      "_id": "@angular/core@19.2.14",
+      "extraneous": false,
+      "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/main/console-core/node_modules/@angular/core",
+      "_dependencies": {
+        "tslib": "^2.3.0"
+      },
+      "devDependencies": {},
+      "dependencies": {
+        "rxjs": {
+          "version": "7.8.2",
+          "resolved": "https://registry.npmjs.org/rxjs/-/rxjs-7.8.2.tgz",
+          "overridden": false,
+          "name": "rxjs",
+          "integrity": "sha512-dhKf903U/PQZY6boNNtAGdWbG85WAbjT/1xYoZIC7FAY0yWapOBQVsVrDl58W86//e1VpMNBtRV4MaXfdMySFA==",
+          "license": "Apache-2.0",
+          "peer": true,
+          "_id": "rxjs@7.8.2",
+          "extraneous": false,
+          "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/main/console-core/node_modules/rxjs",
+          "_dependencies": {
+            "tslib": "^2.1.0"
+          },
+          "devDependencies": {},
+          "peerDependencies": {},
+          "dependencies": {
+            "tslib": {
+              "version": "2.9.1",
+              "name": "tslib",
+              "resolved": "https://registry.npmjs.org/tslib/-/tslib-2.9.1.tgz",
+              "integrity": "sha512-a4Ux9VKuIMHsOS7ENbEq6hK2ZGYIT27Rtl0E4eD9KqwxhKiQeMZE/9xb3IdYwWaSOyIBQLExhQgXDTYoiCxnWA==",
+              "license": "0BSD",
+              "_id": "tslib@2.9.1",
+              "extraneous": false,
+              "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/main/console-core/node_modules/tslib",
+              "_dependencies": {},
+              "devDependencies": {},
+              "peerDependencies": {}
+            }
+          }
+        },
+        "tslib": {
+          "version": "2.9.1",
+          "resolved": "https://registry.npmjs.org/tslib/-/tslib-2.9.1.tgz",
+          "overridden": false,
+          "name": "tslib",
+          "integrity": "sha512-a4Ux9VKuIMHsOS7ENbEq6hK2ZGYIT27Rtl0E4eD9KqwxhKiQeMZE/9xb3IdYwWaSOyIBQLExhQgXDTYoiCxnWA==",
+          "license": "0BSD",
+          "_id": "tslib@2.9.1",
+          "extraneous": false,
+          "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/main/console-core/node_modules/tslib",
+          "_dependencies": {},
+          "devDependencies": {},
+          "peerDependencies": {}
+        },
+        "zone.js": {
+          "version": "0.15.1",
+          "resolved": "https://registry.npmjs.org/zone.js/-/zone.js-0.15.1.tgz",
+          "overridden": false,
+          "name": "zone.js",
+          "integrity": "sha512-XE96n56IQpJM7NAoXswY3XRLcWFW83xe0BiAOeMD7K5k5xecOeul3Qcpx6GqEeeHNkW5DWL5zOyTbEfB4eti8w==",
+          "license": "MIT",
+          "peer": true,
+          "_id": "zone.js@0.15.1",
+          "extraneous": false,
+          "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/main/console-core/node_modules/zone.js",
+          "_dependencies": {},
+          "devDependencies": {},
+          "peerDependencies": {}
+        }
+      }
+    }
+  }
+}

@@ -49,7 +49,7 @@ class DemoLifecycleLinksTest extends WebTestBase {
     void everyBranchLinksToARealCatalogueCycleAndKeepsItsOriginalGraph() throws Exception {
         String body = ImportService.sample(ImportService.SAMPLE);
         JsonNode sample = JSON.readTree(body);
-        assertThat(sample).hasSize(8);
+        assertThat(sample).hasSize(22);
         int checked = 0;
         for (JsonNode e : sample) {
             String key = e.path("name").asText() + " " + e.path("branch").asText();
@@ -65,11 +65,12 @@ class DemoLifecycleLinksTest extends WebTestBase {
         TestSupport.REPLIES.put("/api/v1/products/full", TestSupport.Reply.ok(
                 new String(new ClassPathResource("catalogue/demo-linked-products.json").getContentAsByteArray(), StandardCharsets.UTF_8)));
         assertThat(catalog.sync().productsSynced()).isEqualTo(2);
-        assertThat(imports.importJson(body, "test").newSnapshots()).isEqualTo(8);
+        assertThat(imports.importJson(body, "test").newSnapshots()).isEqualTo(22);
         assertThat(imports.importJson(body, "again").newSnapshots()).isZero();
 
         for (JsonNode e : sample) {
             String key = e.path("name").asText() + " " + e.path("branch").asText();
+            if (!LINKED.containsKey(key)) continue; // the seven-demo products are covered by SevenDemoRepositoriesTest
             List<Ledger.Dep> deps = ledger.deps(ledger.branch(branchId(e.path("url").asText(), e.path("branch").asText())).snapshotId());
             List<Ledger.Dep> linked = deps.stream().filter(d -> d.cycle() != null).toList();
             assertThat(linked).as(key).isNotEmpty();

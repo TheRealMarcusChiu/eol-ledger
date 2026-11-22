@@ -1,0 +1,240 @@
+[
+  {
+    "repository": "inventory-persistence",
+    "branch": "release/legacy",
+    "commit": "73d32732e03089ec6a619a0db2ea1a5a50866731",
+    "command": "/usr/bin/git clone -q --no-hardlinks --branch release/legacy /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/inventory-persistence /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:39:16Z",
+    "finishedAt": "2026-11-22T09:39:16Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "repository": "inventory-persistence",
+    "branch": "release/legacy",
+    "commit": "73d32732e03089ec6a619a0db2ea1a5a50866731",
+    "command": "/usr/bin/git rev-parse HEAD",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:39:16Z",
+    "finishedAt": "2026-11-22T09:39:16Z",
+    "stdout": "73d32732e03089ec6a619a0db2ea1a5a50866731\n",
+    "stderr": ""
+  },
+  {
+    "module": "inventory-orm",
+    "repository": "inventory-persistence",
+    "branch": "release/legacy",
+    "commit": "73d32732e03089ec6a619a0db2ea1a5a50866731",
+    "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2 clean package",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-orm",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:39:16Z",
+    "finishedAt": "2026-11-22T09:39:22Z",
+    "stdout": "[INFO] Scanning for projects...\n[INFO] \n[INFO] ----------------< com.example.inventory:inventory-orm >-----------------\n[INFO] Building inventory-orm 1.4.0\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- maven-clean-plugin:3.4.0:clean (default-clean) @ inventory-orm ---\n[INFO] \n[INFO] --- maven-resources-plugin:3.3.1:resources (default-resources) @ inventory-orm ---\n[INFO] skip non existing resourceDirectory /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-orm/src/main/resources\n[INFO] \n[INFO] --- maven-compiler-plugin:3.13.0:compile (default-compile) @ inventory-orm ---\n[INFO] Recompiling the module because of changed dependency.\n[INFO] Compiling 1 source file with javac [debug release 17] to target/classes\n[INFO] \n[INFO] --- maven-resources-plugin:3.3.1:testResources (default-testResources) @ inventory-orm ---\n[INFO] skip non existing resourceDirectory /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-orm/src/test/resources\n[INFO] \n[INFO] --- maven-compiler-plugin:3.13.0:testCompile (default-testCompile) @ inventory-orm ---\n[INFO] No sources to compile\n[INFO] \n[INFO] --- maven-surefire-plugin:3.5.2:test (default-test) @ inventory-orm ---\n[INFO] No tests to run.\n[INFO] \n[INFO] --- maven-jar-plugin:3.4.2:jar (default-jar) @ inventory-orm ---\n[INFO] Building jar: /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-orm/target/inventory-orm-1.4.0.jar\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  5.210 s\n[INFO] Finished at: 2026-11-22T03:39:22-06:00\n[INFO] ------------------------------------------------------------------------\n",
+    "stderr": ""
+  },
+  {
+    "module": "inventory-orm",
+    "repository": "inventory-persistence",
+    "branch": "release/legacy",
+    "commit": "73d32732e03089ec6a619a0db2ea1a5a50866731",
+    "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree -DoutputType=json -DoutputFile=/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/inventory-persistence/release-legacy/inventory-orm/tree.json",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-orm",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:39:22Z",
+    "finishedAt": "2026-11-22T09:39:24Z",
+    "stdout": "[INFO] Scanning for projects...\n[INFO] \n[INFO] ----------------< com.example.inventory:inventory-orm >-----------------\n[INFO] Building inventory-orm 1.4.0\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- maven-dependency-plugin:3.8.1:tree (default-cli) @ inventory-orm ---\n[INFO] Wrote dependency tree to: /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/inventory-persistence/release-legacy/inventory-orm/tree.json\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  0.795 s\n[INFO] Finished at: 2026-11-22T03:39:24-06:00\n[INFO] ------------------------------------------------------------------------\n",
+    "stderr": ""
+  },
+  {
+    "module": "inventory-orm",
+    "repository": "inventory-persistence",
+    "branch": "release/legacy",
+    "commit": "73d32732e03089ec6a619a0db2ea1a5a50866731",
+    "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree -DoutputFile=/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/inventory-persistence/release-legacy/inventory-orm/tree.txt",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-orm",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:39:24Z",
+    "finishedAt": "2026-11-22T09:39:26Z",
+    "stdout": "[INFO] Scanning for projects...\n[INFO] \n[INFO] ----------------< com.example.inventory:inventory-orm >-----------------\n[INFO] Building inventory-orm 1.4.0\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- maven-dependency-plugin:3.8.1:tree (default-cli) @ inventory-orm ---\n[INFO] Wrote dependency tree to: /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/inventory-persistence/release-legacy/inventory-orm/tree.txt\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  0.805 s\n[INFO] Finished at: 2026-11-22T03:39:26-06:00\n[INFO] ------------------------------------------------------------------------\n",
+    "stderr": ""
+  },
+  {
+    "module": "inventory-orm",
+    "repository": "inventory-persistence",
+    "branch": "release/legacy",
+    "commit": "73d32732e03089ec6a619a0db2ea1a5a50866731",
+    "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:build-classpath -Dmdep.outputFile=/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-orm/target/classpath.txt",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-orm",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:39:26Z",
+    "finishedAt": "2026-11-22T09:39:28Z",
+    "stdout": "[INFO] Scanning for projects...\n[INFO] \n[INFO] ----------------< com.example.inventory:inventory-orm >-----------------\n[INFO] Building inventory-orm 1.4.0\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- maven-dependency-plugin:3.8.1:build-classpath (default-cli) @ inventory-orm ---\n[INFO] Wrote classpath file '/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-orm/target/classpath.txt'.\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  0.873 s\n[INFO] Finished at: 2026-11-22T03:39:28-06:00\n[INFO] ------------------------------------------------------------------------\n",
+    "stderr": ""
+  },
+  {
+    "module": "inventory-orm",
+    "repository": "inventory-persistence",
+    "branch": "release/legacy",
+    "commit": "73d32732e03089ec6a619a0db2ea1a5a50866731",
+    "command": "/usr/bin/java -cp /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-orm/target/inventory-orm-1.4.0.jar:/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2/org/hibernate/hibernate-core/5.6.15.Final/hibernate-core-5.6.15.Final.jar:/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2/org/jboss/logging/jboss-logging/3.4.3.Final/jboss-logging-3.4.3.Final.jar:/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2/javax/persistence/javax.persistence-api/2.2/javax.persistence-api-2.2.jar:/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2/net/bytebuddy/byte-buddy/1.12.18/byte-buddy-1.12.18.jar:/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2/antlr/antlr/2.7.7/antlr-2.7.7.jar:/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2/org/jboss/spec/javax/transaction/jboss-transaction-api_1.2_spec/1.1.1.Final/jboss-transaction-api_1.2_spec-1.1.1.Final.jar:/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2/org/jboss/jandex/2.4.2.Final/jandex-2.4.2.Final.jar:/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2/com/fasterxml/classmate/1.5.1/classmate-1.5.1.jar:/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2/javax/activation/javax.activation-api/1.2.0/javax.activation-api-1.2.0.jar:/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2/org/hibernate/common/hibernate-commons-annotations/5.1.2.Final/hibernate-commons-annotations-5.1.2.Final.jar:/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2/javax/xml/bind/jaxb-api/2.3.1/jaxb-api-2.3.1.jar:/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2/org/glassfish/jaxb/jaxb-runtime/2.3.1/jaxb-runtime-2.3.1.jar:/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2/org/glassfish/jaxb/txw2/2.3.1/txw2-2.3.1.jar:/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2/com/sun/istack/istack-commons-runtime/3.0.7/istack-commons-runtime-3.0.7.jar:/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2/org/jvnet/staxex/stax-ex/1.8/stax-ex-1.8.jar:/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2/com/sun/xml/fastinfoset/FastInfoset/1.2.15/FastInfoset-1.2.15.jar com.example.inventory.orm.InventoryOrm",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-orm",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:39:28Z",
+    "finishedAt": "2026-11-22T09:39:28Z",
+    "stdout": "hibernate-orm 5.6.15.Final\n",
+    "stderr": ""
+  },
+  {
+    "module": "inventory-store",
+    "repository": "inventory-persistence",
+    "branch": "release/legacy",
+    "commit": "73d32732e03089ec6a619a0db2ea1a5a50866731",
+    "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2 clean package",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-store",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:39:28Z",
+    "finishedAt": "2026-11-22T09:39:30Z",
+    "stdout": "[INFO] Scanning for projects...\n[INFO] \n[INFO] ---------------< com.example.inventory:inventory-store >----------------\n[INFO] Building inventory-store 1.4.0\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- maven-clean-plugin:3.4.0:clean (default-clean) @ inventory-store ---\n[INFO] \n[INFO] --- maven-resources-plugin:3.3.1:resources (default-resources) @ inventory-store ---\n[INFO] skip non existing resourceDirectory /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-store/src/main/resources\n[INFO] \n[INFO] --- maven-compiler-plugin:3.13.0:compile (default-compile) @ inventory-store ---\n[INFO] Recompiling the module because of changed source code.\n[INFO] Compiling 1 source file with javac [debug release 17] to target/classes\n[INFO] \n[INFO] --- maven-resources-plugin:3.3.1:testResources (default-testResources) @ inventory-store ---\n[INFO] skip non existing resourceDirectory /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-store/src/test/resources\n[INFO] \n[INFO] --- maven-compiler-plugin:3.13.0:testCompile (default-testCompile) @ inventory-store ---\n[INFO] No sources to compile\n[INFO] \n[INFO] --- maven-surefire-plugin:3.5.2:test (default-test) @ inventory-store ---\n[INFO] No tests to run.\n[INFO] \n[INFO] --- maven-jar-plugin:3.4.2:jar (default-jar) @ inventory-store ---\n[INFO] Building jar: /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-store/target/inventory-store-1.4.0.jar\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  1.309 s\n[INFO] Finished at: 2026-11-22T03:39:30-06:00\n[INFO] ------------------------------------------------------------------------\n",
+    "stderr": ""
+  },
+  {
+    "module": "inventory-store",
+    "repository": "inventory-persistence",
+    "branch": "release/legacy",
+    "commit": "73d32732e03089ec6a619a0db2ea1a5a50866731",
+    "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree -DoutputType=json -DoutputFile=/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/inventory-persistence/release-legacy/inventory-store/tree.json",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-store",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:39:30Z",
+    "finishedAt": "2026-11-22T09:39:32Z",
+    "stdout": "[INFO] Scanning for projects...\n[INFO] \n[INFO] ---------------< com.example.inventory:inventory-store >----------------\n[INFO] Building inventory-store 1.4.0\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- maven-dependency-plugin:3.8.1:tree (default-cli) @ inventory-store ---\n[INFO] Wrote dependency tree to: /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/inventory-persistence/release-legacy/inventory-store/tree.json\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  0.881 s\n[INFO] Finished at: 2026-11-22T03:39:32-06:00\n[INFO] ------------------------------------------------------------------------\n",
+    "stderr": ""
+  },
+  {
+    "module": "inventory-store",
+    "repository": "inventory-persistence",
+    "branch": "release/legacy",
+    "commit": "73d32732e03089ec6a619a0db2ea1a5a50866731",
+    "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree -DoutputFile=/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/inventory-persistence/release-legacy/inventory-store/tree.txt",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-store",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:39:32Z",
+    "finishedAt": "2026-11-22T09:39:34Z",
+    "stdout": "[INFO] Scanning for projects...\n[INFO] \n[INFO] ---------------< com.example.inventory:inventory-store >----------------\n[INFO] Building inventory-store 1.4.0\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- maven-dependency-plugin:3.8.1:tree (default-cli) @ inventory-store ---\n[INFO] Wrote dependency tree to: /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/inventory-persistence/release-legacy/inventory-store/tree.txt\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  0.706 s\n[INFO] Finished at: 2026-11-22T03:39:34-06:00\n[INFO] ------------------------------------------------------------------------\n",
+    "stderr": ""
+  },
+  {
+    "module": "inventory-store",
+    "repository": "inventory-persistence",
+    "branch": "release/legacy",
+    "commit": "73d32732e03089ec6a619a0db2ea1a5a50866731",
+    "command": "/usr/bin/mvn -B -ntp -Dmaven.repo.local=/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2 org.apache.maven.plugins:maven-dependency-plugin:3.8.1:build-classpath -Dmdep.outputFile=/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-store/target/classpath.txt",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-store",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:39:34Z",
+    "finishedAt": "2026-11-22T09:39:36Z",
+    "stdout": "[INFO] Scanning for projects...\n[INFO] \n[INFO] ---------------< com.example.inventory:inventory-store >----------------\n[INFO] Building inventory-store 1.4.0\n[INFO] --------------------------------[ jar ]---------------------------------\n[INFO] \n[INFO] --- maven-dependency-plugin:3.8.1:build-classpath (default-cli) @ inventory-store ---\n[INFO] Wrote classpath file '/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-store/target/classpath.txt'.\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  0.940 s\n[INFO] Finished at: 2026-11-22T03:39:36-06:00\n[INFO] ------------------------------------------------------------------------\n",
+    "stderr": ""
+  },
+  {
+    "module": "inventory-store",
+    "repository": "inventory-persistence",
+    "branch": "release/legacy",
+    "commit": "73d32732e03089ec6a619a0db2ea1a5a50866731",
+    "command": "/usr/bin/java -cp /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-store/target/inventory-store-1.4.0.jar:/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2/com/h2database/h2/2.3.232/h2-2.3.232.jar com.example.inventory.store.StockStore",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/inventory-persistence/release-legacy/inventory-store",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:39:36Z",
+    "finishedAt": "2026-11-22T09:39:36Z",
+    "stdout": "h2 stock total 12\n",
+    "stderr": ""
+  }
+]

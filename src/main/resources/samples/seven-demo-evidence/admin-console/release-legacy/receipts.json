@@ -1,0 +1,160 @@
+[
+  {
+    "repository": "admin-console",
+    "branch": "release/legacy",
+    "commit": "0d432096ab85247a9943cfbd3c18d2e01fcb442c",
+    "command": "/usr/bin/git clone -q --no-hardlinks --branch release/legacy /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/admin-console /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:00Z",
+    "finishedAt": "2026-11-22T09:38:00Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "repository": "admin-console",
+    "branch": "release/legacy",
+    "commit": "0d432096ab85247a9943cfbd3c18d2e01fcb442c",
+    "command": "/usr/bin/git rev-parse HEAD",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:00Z",
+    "finishedAt": "2026-11-22T09:38:00Z",
+    "stdout": "0d432096ab85247a9943cfbd3c18d2e01fcb442c\n",
+    "stderr": ""
+  },
+  {
+    "module": "console-core",
+    "repository": "admin-console",
+    "branch": "release/legacy",
+    "commit": "0d432096ab85247a9943cfbd3c18d2e01fcb442c",
+    "command": "/root/.hermes/node/bin/npm ci --ignore-scripts --no-audit --no-fund",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-core",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:00Z",
+    "finishedAt": "2026-11-22T09:38:02Z",
+    "stdout": "\nadded 4 packages in 1s\n",
+    "stderr": ""
+  },
+  {
+    "module": "console-core",
+    "repository": "admin-console",
+    "branch": "release/legacy",
+    "commit": "0d432096ab85247a9943cfbd3c18d2e01fcb442c",
+    "command": "/root/.hermes/node/bin/npm ls --all --json --long",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-core",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:02Z",
+    "finishedAt": "2026-11-22T09:38:02Z",
+    "stdout": "{\n  \"version\": \"1.4.0\",\n  \"name\": \"console-core\",\n  \"private\": true,\n  \"_id\": \"console-core@1.4.0\",\n  \"extraneous\": false,\n  \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-core\",\n  \"_dependencies\": {\n    \"@angular/core\": \"17.3.12\"\n  },\n  \"devDependencies\": {},\n  \"peerDependencies\": {},\n  \"dependencies\": {\n    \"@angular/core\": {\n      \"version\": \"17.3.12\",\n      \"resolved\": \"https://registry.npmjs.org/@angular/core/-/core-17.3.12.tgz\",\n      \"overridden\": false,\n      \"name\": \"@angular/core\",\n      \"integrity\": \"sha512-MuFt5yKi161JmauUta4Dh0m8ofwoq6Ino+KoOtkYMBGsSx+A7dSm+DUxxNwdj7+DNyg3LjVGCFgBFnq4g8z06A==\",\n      \"license\": \"MIT\",\n      \"engines\": {\n        \"node\": \"^18.13.0 || >=20.9.0\"\n      },\n      \"peerDependencies\": {\n        \"rxjs\": \"^6.5.3 || ^7.4.0\",\n        \"zone.js\": \"~0.14.0\"\n      },\n      \"_id\": \"@angular/core@17.3.12\",\n      \"extraneous\": false,\n      \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-core/node_modules/@angular/core\",\n      \"_dependencies\": {\n        \"tslib\": \"^2.3.0\"\n      },\n      \"devDependencies\": {},\n      \"dependencies\": {\n        \"rxjs\": {\n          \"version\": \"7.8.2\",\n          \"resolved\": \"https://registry.npmjs.org/rxjs/-/rxjs-7.8.2.tgz\",\n          \"overridden\": false,\n          \"name\": \"rxjs\",\n          \"integrity\": \"sha512-dhKf903U/PQZY6boNNtAGdWbG85WAbjT/1xYoZIC7FAY0yWapOBQVsVrDl58W86//e1VpMNBtRV4MaXfdMySFA==\",\n          \"license\": \"Apache-2.0\",\n          \"peer\": true,\n          \"_id\": \"rxjs@7.8.2\",\n          \"extraneous\": false,\n          \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-core/node_modules/rxjs\",\n          \"_dependencies\": {\n            \"tslib\": \"^2.1.0\"\n          },\n          \"devDependencies\": {},\n          \"peerDependencies\": {},\n          \"dependencies\": {\n            \"tslib\": {\n              \"version\": \"2.9.1\",\n              \"name\": \"tslib\",\n              \"resolved\": \"https://registry.npmjs.org/tslib/-/tslib-2.9.1.tgz\",\n              \"integrity\": \"sha512-a4Ux9VKuIMHsOS7ENbEq6hK2ZGYIT27Rtl0E4eD9KqwxhKiQeMZE/9xb3IdYwWaSOyIBQLExhQgXDTYoiCxnWA==\",\n              \"license\": \"0BSD\",\n              \"_id\": \"tslib@2.9.1\",\n              \"extraneous\": false,\n              \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-core/node_modules/tslib\",\n              \"_dependencies\": {},\n              \"devDependencies\": {},\n              \"peerDependencies\": {}\n            }\n          }\n        },\n        \"tslib\": {\n          \"version\": \"2.9.1\",\n          \"resolved\": \"https://registry.npmjs.org/tslib/-/tslib-2.9.1.tgz\",\n          \"overridden\": false,\n          \"name\": \"tslib\",\n          \"integrity\": \"sha512-a4Ux9VKuIMHsOS7ENbEq6hK2ZGYIT27Rtl0E4eD9KqwxhKiQeMZE/9xb3IdYwWaSOyIBQLExhQgXDTYoiCxnWA==\",\n          \"license\": \"0BSD\",\n          \"_id\": \"tslib@2.9.1\",\n          \"extraneous\": false,\n          \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-core/node_modules/tslib\",\n          \"_dependencies\": {},\n          \"devDependencies\": {},\n          \"peerDependencies\": {}\n        },\n        \"zone.js\": {\n          \"version\": \"0.14.10\",\n          \"resolved\": \"https://registry.npmjs.org/zone.js/-/zone.js-0.14.10.tgz\",\n          \"overridden\": false,\n          \"name\": \"zone.js\",\n          \"integrity\": \"sha512-YGAhaO7J5ywOXW6InXNlLmfU194F8lVgu7bRntUF3TiG8Y3nBK0x1UJJuHUP/e8IyihkjCYqhCScpSwnlaSRkQ==\",\n          \"license\": \"MIT\",\n          \"peer\": true,\n          \"_id\": \"zone.js@0.14.10\",\n          \"extraneous\": false,\n          \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-core/node_modules/zone.js\",\n          \"_dependencies\": {},\n          \"devDependencies\": {},\n          \"peerDependencies\": {}\n        }\n      }\n    }\n  }\n}\n",
+    "stderr": ""
+  },
+  {
+    "module": "console-core",
+    "repository": "admin-console",
+    "branch": "release/legacy",
+    "commit": "0d432096ab85247a9943cfbd3c18d2e01fcb442c",
+    "command": "/root/.hermes/node/bin/node index.mjs",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-core",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:02Z",
+    "finishedAt": "2026-11-22T09:38:02Z",
+    "stdout": "@angular/core 17.3.12 4 open tickets (package 17.3.12)\n",
+    "stderr": ""
+  },
+  {
+    "module": "console-streams",
+    "repository": "admin-console",
+    "branch": "release/legacy",
+    "commit": "0d432096ab85247a9943cfbd3c18d2e01fcb442c",
+    "command": "/root/.hermes/node/bin/npm ci --ignore-scripts --no-audit --no-fund",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-streams",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:02Z",
+    "finishedAt": "2026-11-22T09:38:03Z",
+    "stdout": "\nadded 2 packages in 1s\n",
+    "stderr": ""
+  },
+  {
+    "module": "console-streams",
+    "repository": "admin-console",
+    "branch": "release/legacy",
+    "commit": "0d432096ab85247a9943cfbd3c18d2e01fcb442c",
+    "command": "/root/.hermes/node/bin/npm ls --all --json --long",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-streams",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:03Z",
+    "finishedAt": "2026-11-22T09:38:04Z",
+    "stdout": "{\n  \"version\": \"1.4.0\",\n  \"name\": \"console-streams\",\n  \"private\": true,\n  \"_id\": \"console-streams@1.4.0\",\n  \"extraneous\": false,\n  \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-streams\",\n  \"_dependencies\": {\n    \"rxjs\": \"7.8.2\"\n  },\n  \"devDependencies\": {},\n  \"peerDependencies\": {},\n  \"dependencies\": {\n    \"rxjs\": {\n      \"version\": \"7.8.2\",\n      \"resolved\": \"https://registry.npmjs.org/rxjs/-/rxjs-7.8.2.tgz\",\n      \"overridden\": false,\n      \"name\": \"rxjs\",\n      \"integrity\": \"sha512-dhKf903U/PQZY6boNNtAGdWbG85WAbjT/1xYoZIC7FAY0yWapOBQVsVrDl58W86//e1VpMNBtRV4MaXfdMySFA==\",\n      \"license\": \"Apache-2.0\",\n      \"_id\": \"rxjs@7.8.2\",\n      \"extraneous\": false,\n      \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-streams/node_modules/rxjs\",\n      \"_dependencies\": {\n        \"tslib\": \"^2.1.0\"\n      },\n      \"devDependencies\": {},\n      \"peerDependencies\": {},\n      \"dependencies\": {\n        \"tslib\": {\n          \"version\": \"2.9.1\",\n          \"resolved\": \"https://registry.npmjs.org/tslib/-/tslib-2.9.1.tgz\",\n          \"overridden\": false,\n          \"name\": \"tslib\",\n          \"integrity\": \"sha512-a4Ux9VKuIMHsOS7ENbEq6hK2ZGYIT27Rtl0E4eD9KqwxhKiQeMZE/9xb3IdYwWaSOyIBQLExhQgXDTYoiCxnWA==\",\n          \"license\": \"0BSD\",\n          \"_id\": \"tslib@2.9.1\",\n          \"extraneous\": false,\n          \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-streams/node_modules/tslib\",\n          \"_dependencies\": {},\n          \"devDependencies\": {},\n          \"peerDependencies\": {}\n        }\n      }\n    }\n  }\n}\n",
+    "stderr": ""
+  },
+  {
+    "module": "console-streams",
+    "repository": "admin-console",
+    "branch": "release/legacy",
+    "commit": "0d432096ab85247a9943cfbd3c18d2e01fcb442c",
+    "command": "/root/.hermes/node/bin/node index.js",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-streams",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:04Z",
+    "finishedAt": "2026-11-22T09:38:04Z",
+    "stdout": "rxjs 7.8.2 20,40\n",
+    "stderr": ""
+  }
+]

@@ -1,0 +1,32 @@
+{
+  "version": "1.4.0",
+  "name": "docs-search",
+  "private": true,
+  "_id": "docs-search@1.4.0",
+  "extraneous": false,
+  "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/docs-portal/release-legacy/docs-search",
+  "_dependencies": {
+    "fuse.js": "7.1.0"
+  },
+  "devDependencies": {},
+  "peerDependencies": {},
+  "dependencies": {
+    "fuse.js": {
+      "version": "7.1.0",
+      "resolved": "https://registry.npmjs.org/fuse.js/-/fuse.js-7.1.0.tgz",
+      "overridden": false,
+      "name": "fuse.js",
+      "integrity": "sha512-trLf4SzuuUxfusZADLINj+dE8clK1frKdmqiJNb1Es75fmI5oY6X2mxLVUciLLjxqw/xr72Dhy+lER6dGd02FQ==",
+      "license": "Apache-2.0",
+      "engines": {
+        "node": ">=10"
+      },
+      "_id": "fuse.js@7.1.0",
+      "extraneous": false,
+      "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/docs-portal/release-legacy/docs-search/node_modules/fuse.js",
+      "_dependencies": {},
+      "devDependencies": {},
+      "peerDependencies": {}
+    }
+  }
+}

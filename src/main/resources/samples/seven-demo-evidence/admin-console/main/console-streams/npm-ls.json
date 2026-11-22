@@ -1,0 +1,47 @@
+{
+  "version": "2.0.0",
+  "name": "console-streams",
+  "private": true,
+  "_id": "console-streams@2.0.0",
+  "extraneous": false,
+  "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/main/console-streams",
+  "_dependencies": {
+    "rxjs": "7.8.2"
+  },
+  "devDependencies": {},
+  "peerDependencies": {},
+  "dependencies": {
+    "rxjs": {
+      "version": "7.8.2",
+      "resolved": "https://registry.npmjs.org/rxjs/-/rxjs-7.8.2.tgz",
+      "overridden": false,
+      "name": "rxjs",
+      "integrity": "sha512-dhKf903U/PQZY6boNNtAGdWbG85WAbjT/1xYoZIC7FAY0yWapOBQVsVrDl58W86//e1VpMNBtRV4MaXfdMySFA==",
+      "license": "Apache-2.0",
+      "_id": "rxjs@7.8.2",
+      "extraneous": false,
+      "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/main/console-streams/node_modules/rxjs",
+      "_dependencies": {
+        "tslib": "^2.1.0"
+      },
+      "devDependencies": {},
+      "peerDependencies": {},
+      "dependencies": {
+        "tslib": {
+          "version": "2.9.1",
+          "resolved": "https://registry.npmjs.org/tslib/-/tslib-2.9.1.tgz",
+          "overridden": false,
+          "name": "tslib",
+          "integrity": "sha512-a4Ux9VKuIMHsOS7ENbEq6hK2ZGYIT27Rtl0E4eD9KqwxhKiQeMZE/9xb3IdYwWaSOyIBQLExhQgXDTYoiCxnWA==",
+          "license": "0BSD",
+          "_id": "tslib@2.9.1",
+          "extraneous": false,
+          "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/main/console-streams/node_modules/tslib",
+          "_dependencies": {},
+          "devDependencies": {},
+          "peerDependencies": {}
+        }
+      }
+    }
+  }
+}

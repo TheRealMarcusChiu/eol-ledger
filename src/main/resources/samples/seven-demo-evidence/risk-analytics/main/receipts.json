@@ -1,0 +1,320 @@
+[
+  {
+    "repository": "risk-analytics",
+    "branch": "main",
+    "commit": "f811e87d855e63aa1f00420a9beb656087e17723",
+    "command": "/usr/bin/git clone -q --no-hardlinks --branch main /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:05Z",
+    "finishedAt": "2026-11-22T09:38:05Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "repository": "risk-analytics",
+    "branch": "main",
+    "commit": "f811e87d855e63aa1f00420a9beb656087e17723",
+    "command": "/usr/bin/git rev-parse HEAD",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:05Z",
+    "finishedAt": "2026-11-22T09:38:05Z",
+    "stdout": "f811e87d855e63aa1f00420a9beb656087e17723\n",
+    "stderr": ""
+  },
+  {
+    "module": "risk-model",
+    "repository": "risk-analytics",
+    "branch": "main",
+    "commit": "f811e87d855e63aa1f00420a9beb656087e17723",
+    "command": "/root/.local/bin/uv sync --frozen --python 3.11",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-model",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:05Z",
+    "finishedAt": "2026-11-22T09:38:08Z",
+    "stdout": "",
+    "stderr": "Using CPython 3.11.15\nCreating virtual environment at: .venv\nDownloading numpy (16.0MiB)\n Downloaded numpy\nPrepared 1 package in 2.87s\nInstalled 1 package in 47ms\n + numpy==2.2.6\n"
+  },
+  {
+    "module": "risk-model",
+    "repository": "risk-analytics",
+    "branch": "main",
+    "commit": "f811e87d855e63aa1f00420a9beb656087e17723",
+    "command": "/root/.local/bin/uv tree --frozen --no-dedupe --python 3.11",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-model",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:08Z",
+    "finishedAt": "2026-11-22T09:38:08Z",
+    "stdout": "risk-model v2.0.0\n└── numpy v2.2.6\n",
+    "stderr": ""
+  },
+  {
+    "module": "risk-model",
+    "repository": "risk-analytics",
+    "branch": "main",
+    "commit": "f811e87d855e63aa1f00420a9beb656087e17723",
+    "command": "/root/.local/bin/uv tree --frozen --no-dedupe --universal",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-model",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:08Z",
+    "finishedAt": "2026-11-22T09:38:08Z",
+    "stdout": "risk-model v2.0.0\n└── numpy v2.2.6\n",
+    "stderr": ""
+  },
+  {
+    "module": "risk-model",
+    "repository": "risk-analytics",
+    "branch": "main",
+    "commit": "f811e87d855e63aa1f00420a9beb656087e17723",
+    "command": "/root/.local/bin/uv pip list --format json --python /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-model/.venv/bin/python",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-model",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:08Z",
+    "finishedAt": "2026-11-22T09:38:08Z",
+    "stdout": "[{\"name\":\"numpy\",\"version\":\"2.2.6\"}]\n",
+    "stderr": ""
+  },
+  {
+    "module": "risk-model",
+    "repository": "risk-analytics",
+    "branch": "main",
+    "commit": "f811e87d855e63aa1f00420a9beb656087e17723",
+    "command": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-model/.venv/bin/python --version",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-model",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:08Z",
+    "finishedAt": "2026-11-22T09:38:08Z",
+    "stdout": "Python 3.11.15\n",
+    "stderr": ""
+  },
+  {
+    "module": "risk-model",
+    "repository": "risk-analytics",
+    "branch": "main",
+    "commit": "f811e87d855e63aa1f00420a9beb656087e17723",
+    "command": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-model/.venv/bin/python -m compileall -q risk_model",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-model",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:08Z",
+    "finishedAt": "2026-11-22T09:38:08Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "module": "risk-model",
+    "repository": "risk-analytics",
+    "branch": "main",
+    "commit": "f811e87d855e63aa1f00420a9beb656087e17723",
+    "command": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-model/.venv/bin/python -c 'import risk_model.app as m; print(m.smoke())'",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-model",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:08Z",
+    "finishedAt": "2026-11-22T09:38:09Z",
+    "stdout": "numpy 2.2.6 93.10\n",
+    "stderr": ""
+  },
+  {
+    "module": "risk-report",
+    "repository": "risk-analytics",
+    "branch": "main",
+    "commit": "f811e87d855e63aa1f00420a9beb656087e17723",
+    "command": "/root/.local/bin/uv sync --frozen --python 3.11",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-report",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:09Z",
+    "finishedAt": "2026-11-22T09:38:09Z",
+    "stdout": "",
+    "stderr": "Using CPython 3.11.15\nCreating virtual environment at: .venv\nPrepared 1 package in 223ms\nInstalled 1 package in 354ms\n + tabulate==0.9.0\n"
+  },
+  {
+    "module": "risk-report",
+    "repository": "risk-analytics",
+    "branch": "main",
+    "commit": "f811e87d855e63aa1f00420a9beb656087e17723",
+    "command": "/root/.local/bin/uv tree --frozen --no-dedupe --python 3.11",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-report",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:09Z",
+    "finishedAt": "2026-11-22T09:38:09Z",
+    "stdout": "risk-report v2.0.0\n└── tabulate v0.9.0\n",
+    "stderr": ""
+  },
+  {
+    "module": "risk-report",
+    "repository": "risk-analytics",
+    "branch": "main",
+    "commit": "f811e87d855e63aa1f00420a9beb656087e17723",
+    "command": "/root/.local/bin/uv tree --frozen --no-dedupe --universal",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-report",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:09Z",
+    "finishedAt": "2026-11-22T09:38:09Z",
+    "stdout": "risk-report v2.0.0\n└── tabulate v0.9.0\n",
+    "stderr": ""
+  },
+  {
+    "module": "risk-report",
+    "repository": "risk-analytics",
+    "branch": "main",
+    "commit": "f811e87d855e63aa1f00420a9beb656087e17723",
+    "command": "/root/.local/bin/uv pip list --format json --python /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-report/.venv/bin/python",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-report",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:09Z",
+    "finishedAt": "2026-11-22T09:38:09Z",
+    "stdout": "[{\"name\":\"tabulate\",\"version\":\"0.9.0\"}]\n",
+    "stderr": ""
+  },
+  {
+    "module": "risk-report",
+    "repository": "risk-analytics",
+    "branch": "main",
+    "commit": "f811e87d855e63aa1f00420a9beb656087e17723",
+    "command": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-report/.venv/bin/python --version",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-report",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:09Z",
+    "finishedAt": "2026-11-22T09:38:09Z",
+    "stdout": "Python 3.11.15\n",
+    "stderr": ""
+  },
+  {
+    "module": "risk-report",
+    "repository": "risk-analytics",
+    "branch": "main",
+    "commit": "f811e87d855e63aa1f00420a9beb656087e17723",
+    "command": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-report/.venv/bin/python -m compileall -q risk_report",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-report",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:09Z",
+    "finishedAt": "2026-11-22T09:38:10Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "module": "risk-report",
+    "repository": "risk-analytics",
+    "branch": "main",
+    "commit": "f811e87d855e63aa1f00420a9beb656087e17723",
+    "command": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-report/.venv/bin/python -c 'import risk_report.app as m; print(m.smoke())'",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/risk-analytics/main/risk-report",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:10Z",
+    "finishedAt": "2026-11-22T09:38:10Z",
+    "stdout": "tabulate 0.9.0 DEMO-1009     93.1\n",
+    "stderr": ""
+  }
+]

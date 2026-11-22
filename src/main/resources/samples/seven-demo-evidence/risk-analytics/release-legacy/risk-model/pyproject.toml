@@ -1,0 +1,8 @@
+[project]
+name = "risk-model"
+version = "1.4.0"
+requires-python = ">=3.11"
+dependencies = ["numpy==1.26.4"]
+
+[tool.uv]
+package = false

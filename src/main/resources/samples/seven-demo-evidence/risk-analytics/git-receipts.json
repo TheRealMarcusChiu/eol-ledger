@@ -1,0 +1,339 @@
+[
+  {
+    "command": "/usr/bin/git init -q -b main",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:04Z",
+    "finishedAt": "2026-11-22T09:38:04Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git config --local user.name 'EOL Ledger Demo'",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:04Z",
+    "finishedAt": "2026-11-22T09:38:04Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git config --local user.email eol-demo@example.invalid",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:04Z",
+    "finishedAt": "2026-11-22T09:38:04Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git config --local commit.gpgsign false",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:04Z",
+    "finishedAt": "2026-11-22T09:38:04Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "module": "risk-model",
+    "command": "/root/.local/bin/uv lock --python 3.11",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics/risk-model",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:04Z",
+    "finishedAt": "2026-11-22T09:38:05Z",
+    "stdout": "",
+    "stderr": "Using CPython 3.11.15\nResolved 2 packages in 779ms\n"
+  },
+  {
+    "branch": "release/legacy",
+    "module": "risk-report",
+    "command": "/root/.local/bin/uv lock --python 3.11",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics/risk-report",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:05Z",
+    "finishedAt": "2026-11-22T09:38:05Z",
+    "stdout": "",
+    "stderr": "Using CPython 3.11.15\nResolved 2 packages in 213ms\n"
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git add -A",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:05Z",
+    "finishedAt": "2026-11-22T09:38:05Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git commit -q -m 'risk-analytics 1.4.0: numpy 1.26.4'",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:05Z",
+    "finishedAt": "2026-11-22T09:38:05Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git rev-parse HEAD",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:05Z",
+    "finishedAt": "2026-11-22T09:38:05Z",
+    "stdout": "1171adfe3d0ee1f19f8723ced7a553e41c3f1f98\n",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git branch release/legacy",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:05Z",
+    "finishedAt": "2026-11-22T09:38:05Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git status --porcelain",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:05Z",
+    "finishedAt": "2026-11-22T09:38:05Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "module": "risk-model",
+    "command": "/root/.local/bin/uv lock --python 3.11",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics/risk-model",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:05Z",
+    "finishedAt": "2026-11-22T09:38:05Z",
+    "stdout": "",
+    "stderr": "Using CPython 3.11.15\nResolved 2 packages in 190ms\nUpdated numpy v1.26.4 -> v2.2.6\nUpdated risk-model v1.4.0 -> v2.0.0\n"
+  },
+  {
+    "branch": "main",
+    "module": "risk-report",
+    "command": "/root/.local/bin/uv lock --python 3.11",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics/risk-report",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:05Z",
+    "finishedAt": "2026-11-22T09:38:05Z",
+    "stdout": "",
+    "stderr": "Using CPython 3.11.15\nResolved 2 packages in 3ms\nUpdated risk-report v1.4.0 -> v2.0.0\n"
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git add -A",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:05Z",
+    "finishedAt": "2026-11-22T09:38:05Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git commit -q -m 'risk-analytics 2.0.0: numpy 2.2.6'",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:05Z",
+    "finishedAt": "2026-11-22T09:38:05Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git rev-parse HEAD",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:05Z",
+    "finishedAt": "2026-11-22T09:38:05Z",
+    "stdout": "f811e87d855e63aa1f00420a9beb656087e17723\n",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git status --porcelain",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:05Z",
+    "finishedAt": "2026-11-22T09:38:05Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git bundle create /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/sources/risk-analytics.bundle --all",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:16Z",
+    "finishedAt": "2026-11-22T09:38:16Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git bundle verify /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/sources/risk-analytics.bundle",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:16Z",
+    "finishedAt": "2026-11-22T09:38:16Z",
+    "stdout": "The bundle contains these 3 refs:\nf811e87d855e63aa1f00420a9beb656087e17723 refs/heads/main\n1171adfe3d0ee1f19f8723ced7a553e41c3f1f98 refs/heads/release/legacy\nf811e87d855e63aa1f00420a9beb656087e17723 HEAD\nThe bundle records a complete history.\nThe bundle uses this hash algorithm: sha1\n",
+    "stderr": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/sources/risk-analytics.bundle is okay\n"
+  },
+  {
+    "command": "/usr/bin/git bundle list-heads /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/sources/risk-analytics.bundle",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/risk-analytics",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:16Z",
+    "finishedAt": "2026-11-22T09:38:16Z",
+    "stdout": "f811e87d855e63aa1f00420a9beb656087e17723 refs/heads/main\n1171adfe3d0ee1f19f8723ced7a553e41c3f1f98 refs/heads/release/legacy\nf811e87d855e63aa1f00420a9beb656087e17723 HEAD\n",
+    "stderr": ""
+  }
+]

@@ -1,0 +1,4 @@
+com.example.ledger:batch-import:jar:2.0.0
+\- org.apache.commons:commons-csv:jar:1.12.0:compile
+   +- commons-io:commons-io:jar:2.17.0:compile
+   \- commons-codec:commons-codec:jar:1.17.1:compile

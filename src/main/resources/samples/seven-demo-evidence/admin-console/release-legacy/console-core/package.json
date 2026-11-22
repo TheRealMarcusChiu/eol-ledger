@@ -1,0 +1,8 @@
+{
+  "name": "console-core",
+  "version": "1.4.0",
+  "private": true,
+  "dependencies": {
+    "@angular/core": "17.3.12"
+  }
+}

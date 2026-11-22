@@ -1,0 +1,339 @@
+[
+  {
+    "command": "/usr/bin/git init -q -b main",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:14Z",
+    "finishedAt": "2026-11-22T09:37:14Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git config --local user.name 'EOL Ledger Demo'",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:14Z",
+    "finishedAt": "2026-11-22T09:37:14Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git config --local user.email eol-demo@example.invalid",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:14Z",
+    "finishedAt": "2026-11-22T09:37:14Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git config --local commit.gpgsign false",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:14Z",
+    "finishedAt": "2026-11-22T09:37:14Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "module": "storefront-web",
+    "command": "/root/.hermes/node/bin/npm install --package-lock --ignore-scripts --no-audit --no-fund",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui/storefront-web",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:14Z",
+    "finishedAt": "2026-11-22T09:37:16Z",
+    "stdout": "\nadded 13 packages in 1s\n",
+    "stderr": "npm warn deprecated vue@2.7.16: Vue 2 has reached EOL and is no longer actively maintained. See https://v2.vuejs.org/eol/ for more details.\n"
+  },
+  {
+    "branch": "release/legacy",
+    "module": "storefront-format",
+    "command": "/root/.hermes/node/bin/npm install --package-lock --ignore-scripts --no-audit --no-fund",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui/storefront-format",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:16Z",
+    "finishedAt": "2026-11-22T09:37:16Z",
+    "stdout": "\nadded 1 package in 545ms\n",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git add -A",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:16Z",
+    "finishedAt": "2026-11-22T09:37:16Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git commit -q -m 'storefront-ui 1.4.0: vue 2.7.16'",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:16Z",
+    "finishedAt": "2026-11-22T09:37:16Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git rev-parse HEAD",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:16Z",
+    "finishedAt": "2026-11-22T09:37:16Z",
+    "stdout": "a062d528b558b765f429ec84c3c378e443b10086\n",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git branch release/legacy",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:16Z",
+    "finishedAt": "2026-11-22T09:37:16Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git status --porcelain",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:16Z",
+    "finishedAt": "2026-11-22T09:37:16Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "module": "storefront-web",
+    "command": "/root/.hermes/node/bin/npm install --package-lock --ignore-scripts --no-audit --no-fund",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui/storefront-web",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:16Z",
+    "finishedAt": "2026-11-22T09:37:17Z",
+    "stdout": "\nadded 12 packages, removed 2 packages, and changed 2 packages in 1s\n",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "module": "storefront-format",
+    "command": "/root/.hermes/node/bin/npm install --package-lock --ignore-scripts --no-audit --no-fund",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui/storefront-format",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:17Z",
+    "finishedAt": "2026-11-22T09:37:18Z",
+    "stdout": "\nup to date in 238ms\n",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git add -A",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:18Z",
+    "finishedAt": "2026-11-22T09:37:18Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git commit -q -m 'storefront-ui 2.0.0: vue 3.5.13'",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:18Z",
+    "finishedAt": "2026-11-22T09:37:18Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git rev-parse HEAD",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:18Z",
+    "finishedAt": "2026-11-22T09:37:18Z",
+    "stdout": "63005340354ffcb407269a04d59ccf21dbc67efe\n",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git status --porcelain",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:18Z",
+    "finishedAt": "2026-11-22T09:37:18Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git bundle create /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/sources/storefront-ui.bundle --all",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:21Z",
+    "finishedAt": "2026-11-22T09:37:21Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git bundle verify /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/sources/storefront-ui.bundle",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:21Z",
+    "finishedAt": "2026-11-22T09:37:21Z",
+    "stdout": "The bundle contains these 3 refs:\n63005340354ffcb407269a04d59ccf21dbc67efe refs/heads/main\na062d528b558b765f429ec84c3c378e443b10086 refs/heads/release/legacy\n63005340354ffcb407269a04d59ccf21dbc67efe HEAD\nThe bundle records a complete history.\nThe bundle uses this hash algorithm: sha1\n",
+    "stderr": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/sources/storefront-ui.bundle is okay\n"
+  },
+  {
+    "command": "/usr/bin/git bundle list-heads /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/sources/storefront-ui.bundle",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:21Z",
+    "finishedAt": "2026-11-22T09:37:21Z",
+    "stdout": "63005340354ffcb407269a04d59ccf21dbc67efe refs/heads/main\na062d528b558b765f429ec84c3c378e443b10086 refs/heads/release/legacy\n63005340354ffcb407269a04d59ccf21dbc67efe HEAD\n",
+    "stderr": ""
+  }
+]

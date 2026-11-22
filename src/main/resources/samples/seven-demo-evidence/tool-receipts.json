@@ -1,0 +1,82 @@
+[
+  {
+    "command": "/usr/bin/mvn -v",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:06Z",
+    "finishedAt": "2026-11-22T09:37:07Z",
+    "stdout": "\u001b[1mApache Maven 3.8.7\u001b[m\nMaven home: /usr/share/maven\nJava version: 21.0.13.1, vendor: Ubuntu, runtime: /usr/lib/jvm/java-21-openjdk-amd64\nDefault locale: en_US, platform encoding: UTF-8\nOS name: \"linux\", version: \"6.17.4-1-pve\", arch: \"amd64\", family: \"unix\"\n",
+    "stderr": ""
+  },
+  {
+    "command": "/root/.local/bin/uv --version",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:07Z",
+    "finishedAt": "2026-11-22T09:37:07Z",
+    "stdout": "uv 0.11.16 (x86_64-unknown-linux-gnu)\n",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git --version",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:07Z",
+    "finishedAt": "2026-11-22T09:37:07Z",
+    "stdout": "git version 2.43.0\n",
+    "stderr": ""
+  },
+  {
+    "command": "/root/.hermes/node/bin/node --version",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:07Z",
+    "finishedAt": "2026-11-22T09:37:07Z",
+    "stdout": "v22.22.3\n",
+    "stderr": ""
+  },
+  {
+    "command": "/root/.hermes/node/bin/npm --version",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:07Z",
+    "finishedAt": "2026-11-22T09:37:07Z",
+    "stdout": "10.9.8\n",
+    "stderr": ""
+  }
+]

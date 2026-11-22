@@ -1,0 +1,20 @@
+{
+  "groupId": "com.example.inventory",
+  "artifactId": "inventory-store",
+  "version": "1.4.0",
+  "type": "jar",
+  "scope": "",
+  "classifier": "",
+  "optional": "false",
+  "children": [
+    {
+      "groupId": "com.h2database",
+      "artifactId": "h2",
+      "version": "2.3.232",
+      "type": "jar",
+      "scope": "compile",
+      "classifier": "",
+      "optional": "false"
+    }
+    ]
+}

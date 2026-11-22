@@ -1,0 +1,100 @@
+{
+  "version": "1.4.0",
+  "name": "console-core",
+  "private": true,
+  "_id": "console-core@1.4.0",
+  "extraneous": false,
+  "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-core",
+  "_dependencies": {
+    "@angular/core": "17.3.12"
+  },
+  "devDependencies": {},
+  "peerDependencies": {},
+  "dependencies": {
+    "@angular/core": {
+      "version": "17.3.12",
+      "resolved": "https://registry.npmjs.org/@angular/core/-/core-17.3.12.tgz",
+      "overridden": false,
+      "name": "@angular/core",
+      "integrity": "sha512-MuFt5yKi161JmauUta4Dh0m8ofwoq6Ino+KoOtkYMBGsSx+A7dSm+DUxxNwdj7+DNyg3LjVGCFgBFnq4g8z06A==",
+      "license": "MIT",
+      "engines": {
+        "node": "^18.13.0 || >=20.9.0"
+      },
+      "peerDependencies": {
+        "rxjs": "^6.5.3 || ^7.4.0",
+        "zone.js": "~0.14.0"
+      },
+      "_id": "@angular/core@17.3.12",
+      "extraneous": false,
+      "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-core/node_modules/@angular/core",
+      "_dependencies": {
+        "tslib": "^2.3.0"
+      },
+      "devDependencies": {},
+      "dependencies": {
+        "rxjs": {
+          "version": "7.8.2",
+          "resolved": "https://registry.npmjs.org/rxjs/-/rxjs-7.8.2.tgz",
+          "overridden": false,
+          "name": "rxjs",
+          "integrity": "sha512-dhKf903U/PQZY6boNNtAGdWbG85WAbjT/1xYoZIC7FAY0yWapOBQVsVrDl58W86//e1VpMNBtRV4MaXfdMySFA==",
+          "license": "Apache-2.0",
+          "peer": true,
+          "_id": "rxjs@7.8.2",
+          "extraneous": false,
+          "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-core/node_modules/rxjs",
+          "_dependencies": {
+            "tslib": "^2.1.0"
+          },
+          "devDependencies": {},
+          "peerDependencies": {},
+          "dependencies": {
+            "tslib": {
+              "version": "2.9.1",
+              "name": "tslib",
+              "resolved": "https://registry.npmjs.org/tslib/-/tslib-2.9.1.tgz",
+              "integrity": "sha512-a4Ux9VKuIMHsOS7ENbEq6hK2ZGYIT27Rtl0E4eD9KqwxhKiQeMZE/9xb3IdYwWaSOyIBQLExhQgXDTYoiCxnWA==",
+              "license": "0BSD",
+              "_id": "tslib@2.9.1",
+              "extraneous": false,
+              "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-core/node_modules/tslib",
+              "_dependencies": {},
+              "devDependencies": {},
+              "peerDependencies": {}
+            }
+          }
+        },
+        "tslib": {
+          "version": "2.9.1",
+          "resolved": "https://registry.npmjs.org/tslib/-/tslib-2.9.1.tgz",
+          "overridden": false,
+          "name": "tslib",
+          "integrity": "sha512-a4Ux9VKuIMHsOS7ENbEq6hK2ZGYIT27Rtl0E4eD9KqwxhKiQeMZE/9xb3IdYwWaSOyIBQLExhQgXDTYoiCxnWA==",
+          "license": "0BSD",
+          "_id": "tslib@2.9.1",
+          "extraneous": false,
+          "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-core/node_modules/tslib",
+          "_dependencies": {},
+          "devDependencies": {},
+          "peerDependencies": {}
+        },
+        "zone.js": {
+          "version": "0.14.10",
+          "resolved": "https://registry.npmjs.org/zone.js/-/zone.js-0.14.10.tgz",
+          "overridden": false,
+          "name": "zone.js",
+          "integrity": "sha512-YGAhaO7J5ywOXW6InXNlLmfU194F8lVgu7bRntUF3TiG8Y3nBK0x1UJJuHUP/e8IyihkjCYqhCScpSwnlaSRkQ==",
+          "license": "MIT",
+          "peer": true,
+          "_id": "zone.js@0.14.10",
+          "extraneous": false,
+          "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/admin-console/release-legacy/console-core/node_modules/zone.js",
+          "_dependencies": {},
+          "devDependencies": {},
+          "peerDependencies": {}
+        }
+      }
+    }
+  }
+}

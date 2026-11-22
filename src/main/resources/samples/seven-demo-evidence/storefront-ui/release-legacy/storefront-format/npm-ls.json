@@ -1,0 +1,29 @@
+{
+  "version": "1.4.0",
+  "name": "storefront-format",
+  "private": true,
+  "_id": "storefront-format@1.4.0",
+  "extraneous": false,
+  "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-format",
+  "_dependencies": {
+    "dayjs": "1.11.13"
+  },
+  "devDependencies": {},
+  "peerDependencies": {},
+  "dependencies": {
+    "dayjs": {
+      "version": "1.11.13",
+      "resolved": "https://registry.npmjs.org/dayjs/-/dayjs-1.11.13.tgz",
+      "overridden": false,
+      "name": "dayjs",
+      "integrity": "sha512-oaMBel6gjolK862uaPQOVTA7q3TZhuSvuMQAAglQDOWYO9A91IrAOUJEyKVlqJlHE0vq5p5UXxzdPfMH/x6xNg==",
+      "license": "MIT",
+      "_id": "dayjs@1.11.13",
+      "extraneous": false,
+      "path": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-format/node_modules/dayjs",
+      "_dependencies": {},
+      "devDependencies": {},
+      "peerDependencies": {}
+    }
+  }
+}

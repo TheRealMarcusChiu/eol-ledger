@@ -1,0 +1,339 @@
+[
+  {
+    "command": "/usr/bin/git init -q -b main",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:21Z",
+    "finishedAt": "2026-11-22T09:37:21Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git config --local user.name 'EOL Ledger Demo'",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:21Z",
+    "finishedAt": "2026-11-22T09:37:21Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git config --local user.email eol-demo@example.invalid",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:21Z",
+    "finishedAt": "2026-11-22T09:37:21Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git config --local commit.gpgsign false",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:21Z",
+    "finishedAt": "2026-11-22T09:37:21Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "module": "docs-web",
+    "command": "/root/.hermes/node/bin/npm install --package-lock --ignore-scripts --no-audit --no-fund",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal/docs-web",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:21Z",
+    "finishedAt": "2026-11-22T09:37:28Z",
+    "stdout": "\nadded 21 packages in 6s\n",
+    "stderr": "npm warn deprecated next@14.2.28: This version has a security vulnerability. Please upgrade to a patched version. See https://nextjs.org/blog/security-update-2025-12-11 for more details.\n"
+  },
+  {
+    "branch": "release/legacy",
+    "module": "docs-search",
+    "command": "/root/.hermes/node/bin/npm install --package-lock --ignore-scripts --no-audit --no-fund",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal/docs-search",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:28Z",
+    "finishedAt": "2026-11-22T09:37:28Z",
+    "stdout": "\nadded 1 package in 408ms\n",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git add -A",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:28Z",
+    "finishedAt": "2026-11-22T09:37:29Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git commit -q -m 'docs-portal 1.4.0: next 14.2.28'",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:29Z",
+    "finishedAt": "2026-11-22T09:37:29Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git rev-parse HEAD",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:29Z",
+    "finishedAt": "2026-11-22T09:37:29Z",
+    "stdout": "c8bc61e3d06a7fea21e9e03c7688ed166f15afab\n",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git branch release/legacy",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:29Z",
+    "finishedAt": "2026-11-22T09:37:29Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git status --porcelain",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:29Z",
+    "finishedAt": "2026-11-22T09:37:29Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "module": "docs-web",
+    "command": "/root/.hermes/node/bin/npm install --package-lock --ignore-scripts --no-audit --no-fund",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal/docs-web",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:29Z",
+    "finishedAt": "2026-11-22T09:37:36Z",
+    "stdout": "\nadded 6 packages, removed 3 packages, and changed 8 packages in 8s\n",
+    "stderr": "npm warn ERESOLVE overriding peer dependency\nnpm warn While resolving: docs-web@2.0.0\nnpm warn Found: react@18.3.1\nnpm warn node_modules/react\nnpm warn   react@\"19.1.0\" from the root project\nnpm warn   2 more (react-dom, next)\nnpm warn\nnpm warn Could not resolve dependency:\nnpm warn peer react@\"^18.3.1\" from react-dom@18.3.1\nnpm warn node_modules/react-dom\nnpm warn   react-dom@\"19.1.0\" from the root project\nnpm warn   1 more (next)\nnpm warn deprecated next@15.3.3: This version has a security vulnerability. Please upgrade to a patched version. See https://nextjs.org/blog/CVE-2025-66478 for more details.\n"
+  },
+  {
+    "branch": "main",
+    "module": "docs-search",
+    "command": "/root/.hermes/node/bin/npm install --package-lock --ignore-scripts --no-audit --no-fund",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal/docs-search",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:36Z",
+    "finishedAt": "2026-11-22T09:37:37Z",
+    "stdout": "\nup to date in 249ms\n",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git add -A",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:37Z",
+    "finishedAt": "2026-11-22T09:37:37Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git commit -q -m 'docs-portal 2.0.0: next 15.3.3'",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:37Z",
+    "finishedAt": "2026-11-22T09:37:37Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git rev-parse HEAD",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:37Z",
+    "finishedAt": "2026-11-22T09:37:37Z",
+    "stdout": "5ac5ee340753b5961167bec8e4dcb6f0c544d0f2\n",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git status --porcelain",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:37Z",
+    "finishedAt": "2026-11-22T09:37:37Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git bundle create /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/sources/docs-portal.bundle --all",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:50Z",
+    "finishedAt": "2026-11-22T09:37:50Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git bundle verify /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/sources/docs-portal.bundle",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:50Z",
+    "finishedAt": "2026-11-22T09:37:50Z",
+    "stdout": "The bundle contains these 3 refs:\n5ac5ee340753b5961167bec8e4dcb6f0c544d0f2 refs/heads/main\nc8bc61e3d06a7fea21e9e03c7688ed166f15afab refs/heads/release/legacy\n5ac5ee340753b5961167bec8e4dcb6f0c544d0f2 HEAD\nThe bundle records a complete history.\nThe bundle uses this hash algorithm: sha1\n",
+    "stderr": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/sources/docs-portal.bundle is okay\n"
+  },
+  {
+    "command": "/usr/bin/git bundle list-heads /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/sources/docs-portal.bundle",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/docs-portal",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:50Z",
+    "finishedAt": "2026-11-22T09:37:50Z",
+    "stdout": "5ac5ee340753b5961167bec8e4dcb6f0c544d0f2 refs/heads/main\nc8bc61e3d06a7fea21e9e03c7688ed166f15afab refs/heads/release/legacy\n5ac5ee340753b5961167bec8e4dcb6f0c544d0f2 HEAD\n",
+    "stderr": ""
+  }
+]

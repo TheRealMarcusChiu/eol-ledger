@@ -1,0 +1,267 @@
+[
+  {
+    "command": "/usr/bin/git init -q -b main",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/inventory-persistence",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:54Z",
+    "finishedAt": "2026-11-22T09:38:54Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git config --local user.name 'EOL Ledger Demo'",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/inventory-persistence",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:54Z",
+    "finishedAt": "2026-11-22T09:38:54Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git config --local user.email eol-demo@example.invalid",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/inventory-persistence",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:54Z",
+    "finishedAt": "2026-11-22T09:38:54Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git config --local commit.gpgsign false",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/inventory-persistence",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:54Z",
+    "finishedAt": "2026-11-22T09:38:54Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git add -A",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/inventory-persistence",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:54Z",
+    "finishedAt": "2026-11-22T09:38:54Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git commit -q -m 'inventory-persistence 1.4.0: org.hibernate:hibernate-core 5.6.15.Final'",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/inventory-persistence",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:54Z",
+    "finishedAt": "2026-11-22T09:38:54Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git rev-parse HEAD",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/inventory-persistence",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:54Z",
+    "finishedAt": "2026-11-22T09:38:54Z",
+    "stdout": "73d32732e03089ec6a619a0db2ea1a5a50866731\n",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git branch release/legacy",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/inventory-persistence",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:54Z",
+    "finishedAt": "2026-11-22T09:38:54Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "release/legacy",
+    "command": "/usr/bin/git status --porcelain",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/inventory-persistence",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:54Z",
+    "finishedAt": "2026-11-22T09:38:54Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git add -A",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/inventory-persistence",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:54Z",
+    "finishedAt": "2026-11-22T09:38:54Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git commit -q -m 'inventory-persistence 2.0.0: org.hibernate.orm:hibernate-core 6.6.13.Final'",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/inventory-persistence",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:54Z",
+    "finishedAt": "2026-11-22T09:38:54Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git rev-parse HEAD",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/inventory-persistence",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:54Z",
+    "finishedAt": "2026-11-22T09:38:54Z",
+    "stdout": "117889eedd29a9cf8002a3c12c8d174b3408e7f2\n",
+    "stderr": ""
+  },
+  {
+    "branch": "main",
+    "command": "/usr/bin/git status --porcelain",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/inventory-persistence",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:38:54Z",
+    "finishedAt": "2026-11-22T09:38:54Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git bundle create /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/sources/inventory-persistence.bundle --all",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/inventory-persistence",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:39:36Z",
+    "finishedAt": "2026-11-22T09:39:36Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "/usr/bin/git bundle verify /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/sources/inventory-persistence.bundle",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/inventory-persistence",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:39:36Z",
+    "finishedAt": "2026-11-22T09:39:36Z",
+    "stdout": "The bundle contains these 3 refs:\n117889eedd29a9cf8002a3c12c8d174b3408e7f2 refs/heads/main\n73d32732e03089ec6a619a0db2ea1a5a50866731 refs/heads/release/legacy\n117889eedd29a9cf8002a3c12c8d174b3408e7f2 HEAD\nThe bundle records a complete history.\nThe bundle uses this hash algorithm: sha1\n",
+    "stderr": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/sources/inventory-persistence.bundle is okay\n"
+  },
+  {
+    "command": "/usr/bin/git bundle list-heads /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/stage/sources/inventory-persistence.bundle",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/inventory-persistence",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:39:36Z",
+    "finishedAt": "2026-11-22T09:39:36Z",
+    "stdout": "117889eedd29a9cf8002a3c12c8d174b3408e7f2 refs/heads/main\n73d32732e03089ec6a619a0db2ea1a5a50866731 refs/heads/release/legacy\n117889eedd29a9cf8002a3c12c8d174b3408e7f2 HEAD\n",
+    "stderr": ""
+  }
+]

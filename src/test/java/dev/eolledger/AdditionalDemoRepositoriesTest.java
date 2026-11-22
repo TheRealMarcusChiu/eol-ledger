@@ -47,7 +47,7 @@ class AdditionalDemoRepositoriesTest {
     @Test
     void originalFourEntriesAreUnchangedAndFourNewBranchesAreAppended() throws Exception {
         JsonNode sample = sample();
-        assertThat(sample).hasSize(8);
+        assertThat(sample).hasSize(22);
         Map<String, String> originals = new HashMap<>();
         Set<String> originalApps = new HashSet<>();
         for (int i = 0; i < 4; i++) {
@@ -83,7 +83,7 @@ class AdditionalDemoRepositoriesTest {
             });
         }
         assertThat(added).containsExactlyInAnyOrderElementsOf(PINNED.keySet());
-        assertThat(InventoryJson.parse(ImportService.sample(ImportService.SAMPLE))).hasSize(8);
+        assertThat(InventoryJson.parse(ImportService.sample(ImportService.SAMPLE))).hasSize(22);
     }
 
     @Test

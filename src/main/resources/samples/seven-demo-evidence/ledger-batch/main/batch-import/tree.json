@@ -1,0 +1,40 @@
+{
+  "groupId": "com.example.ledger",
+  "artifactId": "batch-import",
+  "version": "2.0.0",
+  "type": "jar",
+  "scope": "",
+  "classifier": "",
+  "optional": "false",
+  "children": [
+    {
+      "groupId": "org.apache.commons",
+      "artifactId": "commons-csv",
+      "version": "1.12.0",
+      "type": "jar",
+      "scope": "compile",
+      "classifier": "",
+      "optional": "false",
+      "children": [
+        {
+          "groupId": "commons-io",
+          "artifactId": "commons-io",
+          "version": "2.17.0",
+          "type": "jar",
+          "scope": "compile",
+          "classifier": "",
+          "optional": "false"
+        },
+        {
+          "groupId": "commons-codec",
+          "artifactId": "commons-codec",
+          "version": "1.17.1",
+          "type": "jar",
+          "scope": "compile",
+          "classifier": "",
+          "optional": "false"
+        }
+        ]
+    }
+    ]
+}

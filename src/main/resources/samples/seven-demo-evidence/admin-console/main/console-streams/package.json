@@ -1,0 +1,8 @@
+{
+  "name": "console-streams",
+  "version": "2.0.0",
+  "private": true,
+  "dependencies": {
+    "rxjs": "7.8.2"
+  }
+}

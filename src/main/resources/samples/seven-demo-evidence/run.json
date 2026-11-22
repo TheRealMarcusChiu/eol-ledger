@@ -1,0 +1,507 @@
+{
+  "generator": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/generate.py",
+  "generatorSha256": "5047fcc79d4c1085f12e70831a3192448b45c22f9b2da0878560868b211364fe",
+  "startedAt": "2026-11-22T09:37:04Z",
+  "finishedAt": "2026-11-22T09:39:36Z",
+  "tools": {
+    "mvn": "Apache Maven 3.8.7\u001b[m",
+    "java": "openjdk version \"21.0.13.1\" 2026-11-17",
+    "uv": "uv 0.11.16 (x86_64-unknown-linux-gnu)",
+    "git": "git version 2.43.0",
+    "node": "v22.22.3",
+    "npm": "npm 10.9.8"
+  },
+  "mavenRepoLocal": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/m2",
+  "mavenRepoLocalSeededFrom": "/root/projects/eol-ledger-ops/drag-preview/additional-demo/cache/m2",
+  "uvCacheDir": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+  "npmCache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+  "originalEntrySha256": {
+    "enterprise-suite main": "e47e7ce798d04652e949535fb9960e922e0bbfc52477cf8f14558de2a45875da",
+    "enterprise-suite release/legacy": "7ac42082d57de3bd44c06ebfb22132314ab29ff3e2f080813bbb0e10300350ed",
+    "web-platform main": "e4217d50d3a85edb3b56c335aca3c9283302a1fdc76d4d522e8255768a7de1e2",
+    "web-platform release/legacy": "8896da912333a59c06abf64b839ef410a09588f36c3c6d01fde7e2cf0e5a96c9",
+    "payments-service main": "7f5000d5adf96475861d264cc3184b5de51aabc112acf6bec9dce68b69f7d237",
+    "payments-service release/legacy": "7d3fd27c8cc3e4c7aa2b8cb7fa74595093b7fcd057bd1e5b19c58dc4e2b5d18f",
+    "reporting-service main": "3e68ed29879090a5432ee1552a814de3a3cb3ba28a7fc5f40ab10c97af9fe096",
+    "reporting-service release/legacy": "898490fc5a3f7ae6dcc31dbdbc10d65121ffbe7646f333fc4172a949f74f5b0a"
+  },
+  "originalEntrySha256AfterAppend": {
+    "enterprise-suite main": "e47e7ce798d04652e949535fb9960e922e0bbfc52477cf8f14558de2a45875da",
+    "enterprise-suite release/legacy": "7ac42082d57de3bd44c06ebfb22132314ab29ff3e2f080813bbb0e10300350ed",
+    "web-platform main": "e4217d50d3a85edb3b56c335aca3c9283302a1fdc76d4d522e8255768a7de1e2",
+    "web-platform release/legacy": "8896da912333a59c06abf64b839ef410a09588f36c3c6d01fde7e2cf0e5a96c9",
+    "payments-service main": "7f5000d5adf96475861d264cc3184b5de51aabc112acf6bec9dce68b69f7d237",
+    "payments-service release/legacy": "7d3fd27c8cc3e4c7aa2b8cb7fa74595093b7fcd057bd1e5b19c58dc4e2b5d18f",
+    "reporting-service main": "3e68ed29879090a5432ee1552a814de3a3cb3ba28a7fc5f40ab10c97af9fe096",
+    "reporting-service release/legacy": "898490fc5a3f7ae6dcc31dbdbc10d65121ffbe7646f333fc4172a949f74f5b0a"
+  },
+  "sampleSha256Before": "4eef317be7602271ef4586d9c9c24a51b207d8e228bd624c5f0ad023510b7e1b",
+  "sampleSha256After": "e0c59dfda21d5e77a86ecba63fa77fed6699b40f74f42a55f93ab5d4e0845254",
+  "catalogBefore": "/root/projects/eol-ledger-ops/shareable-views/catalog-before.json",
+  "catalogBeforeSha256": "b33e29575c6344fe387f6d2aa8a2845854a1fbeec0213a9d61c42d4602ca872c",
+  "catalogFetches": [
+    {
+      "url": "https://endoflife.date/api/v1/products/express",
+      "status": 200,
+      "bytes": 2345,
+      "sha256": "66765b90feb4693d1e4b78690dd6e1af6b4b9f588f01bf2b139c745913771b3e",
+      "startedAt": "2026-11-22T09:37:04Z",
+      "finishedAt": "2026-11-22T09:37:04Z"
+    },
+    {
+      "url": "https://endoflife.date/api/v1/products/vue",
+      "status": 200,
+      "bytes": 5898,
+      "sha256": "efb3ae8f0e610860088674efae09f2fa2b420e3a1d3f28969bbac1e2857d6693",
+      "startedAt": "2026-11-22T09:37:04Z",
+      "finishedAt": "2026-11-22T09:37:05Z"
+    },
+    {
+      "url": "https://endoflife.date/api/v1/products/nextjs",
+      "status": 200,
+      "bytes": 2897,
+      "sha256": "dec92f9de6637cf6b4e817b2f32b3a1799306f857d41ed26f16b16a5668a97e4",
+      "startedAt": "2026-11-22T09:37:05Z",
+      "finishedAt": "2026-11-22T09:37:05Z"
+    },
+    {
+      "url": "https://endoflife.date/api/v1/products/angular",
+      "status": 200,
+      "bytes": 5701,
+      "sha256": "ab9597bed85d822309bf7db0ad6eaadb36f0ed4812e2dc8060346c2e663d2c41",
+      "startedAt": "2026-11-22T09:37:05Z",
+      "finishedAt": "2026-11-22T09:37:05Z"
+    },
+    {
+      "url": "https://endoflife.date/api/v1/products/numpy",
+      "status": 200,
+      "bytes": 6062,
+      "sha256": "2ab5e1fb9bb726211a147cb1394c501b1fef5a466a674946e9561e977b09a333",
+      "startedAt": "2026-11-22T09:37:05Z",
+      "finishedAt": "2026-11-22T09:37:06Z"
+    },
+    {
+      "url": "https://endoflife.date/api/v1/products/log4j",
+      "status": 200,
+      "bytes": 1984,
+      "sha256": "21e9dd2097f0fb1dbeb0a1fab61dd36adddbdbfce46dbeee6885029240c8dd93",
+      "startedAt": "2026-11-22T09:37:06Z",
+      "finishedAt": "2026-11-22T09:37:06Z"
+    },
+    {
+      "url": "https://endoflife.date/api/v1/products/hibernate-orm",
+      "status": 200,
+      "bytes": 7077,
+      "sha256": "0c6ba5bb7b4d792acd5d375fe2516979cafdd149df3ce9c81c7bff5e1b792a2b",
+      "startedAt": "2026-11-22T09:37:06Z",
+      "finishedAt": "2026-11-22T09:37:06Z"
+    }
+  ],
+  "catalogMapping": [
+    {
+      "repository": "checkout-gateway",
+      "appId": "DEMO-1005",
+      "branch": "main",
+      "module": "gateway-api",
+      "package": "express",
+      "version": "5.1.0",
+      "purl": "pkg:npm/express@5.1.0",
+      "product": "express",
+      "cycle": "5",
+      "isEol": false,
+      "eolFrom": null,
+      "source": "seven-demo-evidence/catalog/express.json"
+    },
+    {
+      "repository": "checkout-gateway",
+      "appId": "DEMO-1005",
+      "branch": "release/legacy",
+      "module": "gateway-api",
+      "package": "express",
+      "version": "4.21.2",
+      "purl": "pkg:npm/express@4.21.2",
+      "product": "express",
+      "cycle": "4",
+      "isEol": false,
+      "eolFrom": null,
+      "source": "seven-demo-evidence/catalog/express.json"
+    },
+    {
+      "repository": "storefront-ui",
+      "appId": "DEMO-1006",
+      "branch": "main",
+      "module": "storefront-web",
+      "package": "vue",
+      "version": "3.5.13",
+      "purl": "pkg:npm/vue@3.5.13",
+      "product": "vue",
+      "cycle": "3.5",
+      "isEol": false,
+      "eolFrom": null,
+      "source": "seven-demo-evidence/catalog/vue.json"
+    },
+    {
+      "repository": "storefront-ui",
+      "appId": "DEMO-1006",
+      "branch": "release/legacy",
+      "module": "storefront-web",
+      "package": "vue",
+      "version": "2.7.16",
+      "purl": "pkg:npm/vue@2.7.16",
+      "product": "vue",
+      "cycle": "2.7",
+      "isEol": true,
+      "eolFrom": "2023-12-31",
+      "source": "seven-demo-evidence/catalog/vue.json"
+    },
+    {
+      "repository": "docs-portal",
+      "appId": "DEMO-1007",
+      "branch": "main",
+      "module": "docs-web",
+      "package": "next",
+      "version": "15.3.3",
+      "purl": "pkg:npm/next@15.3.3",
+      "product": "nextjs",
+      "cycle": "15",
+      "isEol": false,
+      "eolFrom": "2027-01-31",
+      "source": "seven-demo-evidence/catalog/nextjs.json"
+    },
+    {
+      "repository": "docs-portal",
+      "appId": "DEMO-1007",
+      "branch": "release/legacy",
+      "module": "docs-web",
+      "package": "next",
+      "version": "14.2.28",
+      "purl": "pkg:npm/next@14.2.28",
+      "product": "nextjs",
+      "cycle": "14",
+      "isEol": true,
+      "eolFrom": "2025-10-26",
+      "source": "seven-demo-evidence/catalog/nextjs.json"
+    },
+    {
+      "repository": "admin-console",
+      "appId": "DEMO-1008",
+      "branch": "main",
+      "module": "console-core",
+      "package": "@angular/core",
+      "version": "19.2.14",
+      "purl": "pkg:npm/%40angular/core@19.2.14",
+      "product": "angular",
+      "cycle": "19",
+      "isEol": true,
+      "eolFrom": "2026-05-19",
+      "source": "seven-demo-evidence/catalog/angular.json"
+    },
+    {
+      "repository": "admin-console",
+      "appId": "DEMO-1008",
+      "branch": "release/legacy",
+      "module": "console-core",
+      "package": "@angular/core",
+      "version": "17.3.12",
+      "purl": "pkg:npm/%40angular/core@17.3.12",
+      "product": "angular",
+      "cycle": "17",
+      "isEol": true,
+      "eolFrom": "2025-05-15",
+      "source": "seven-demo-evidence/catalog/angular.json"
+    },
+    {
+      "repository": "risk-analytics",
+      "appId": "DEMO-1009",
+      "branch": "main",
+      "module": "risk-model",
+      "package": "numpy",
+      "version": "2.2.6",
+      "purl": "pkg:pypi/numpy@2.2.6",
+      "product": "numpy",
+      "cycle": "2.2",
+      "isEol": false,
+      "eolFrom": "2026-12-09",
+      "source": "seven-demo-evidence/catalog/numpy.json"
+    },
+    {
+      "repository": "risk-analytics",
+      "appId": "DEMO-1009",
+      "branch": "release/legacy",
+      "module": "risk-model",
+      "package": "numpy",
+      "version": "1.26.4",
+      "purl": "pkg:pypi/numpy@1.26.4",
+      "product": "numpy",
+      "cycle": "1.26",
+      "isEol": true,
+      "eolFrom": "2025-09-17",
+      "source": "seven-demo-evidence/catalog/numpy.json"
+    },
+    {
+      "repository": "ledger-batch",
+      "appId": "DEMO-1010",
+      "branch": "main",
+      "module": "batch-audit",
+      "package": "org.apache.logging.log4j:log4j-core",
+      "version": "2.24.3",
+      "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.24.3",
+      "product": "log4j",
+      "cycle": "2",
+      "isEol": false,
+      "eolFrom": null,
+      "source": "seven-demo-evidence/catalog/log4j.json"
+    },
+    {
+      "repository": "ledger-batch",
+      "appId": "DEMO-1010",
+      "branch": "release/legacy",
+      "module": "batch-audit",
+      "package": "org.apache.logging.log4j:log4j-core",
+      "version": "2.12.4",
+      "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.12.4",
+      "product": "log4j",
+      "cycle": "2.12",
+      "isEol": true,
+      "eolFrom": "2021-12-14",
+      "source": "seven-demo-evidence/catalog/log4j.json"
+    },
+    {
+      "repository": "inventory-persistence",
+      "appId": "DEMO-1011",
+      "branch": "main",
+      "module": "inventory-orm",
+      "package": "org.hibernate.orm:hibernate-core",
+      "version": "6.6.13.Final",
+      "purl": "pkg:maven/org.hibernate.orm/hibernate-core@6.6.13.Final",
+      "product": "hibernate-orm",
+      "cycle": "6.6",
+      "isEol": true,
+      "eolFrom": "2026-06-09",
+      "source": "seven-demo-evidence/catalog/hibernate-orm.json"
+    },
+    {
+      "repository": "inventory-persistence",
+      "appId": "DEMO-1011",
+      "branch": "release/legacy",
+      "module": "inventory-orm",
+      "package": "org.hibernate:hibernate-core",
+      "version": "5.6.15.Final",
+      "purl": "pkg:maven/org.hibernate/hibernate-core@5.6.15.Final",
+      "product": "hibernate-orm",
+      "cycle": "5.6",
+      "isEol": true,
+      "eolFrom": "2023-02-06",
+      "source": "seven-demo-evidence/catalog/hibernate-orm.json"
+    }
+  ],
+  "entries": [
+    {
+      "name": "checkout-gateway",
+      "appId": "DEMO-1005",
+      "branch": "main",
+      "commit": "f5f1bf46d5c61638aa864544dec05cea43c50017",
+      "receipts": "seven-demo-evidence/checkout-gateway/main/receipts.json",
+      "dependencyRows": 141
+    },
+    {
+      "name": "checkout-gateway",
+      "appId": "DEMO-1005",
+      "branch": "release/legacy",
+      "commit": "f0b0dd5eac612aa5632b20f45990745c2ce53e95",
+      "receipts": "seven-demo-evidence/checkout-gateway/release-legacy/receipts.json",
+      "dependencyRows": 143
+    },
+    {
+      "name": "storefront-ui",
+      "appId": "DEMO-1006",
+      "branch": "main",
+      "commit": "63005340354ffcb407269a04d59ccf21dbc67efe",
+      "receipts": "seven-demo-evidence/storefront-ui/main/receipts.json",
+      "dependencyRows": 42
+    },
+    {
+      "name": "storefront-ui",
+      "appId": "DEMO-1006",
+      "branch": "release/legacy",
+      "commit": "a062d528b558b765f429ec84c3c378e443b10086",
+      "receipts": "seven-demo-evidence/storefront-ui/release-legacy/receipts.json",
+      "dependencyRows": 14
+    },
+    {
+      "name": "docs-portal",
+      "appId": "DEMO-1007",
+      "branch": "main",
+      "commit": "5ac5ee340753b5961167bec8e4dcb6f0c544d0f2",
+      "receipts": "seven-demo-evidence/docs-portal/main/receipts.json",
+      "dependencyRows": 34
+    },
+    {
+      "name": "docs-portal",
+      "appId": "DEMO-1007",
+      "branch": "release/legacy",
+      "commit": "c8bc61e3d06a7fea21e9e03c7688ed166f15afab",
+      "receipts": "seven-demo-evidence/docs-portal/release-legacy/receipts.json",
+      "dependencyRows": 29
+    },
+    {
+      "name": "admin-console",
+      "appId": "DEMO-1008",
+      "branch": "main",
+      "commit": "2c62d755f2941f332841816bb35c40124a411e90",
+      "receipts": "seven-demo-evidence/admin-console/main/receipts.json",
+      "dependencyRows": 7
+    },
+    {
+      "name": "admin-console",
+      "appId": "DEMO-1008",
+      "branch": "release/legacy",
+      "commit": "0d432096ab85247a9943cfbd3c18d2e01fcb442c",
+      "receipts": "seven-demo-evidence/admin-console/release-legacy/receipts.json",
+      "dependencyRows": 7
+    },
+    {
+      "name": "risk-analytics",
+      "appId": "DEMO-1009",
+      "branch": "main",
+      "commit": "f811e87d855e63aa1f00420a9beb656087e17723",
+      "receipts": "seven-demo-evidence/risk-analytics/main/receipts.json",
+      "dependencyRows": 2
+    },
+    {
+      "name": "risk-analytics",
+      "appId": "DEMO-1009",
+      "branch": "release/legacy",
+      "commit": "1171adfe3d0ee1f19f8723ced7a553e41c3f1f98",
+      "receipts": "seven-demo-evidence/risk-analytics/release-legacy/receipts.json",
+      "dependencyRows": 2
+    },
+    {
+      "name": "ledger-batch",
+      "appId": "DEMO-1010",
+      "branch": "main",
+      "commit": "9932f0e8f7434cc1134de5e53b6b7c88ef4463b6",
+      "receipts": "seven-demo-evidence/ledger-batch/main/receipts.json",
+      "dependencyRows": 5
+    },
+    {
+      "name": "ledger-batch",
+      "appId": "DEMO-1010",
+      "branch": "release/legacy",
+      "commit": "003c5023544fbe2db87284e76a30b77279b1e8bd",
+      "receipts": "seven-demo-evidence/ledger-batch/release-legacy/receipts.json",
+      "dependencyRows": 5
+    },
+    {
+      "name": "inventory-persistence",
+      "appId": "DEMO-1011",
+      "branch": "main",
+      "commit": "117889eedd29a9cf8002a3c12c8d174b3408e7f2",
+      "receipts": "seven-demo-evidence/inventory-persistence/main/receipts.json",
+      "dependencyRows": 18
+    },
+    {
+      "name": "inventory-persistence",
+      "appId": "DEMO-1011",
+      "branch": "release/legacy",
+      "commit": "73d32732e03089ec6a619a0db2ea1a5a50866731",
+      "receipts": "seven-demo-evidence/inventory-persistence/release-legacy/receipts.json",
+      "dependencyRows": 17
+    }
+  ],
+  "commits": {
+    "checkout-gateway": {
+      "release/legacy": "f0b0dd5eac612aa5632b20f45990745c2ce53e95",
+      "main": "f5f1bf46d5c61638aa864544dec05cea43c50017"
+    },
+    "storefront-ui": {
+      "release/legacy": "a062d528b558b765f429ec84c3c378e443b10086",
+      "main": "63005340354ffcb407269a04d59ccf21dbc67efe"
+    },
+    "docs-portal": {
+      "release/legacy": "c8bc61e3d06a7fea21e9e03c7688ed166f15afab",
+      "main": "5ac5ee340753b5961167bec8e4dcb6f0c544d0f2"
+    },
+    "admin-console": {
+      "release/legacy": "0d432096ab85247a9943cfbd3c18d2e01fcb442c",
+      "main": "2c62d755f2941f332841816bb35c40124a411e90"
+    },
+    "risk-analytics": {
+      "release/legacy": "1171adfe3d0ee1f19f8723ced7a553e41c3f1f98",
+      "main": "f811e87d855e63aa1f00420a9beb656087e17723"
+    },
+    "ledger-batch": {
+      "release/legacy": "003c5023544fbe2db87284e76a30b77279b1e8bd",
+      "main": "9932f0e8f7434cc1134de5e53b6b7c88ef4463b6"
+    },
+    "inventory-persistence": {
+      "release/legacy": "73d32732e03089ec6a619a0db2ea1a5a50866731",
+      "main": "117889eedd29a9cf8002a3c12c8d174b3408e7f2"
+    }
+  },
+  "bundles": {
+    "checkout-gateway": {
+      "path": "seven-demo-evidence/sources/checkout-gateway.bundle",
+      "sha256": "388f89d8eff478b7aba038d417350d23cb60d111c3953fb7f89345c86216aa10",
+      "heads": {
+        "refs/heads/main": "f5f1bf46d5c61638aa864544dec05cea43c50017",
+        "refs/heads/release/legacy": "f0b0dd5eac612aa5632b20f45990745c2ce53e95",
+        "HEAD": "f5f1bf46d5c61638aa864544dec05cea43c50017"
+      }
+    },
+    "storefront-ui": {
+      "path": "seven-demo-evidence/sources/storefront-ui.bundle",
+      "sha256": "bb2b6ed995666e74a0aeda1d60a293c2bc9d495ca0b70601d5effb1f07e26daa",
+      "heads": {
+        "refs/heads/main": "63005340354ffcb407269a04d59ccf21dbc67efe",
+        "refs/heads/release/legacy": "a062d528b558b765f429ec84c3c378e443b10086",
+        "HEAD": "63005340354ffcb407269a04d59ccf21dbc67efe"
+      }
+    },
+    "docs-portal": {
+      "path": "seven-demo-evidence/sources/docs-portal.bundle",
+      "sha256": "1fcdb015b19547d8b25c643cfbd4949d58138601947bbb5315267210458dccd6",
+      "heads": {
+        "refs/heads/main": "5ac5ee340753b5961167bec8e4dcb6f0c544d0f2",
+        "refs/heads/release/legacy": "c8bc61e3d06a7fea21e9e03c7688ed166f15afab",
+        "HEAD": "5ac5ee340753b5961167bec8e4dcb6f0c544d0f2"
+      }
+    },
+    "admin-console": {
+      "path": "seven-demo-evidence/sources/admin-console.bundle",
+      "sha256": "c4719943e025b8780fb18b72ccc2e8b74e8fa950bf4893a28f1cc4d55397a287",
+      "heads": {
+        "refs/heads/main": "2c62d755f2941f332841816bb35c40124a411e90",
+        "refs/heads/release/legacy": "0d432096ab85247a9943cfbd3c18d2e01fcb442c",
+        "HEAD": "2c62d755f2941f332841816bb35c40124a411e90"
+      }
+    },
+    "risk-analytics": {
+      "path": "seven-demo-evidence/sources/risk-analytics.bundle",
+      "sha256": "08f4d824f0c9ac985838928d9e3866b118ad52306263df8dd61dbbfc9afdc2ad",
+      "heads": {
+        "refs/heads/main": "f811e87d855e63aa1f00420a9beb656087e17723",
+        "refs/heads/release/legacy": "1171adfe3d0ee1f19f8723ced7a553e41c3f1f98",
+        "HEAD": "f811e87d855e63aa1f00420a9beb656087e17723"
+      }
+    },
+    "ledger-batch": {
+      "path": "seven-demo-evidence/sources/ledger-batch.bundle",
+      "sha256": "d68180dfa8d666b7a7ecf9ff1ce48b1585568b2324643c2c3163c961df1dfe85",
+      "heads": {
+        "refs/heads/main": "9932f0e8f7434cc1134de5e53b6b7c88ef4463b6",
+        "refs/heads/release/legacy": "003c5023544fbe2db87284e76a30b77279b1e8bd",
+        "HEAD": "9932f0e8f7434cc1134de5e53b6b7c88ef4463b6"
+      }
+    },
+    "inventory-persistence": {
+      "path": "seven-demo-evidence/sources/inventory-persistence.bundle",
+      "sha256": "67409fa14c8939adb745acc8e861854679ea83990a2d8da98faade29d9cc03cc",
+      "heads": {
+        "refs/heads/main": "117889eedd29a9cf8002a3c12c8d174b3408e7f2",
+        "refs/heads/release/legacy": "73d32732e03089ec6a619a0db2ea1a5a50866731",
+        "HEAD": "117889eedd29a9cf8002a3c12c8d174b3408e7f2"
+      }
+    }
+  }
+}

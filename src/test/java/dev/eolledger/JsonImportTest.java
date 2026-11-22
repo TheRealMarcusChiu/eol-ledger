@@ -321,14 +321,14 @@ class JsonImportTest extends WebTestBase {
                 .andReturn().getResponse().getContentAsByteArray();
         assertThat(body).isEqualTo(ImportService.sample("demo-dependency-inventory.json").getBytes(StandardCharsets.UTF_8));
         JsonNode sample = JSON.readTree(body);
-        assertThat(sample).hasSize(8);
+        assertThat(sample).hasSize(22);
         List<String> urls = new ArrayList<>();
         List<String> branches = new ArrayList<>();
         sample.forEach(e -> {
             urls.add(e.path("url").asText());
             branches.add(e.path("branch").asText());
         });
-        assertThat(urls.stream().distinct()).hasSize(4);
+        assertThat(urls.stream().distinct()).hasSize(11);
         assertThat(branches.stream().distinct()).containsExactlyInAnyOrder("main", "release/legacy");
         List<String> managers = new ArrayList<>();
         sample.forEach(e -> e.path("projects").forEach(p -> managers.add(p.path("packageManager").asText())));
@@ -337,15 +337,15 @@ class JsonImportTest extends WebTestBase {
 
         mvc.perform(multipart("/imports").file(new MockMultipartFile("file", "demo.json", "application/json", body)).with(csrf()))
                 .andExpect(status().isSeeOther())
-                .andExpect(flash().attribute("message", "8 code-repos imported"));
-        assertThat(count("snapshot")).isEqualTo(8);
+                .andExpect(flash().attribute("message", "22 code-repos imported"));
+        assertThat(count("snapshot")).isEqualTo(22);
         ImportService.Result repeated = imports.importJson(new String(body, StandardCharsets.UTF_8), "reupload");
-        assertThat(repeated.rows()).isEqualTo(8);
+        assertThat(repeated.rows()).isEqualTo(22);
         assertThat(repeated.newSnapshots()).isZero();
-        assertThat(repeated.message()).isEqualTo("8 code-repos imported");
+        assertThat(repeated.message()).isEqualTo("22 code-repos imported");
         assertThat(db.sql("SELECT message FROM import_run ORDER BY id").query(String.class).list())
-                .containsExactly("8 code-repos imported", "8 code-repos imported");
-        assertThat(count("snapshot")).isEqualTo(8);
+                .containsExactly("22 code-repos imported", "22 code-repos imported");
+        assertThat(count("snapshot")).isEqualTo(22);
 
         boolean sawMultiModulePackage = false;
         java.util.Map<String, java.util.Set<String>> inventories = new java.util.HashMap<>();

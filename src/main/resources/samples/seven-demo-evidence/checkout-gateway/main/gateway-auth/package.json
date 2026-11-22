@@ -1,0 +1,8 @@
+{
+  "name": "gateway-auth",
+  "version": "2.0.0",
+  "private": true,
+  "dependencies": {
+    "jsonwebtoken": "9.0.2"
+  }
+}

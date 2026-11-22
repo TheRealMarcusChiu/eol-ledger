@@ -1,0 +1,160 @@
+[
+  {
+    "repository": "storefront-ui",
+    "branch": "release/legacy",
+    "commit": "a062d528b558b765f429ec84c3c378e443b10086",
+    "command": "/usr/bin/git clone -q --no-hardlinks --branch release/legacy /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/repos/storefront-ui /root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:20Z",
+    "finishedAt": "2026-11-22T09:37:20Z",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "repository": "storefront-ui",
+    "branch": "release/legacy",
+    "commit": "a062d528b558b765f429ec84c3c378e443b10086",
+    "command": "/usr/bin/git rev-parse HEAD",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:20Z",
+    "finishedAt": "2026-11-22T09:37:20Z",
+    "stdout": "a062d528b558b765f429ec84c3c378e443b10086\n",
+    "stderr": ""
+  },
+  {
+    "module": "storefront-web",
+    "repository": "storefront-ui",
+    "branch": "release/legacy",
+    "commit": "a062d528b558b765f429ec84c3c378e443b10086",
+    "command": "/root/.hermes/node/bin/npm ci --ignore-scripts --no-audit --no-fund",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-web",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:20Z",
+    "finishedAt": "2026-11-22T09:37:20Z",
+    "stdout": "\nadded 13 packages in 533ms\n",
+    "stderr": "npm warn deprecated vue@2.7.16: Vue 2 has reached EOL and is no longer actively maintained. See https://v2.vuejs.org/eol/ for more details.\n"
+  },
+  {
+    "module": "storefront-web",
+    "repository": "storefront-ui",
+    "branch": "release/legacy",
+    "commit": "a062d528b558b765f429ec84c3c378e443b10086",
+    "command": "/root/.hermes/node/bin/npm ls --all --json --long",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-web",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:20Z",
+    "finishedAt": "2026-11-22T09:37:21Z",
+    "stdout": "{\n  \"version\": \"1.4.0\",\n  \"name\": \"storefront-web\",\n  \"private\": true,\n  \"_id\": \"storefront-web@1.4.0\",\n  \"extraneous\": false,\n  \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-web\",\n  \"_dependencies\": {\n    \"vue\": \"2.7.16\"\n  },\n  \"devDependencies\": {},\n  \"peerDependencies\": {},\n  \"dependencies\": {\n    \"vue\": {\n      \"version\": \"2.7.16\",\n      \"resolved\": \"https://registry.npmjs.org/vue/-/vue-2.7.16.tgz\",\n      \"overridden\": false,\n      \"name\": \"vue\",\n      \"integrity\": \"sha512-4gCtFXaAA3zYZdTp5s4Hl2sozuySsgz4jy1EnpBHNfpMa9dK1ZCG7viqBPCwXtmgc8nHqUsAu3G4gtmXkkY3Sw==\",\n      \"deprecated\": \"Vue 2 has reached EOL and is no longer actively maintained. See https://v2.vuejs.org/eol/ for more details.\",\n      \"license\": \"MIT\",\n      \"_id\": \"vue@2.7.16\",\n      \"extraneous\": false,\n      \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-web/node_modules/vue\",\n      \"_dependencies\": {\n        \"@vue/compiler-sfc\": \"2.7.16\",\n        \"csstype\": \"^3.1.0\"\n      },\n      \"devDependencies\": {},\n      \"peerDependencies\": {},\n      \"dependencies\": {\n        \"@vue/compiler-sfc\": {\n          \"version\": \"2.7.16\",\n          \"resolved\": \"https://registry.npmjs.org/@vue/compiler-sfc/-/compiler-sfc-2.7.16.tgz\",\n          \"overridden\": false,\n          \"name\": \"@vue/compiler-sfc\",\n          \"integrity\": \"sha512-KWhJ9k5nXuNtygPU7+t1rX6baZeqOYLEforUPjgNDBnLicfHCoi48H87Q8XyLZOrNNsmhuwKqtpDQWjEFe6Ekg==\",\n          \"optionalDependencies\": {\n            \"prettier\": \"^1.18.2 || ^2.0.0\"\n          },\n          \"_id\": \"@vue/compiler-sfc@2.7.16\",\n          \"extraneous\": false,\n          \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-web/node_modules/@vue/compiler-sfc\",\n          \"_dependencies\": {\n            \"@babel/parser\": \"^7.23.5\",\n            \"postcss\": \"^8.4.14\",\n            \"source-map\": \"^0.6.1\",\n            \"prettier\": \"^1.18.2 || ^2.0.0\"\n          },\n          \"devDependencies\": {},\n          \"peerDependencies\": {},\n          \"dependencies\": {\n            \"@babel/parser\": {\n              \"version\": \"7.29.15\",\n              \"resolved\": \"https://registry.npmjs.org/@babel/parser/-/parser-7.29.15.tgz\",\n              \"overridden\": false,\n              \"name\": \"@babel/parser\",\n              \"integrity\": \"sha512-RpKWyisHoP81twtSCgmE02iU0RnPcq1DN5bBEbpUePrjA9Q3wXhufnCJrrayPpoZieqFh3zyZQqwtSK0gGccRA==\",\n              \"license\": \"MIT\",\n              \"bin\": {\n                \"parser\": \"bin/babel-parser.js\"\n              },\n              \"engines\": {\n                \"node\": \">=6.0.0\"\n              },\n              \"_id\": \"@babel/parser@7.29.15\",\n              \"extraneous\": false,\n              \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-web/node_modules/@babel/parser\",\n              \"_dependencies\": {\n                \"@babel/types\": \"^7.29.15\"\n              },\n              \"devDependencies\": {},\n              \"peerDependencies\": {},\n              \"dependencies\": {\n                \"@babel/types\": {\n                  \"version\": \"7.29.15\",\n                  \"resolved\": \"https://registry.npmjs.org/@babel/types/-/types-7.29.15.tgz\",\n                  \"overridden\": false,\n                  \"name\": \"@babel/types\",\n                  \"integrity\": \"sha512-/XKpKDakL//LZ66bq1XsZOswuqeI5MZqPLDu18o3XdkU1fNJ7bdPtzgnc4ZNS+bBGHV0FJG8jjb8SwcC3nNVQQ==\",\n                  \"license\": \"MIT\",\n                  \"engines\": {\n                    \"node\": \">=6.9.0\"\n                  },\n                  \"_id\": \"@babel/types@7.29.15\",\n                  \"extraneous\": false,\n                  \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-web/node_modules/@babel/types\",\n                  \"_dependencies\": {\n                    \"@babel/helper-string-parser\": \"^7.29.15\",\n                    \"@babel/helper-validator-identifier\": \"^7.29.7\"\n                  },\n                  \"devDependencies\": {},\n                  \"peerDependencies\": {},\n                  \"dependencies\": {\n                    \"@babel/helper-string-parser\": {\n                      \"version\": \"7.29.15\",\n                      \"resolved\": \"https://registry.npmjs.org/@babel/helper-string-parser/-/helper-string-parser-7.29.15.tgz\",\n                      \"overridden\": false,\n                      \"name\": \"@babel/helper-string-parser\",\n                      \"integrity\": \"sha512-C2FuapQ2Kh1OnVHAoLi5rD3GBJ8COb9Q609T6HEpLqaBAo560PDP5OxBE5dCI/h951MBO/+bCUYU5SZ+8ZlV+w==\",\n                      \"license\": \"MIT\",\n                      \"engines\": {\n                        \"node\": \">=6.9.0\"\n                      },\n                      \"_id\": \"@babel/helper-string-parser@7.29.15\",\n                      \"extraneous\": false,\n                      \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-web/node_modules/@babel/helper-string-parser\",\n                      \"_dependencies\": {},\n                      \"devDependencies\": {},\n                      \"peerDependencies\": {}\n                    },\n                    \"@babel/helper-validator-identifier\": {\n                      \"version\": \"7.29.7\",\n                      \"resolved\": \"https://registry.npmjs.org/@babel/helper-validator-identifier/-/helper-validator-identifier-7.29.7.tgz\",\n                      \"overridden\": false,\n                      \"name\": \"@babel/helper-validator-identifier\",\n                      \"integrity\": \"sha512-qehxGkRj55h/ff8EMaJ+cYhyaKlHIxqYDn682wQD7RNp9UujOQsHog2uS0r2vzr4pW+sXf90NeeayjcNaX3fFg==\",\n                      \"license\": \"MIT\",\n                      \"engines\": {\n                        \"node\": \">=6.9.0\"\n                      },\n                      \"_id\": \"@babel/helper-validator-identifier@7.29.7\",\n                      \"extraneous\": false,\n                      \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-web/node_modules/@babel/helper-validator-identifier\",\n                      \"_dependencies\": {},\n                      \"devDependencies\": {},\n                      \"peerDependencies\": {}\n                    }\n                  }\n                }\n              }\n            },\n            \"postcss\": {\n              \"version\": \"8.5.33\",\n              \"resolved\": \"https://registry.npmjs.org/postcss/-/postcss-8.5.33.tgz\",\n              \"overridden\": false,\n              \"name\": \"postcss\",\n              \"integrity\": \"sha512-RVHEU9/Pp1Fnjr/MpAJsZoADukCKhfIi15OunEYiGktIkYLkPVvC1sioWolGDS7XByMTx9m/IGbro0Js13zhnQ==\",\n              \"funding\": [\n                {\n                  \"type\": \"opencollective\",\n                  \"url\": \"https://opencollective.com/postcss/\"\n                },\n                {\n                  \"type\": \"tidelift\",\n                  \"url\": \"https://tidelift.com/funding/github/npm/postcss\"\n                },\n                {\n                  \"type\": \"github\",\n                  \"url\": \"https://github.com/sponsors/ai\"\n                }\n              ],\n              \"license\": \"MIT\",\n              \"engines\": {\n                \"node\": \"^10 || ^12 || >=14\"\n              },\n              \"_id\": \"postcss@8.5.33\",\n              \"extraneous\": false,\n              \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-web/node_modules/postcss\",\n              \"_dependencies\": {\n                \"nanoid\": \"^3.3.20\",\n                \"picocolors\": \"^1.1.1\",\n                \"source-map-js\": \"^1.2.2\"\n              },\n              \"devDependencies\": {},\n              \"peerDependencies\": {},\n              \"dependencies\": {\n                \"nanoid\": {\n                  \"version\": \"3.3.20\",\n                  \"resolved\": \"https://registry.npmjs.org/nanoid/-/nanoid-3.3.20.tgz\",\n                  \"overridden\": false,\n                  \"name\": \"nanoid\",\n                  \"integrity\": \"sha512-uKdg2G3GNCKQn9byYOpxbGqrT2fGO5KRt5J/8b3pok8rT6qxGWF6hxMyJiEYtAf+FVyYuD9hRaDqX5uPFYJ4ZQ==\",\n                  \"funding\": [\n                    {\n                      \"type\": \"github\",\n                      \"url\": \"https://github.com/sponsors/ai\"\n                    }\n                  ],\n                  \"license\": \"MIT\",\n                  \"bin\": {\n                    \"nanoid\": \"bin/nanoid.cjs\"\n                  },\n                  \"engines\": {\n                    \"node\": \"^10 || ^12 || ^13.7 || ^14 || >=15.0.1\"\n                  },\n                  \"_id\": \"nanoid@3.3.20\",\n                  \"extraneous\": false,\n                  \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-web/node_modules/nanoid\",\n                  \"_dependencies\": {},\n                  \"devDependencies\": {},\n                  \"peerDependencies\": {}\n                },\n                \"picocolors\": {\n                  \"version\": \"1.1.1\",\n                  \"resolved\": \"https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz\",\n                  \"overridden\": false,\n                  \"name\": \"picocolors\",\n                  \"integrity\": \"sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==\",\n                  \"license\": \"ISC\",\n                  \"_id\": \"picocolors@1.1.1\",\n                  \"extraneous\": false,\n                  \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-web/node_modules/picocolors\",\n                  \"_dependencies\": {},\n                  \"devDependencies\": {},\n                  \"peerDependencies\": {}\n                },\n                \"source-map-js\": {\n                  \"version\": \"1.2.4\",\n                  \"resolved\": \"https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.4.tgz\",\n                  \"overridden\": false,\n                  \"name\": \"source-map-js\",\n                  \"integrity\": \"sha512-J7ZjMvHd9O1fcT/5V09QWaaSl2BbWx3F6O08spde82Namf9UB0GxRVIPiNbVsdKkoizHiSpTodo3vp2bAy91MA==\",\n                  \"license\": \"BSD-3-Clause\",\n                  \"engines\": {\n                    \"node\": \">=6.0.0\"\n                  },\n                  \"_id\": \"source-map-js@1.2.4\",\n                  \"extraneous\": false,\n                  \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-web/node_modules/source-map-js\",\n                  \"_dependencies\": {},\n                  \"devDependencies\": {},\n                  \"peerDependencies\": {}\n                }\n              }\n            },\n            \"prettier\": {\n              \"version\": \"2.8.8\",\n              \"resolved\": \"https://registry.npmjs.org/prettier/-/prettier-2.8.8.tgz\",\n              \"overridden\": false,\n              \"name\": \"prettier\",\n              \"integrity\": \"sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==\",\n              \"license\": \"MIT\",\n              \"optional\": true,\n              \"bin\": {\n                \"prettier\": \"bin-prettier.js\"\n              },\n              \"engines\": {\n                \"node\": \">=10.13.0\"\n              },\n              \"funding\": {\n                \"url\": \"https://github.com/prettier/prettier?sponsor=1\"\n              },\n              \"_id\": \"prettier@2.8.8\",\n              \"extraneous\": false,\n              \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-web/node_modules/prettier\",\n              \"_dependencies\": {},\n              \"devDependencies\": {},\n              \"peerDependencies\": {}\n            },\n            \"source-map\": {\n              \"version\": \"0.6.1\",\n              \"resolved\": \"https://registry.npmjs.org/source-map/-/source-map-0.6.1.tgz\",\n              \"overridden\": false,\n              \"name\": \"source-map\",\n              \"integrity\": \"sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==\",\n              \"license\": \"BSD-3-Clause\",\n              \"engines\": {\n                \"node\": \">=0.10.0\"\n              },\n              \"_id\": \"source-map@0.6.1\",\n              \"extraneous\": false,\n              \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-web/node_modules/source-map\",\n              \"_dependencies\": {},\n              \"devDependencies\": {},\n              \"peerDependencies\": {}\n            }\n          }\n        },\n        \"csstype\": {\n          \"version\": \"3.2.4\",\n          \"resolved\": \"https://registry.npmjs.org/csstype/-/csstype-3.2.4.tgz\",\n          \"overridden\": false,\n          \"name\": \"csstype\",\n          \"integrity\": \"sha512-PoKaoPzQapnEoqUSnHx1u6W6ku8CVEgKsnpmmzU3m1nwkidpPBQ8V/Zq2+bWNrsOKoKLwTGdbx6xF7BXP1zLVQ==\",\n          \"license\": \"MIT\",\n          \"_id\": \"csstype@3.2.4\",\n          \"extraneous\": false,\n          \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-web/node_modules/csstype\",\n          \"_dependencies\": {},\n          \"devDependencies\": {},\n          \"peerDependencies\": {}\n        }\n      }\n    }\n  }\n}\n",
+    "stderr": ""
+  },
+  {
+    "module": "storefront-web",
+    "repository": "storefront-ui",
+    "branch": "release/legacy",
+    "commit": "a062d528b558b765f429ec84c3c378e443b10086",
+    "command": "/root/.hermes/node/bin/node index.js",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-web",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:21Z",
+    "finishedAt": "2026-11-22T09:37:21Z",
+    "stdout": "vue 2.7.16 3\n",
+    "stderr": ""
+  },
+  {
+    "module": "storefront-format",
+    "repository": "storefront-ui",
+    "branch": "release/legacy",
+    "commit": "a062d528b558b765f429ec84c3c378e443b10086",
+    "command": "/root/.hermes/node/bin/npm ci --ignore-scripts --no-audit --no-fund",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-format",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:21Z",
+    "finishedAt": "2026-11-22T09:37:21Z",
+    "stdout": "\nadded 1 package in 385ms\n",
+    "stderr": ""
+  },
+  {
+    "module": "storefront-format",
+    "repository": "storefront-ui",
+    "branch": "release/legacy",
+    "commit": "a062d528b558b765f429ec84c3c378e443b10086",
+    "command": "/root/.hermes/node/bin/npm ls --all --json --long",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-format",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:21Z",
+    "finishedAt": "2026-11-22T09:37:21Z",
+    "stdout": "{\n  \"version\": \"1.4.0\",\n  \"name\": \"storefront-format\",\n  \"private\": true,\n  \"_id\": \"storefront-format@1.4.0\",\n  \"extraneous\": false,\n  \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-format\",\n  \"_dependencies\": {\n    \"dayjs\": \"1.11.13\"\n  },\n  \"devDependencies\": {},\n  \"peerDependencies\": {},\n  \"dependencies\": {\n    \"dayjs\": {\n      \"version\": \"1.11.13\",\n      \"resolved\": \"https://registry.npmjs.org/dayjs/-/dayjs-1.11.13.tgz\",\n      \"overridden\": false,\n      \"name\": \"dayjs\",\n      \"integrity\": \"sha512-oaMBel6gjolK862uaPQOVTA7q3TZhuSvuMQAAglQDOWYO9A91IrAOUJEyKVlqJlHE0vq5p5UXxzdPfMH/x6xNg==\",\n      \"license\": \"MIT\",\n      \"_id\": \"dayjs@1.11.13\",\n      \"extraneous\": false,\n      \"path\": \"/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-format/node_modules/dayjs\",\n      \"_dependencies\": {},\n      \"devDependencies\": {},\n      \"peerDependencies\": {}\n    }\n  }\n}\n",
+    "stderr": ""
+  },
+  {
+    "module": "storefront-format",
+    "repository": "storefront-ui",
+    "branch": "release/legacy",
+    "commit": "a062d528b558b765f429ec84c3c378e443b10086",
+    "command": "/root/.hermes/node/bin/node index.js",
+    "cwd": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/work/build/storefront-ui/release-legacy/storefront-format",
+    "env": {
+      "UV_CACHE_DIR": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/uv",
+      "npm_config_cache": "/root/projects/eol-ledger-ops/shareable-views/seven-demo/cache/npm",
+      "npm_config_update_notifier": "false",
+      "npm_config_fund": "false",
+      "npm_config_audit": "false"
+    },
+    "exit": 0,
+    "startedAt": "2026-11-22T09:37:21Z",
+    "finishedAt": "2026-11-22T09:37:21Z",
+    "stdout": "dayjs 1.11.13 2026-12-22\n",
+    "stderr": ""
+  }
+]
