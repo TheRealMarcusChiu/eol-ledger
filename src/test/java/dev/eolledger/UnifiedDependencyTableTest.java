@@ -19,24 +19,29 @@ class UnifiedDependencyTableTest extends WebTestBase {
         seed();
         long id = branchId("https://gitlab.com/acme/alpha", "main");
         var expected = List.of(
+                " data-column=\"purl\":Ecosystem / Package URL",
                 " data-column=\"dependency\":Dependency Name", " data-type=\"version\" data-column=\"version\":Version",
                 " data-type=\"date\" data-column=\"eol\":EOL Date", " data-column=\"status\":Status",
                 " data-type=\"number\" class=\"num\" data-column=\"repos\":# Code Repos Using It",
                 " data-type=\"number\" class=\"num\" data-column=\"branches\":# Code Repo Branches Using It",
-                " data-column=\"context\":Project context", " data-column=\"purl\":Ecosystem / purl",
+                " data-column=\"context\":Project context",
                 " data-column=\"cycle\":Upstream cycle", " data-column=\"evidence\":Matching evidence",
                 " data-column=\"source\":Source control", " data-column=\"sbom\":SBOM");
-        assertThat(headers(page("/"))).containsExactlyElementsOf(expected);
-        assertThat(headers(page("/repos/" + id))).containsExactlyElementsOf(expected);
-        assertThat(headers(AcceptanceRepairTest.depsTable(page("/repos/" + id + "/history")))).containsExactlyElementsOf(expected);
+        String root = page("/"), latest = page("/repos/" + id), history = AcceptanceRepairTest.depsTable(page("/repos/" + id + "/history"));
+        for (String html : List.of(root, latest, history)) {
+            assertThat(headers(html)).containsExactlyElementsOf(expected);
+            assertThat(html).doesNotContain("Ecosystem / purl");
+        }
         db.sql("DELETE FROM snapshot_inventory").update();
-        assertThat(headers(page("/repos/" + id))).containsExactlyElementsOf(expected);
+        String fallback = page("/repos/" + id);
+        assertThat(headers(fallback)).containsExactlyElementsOf(expected);
+        assertThat(fallback).doesNotContain("Ecosystem / purl");
     }
     @Test void serverRenderedOrderAndCellMeaningWorkWithoutJavascript() throws Exception {
         seed();
         long id = branchId("https://gitlab.com/acme/alpha", "main");
-        var keys = List.of("dependency", "version", "eol", "status", "repos", "branches",
-                "context", "purl", "cycle", "evidence", "source", "sbom");
+        var keys = List.of("purl", "dependency", "version", "eol", "status", "repos", "branches",
+                "context", "cycle", "evidence", "source", "sbom");
         for (String path : List.of("/", "/repos/" + id, "/repos/" + id + "/history")) {
             String table = path.equals("/") ? page(path) : AcceptanceRepairTest.depsTable(page(path));
             assertThat(Pattern.compile("<col data-column=\"([^\"]+)\"").matcher(table).results()
@@ -51,13 +56,13 @@ class UnifiedDependencyTableTest extends WebTestBase {
             String react = rows.stream().filter(r -> r.contains(">react</a>")).findFirst().orElseThrow();
             var cells = Pattern.compile("<td[^>]*>(.*?)</td>", Pattern.DOTALL).matcher(react).results()
                     .map(m -> m.group(1)).toList();
-            assertThat(cells.get(0)).contains(">react</a>");
-            assertThat(cells.get(1)).contains("18.2.0");
-            assertThat(cells.get(2)).contains("2025-01-01");
-            assertThat(cells.get(3)).contains("eol-ended", "Ended");
-            assertThat(cells.get(4)).isEqualTo("1");
-            assertThat(cells.get(5)).isEqualTo(path.equals("/") ? "2" : "1");
-            assertThat(cells.get(7)).contains("pkg:npm/react@18.2.0");
+            assertThat(cells.get(0)).contains("pkg:npm/react@18.2.0");
+            assertThat(cells.get(1)).contains(">react</a>");
+            assertThat(cells.get(2)).contains("18.2.0");
+            assertThat(cells.get(3)).contains("2025-01-01");
+            assertThat(cells.get(4)).contains("eol-ended", "Ended");
+            assertThat(cells.get(5)).isEqualTo("1");
+            assertThat(cells.get(6)).isEqualTo(path.equals("/") ? "2" : "1");
             assertThat(cells.get(8)).contains("React 18");
             assertThat(cells.get(10)).contains("https://gitlab.com/acme/alpha");
         }

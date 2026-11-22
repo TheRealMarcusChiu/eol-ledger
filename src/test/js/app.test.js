@@ -23,12 +23,26 @@ test('column order normalizes corrupt, duplicate, unknown and missing identities
 
 const plain = (o) => JSON.parse(JSON.stringify(o));
 const DEFAULTS = {
+  purl: { visible: true, width: 280 },
   dependency: { visible: true, width: 220 }, version: { visible: true, width: 120 },
   eol: { visible: true, width: 130 }, status: { visible: true, width: 210 },
   repos: { visible: true, width: 120 }, branches: { visible: true, width: 120 },
-  context: { visible: true, width: 240 }, purl: { visible: true, width: 280 }, cycle: { visible: true, width: 200 },
+  context: { visible: true, width: 240 }, cycle: { visible: true, width: 200 },
   evidence: { visible: true, width: 280 }, source: { visible: true, width: 260 }, sbom: { visible: true, width: 260 },
 };
+const ECOSYSTEM_FIRST = ['purl', 'dependency', 'version', 'eol', 'status', 'repos', 'branches', 'context', 'cycle', 'evidence', 'source', 'sbom'];
+
+test('shared columns default to ecosystem first; fresh order follows it and complete saved orders are kept', () => {
+  const { TABLE_COLUMNS, tablePrefs, columnOrder } = load();
+  assert.deepStrictEqual(plain(Object.keys(TABLE_COLUMNS)), ECOSYSTEM_FIRST);
+  assert.deepStrictEqual(Object.keys(plain(tablePrefs(null))), ECOSYSTEM_FIRST);
+  const keys = Object.keys(TABLE_COLUMNS);
+  assert.deepStrictEqual(plain(columnOrder(null, keys)), ECOSYSTEM_FIRST);
+  const old = ['dependency', 'version', 'eol', 'status', 'repos', 'branches', 'context', 'purl', 'cycle', 'evidence', 'source', 'sbom'];
+  assert.deepStrictEqual(plain(columnOrder(JSON.stringify(old), keys)), old);
+  const custom = ['sbom', 'eol', 'dependency', 'purl', 'version', 'status', 'repos', 'branches', 'context', 'cycle', 'evidence', 'source'];
+  assert.deepStrictEqual(plain(columnOrder(JSON.stringify(custom), keys)), custom);
+});
 
 test('missing or malformed storage falls back to all shared columns visible at default widths', () => {
   const { tablePrefs } = load();
