@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@org.springframework.test.context.TestPropertySource(properties = "eol.mappings=unstated-react=react")
 class EcosystemColumnTest extends WebTestBase {
     /** React published under two package ecosystems, as endoflife.date products can list several purl identifiers. */
     static final String TWO_ECOSYSTEMS = """
@@ -58,9 +59,31 @@ class EcosystemColumnTest extends WebTestBase {
     @Test void cycleAffectedBranchesShowEcosystemAndEmptyStateSpansAllColumns() throws Exception {
         importMixed();
         String used = page("/dependencies/react?version=18");
-        assertThat(used).contains("<th scope=\"col\">Package</th>\n                <th scope=\"col\">Ecosystem</th>");
+        assertThat(used).contains("<th scope=\"col\" data-type=\"datetime\">Snapshot observed</th>\n                <th scope=\"col\">Ecosystem</th>");
         assertThat(Pattern.compile("<td>(npm|nuget)</td>").matcher(used).results().map(m -> m.group(1)).toList())
                 .containsExactlyInAnyOrder("npm", "nuget");
         assertThat(page("/dependencies/react?version=19")).contains("<td colspan=\"6\" class=\"empty\">No branch uses this cycle");
+    }
+
+    /** Saved cycle-table widths are keyed by original column index, so Ecosystem goes last and the first five never move. */
+    @Test void cycleKeepsOriginalFiveColumnPositionsWithEcosystemLast() throws Exception {
+        importMixed();
+        // no purl: matched only through the configured name mapping, so its ecosystem is unknown
+        imports.importJson(JsonImportTest.array(JsonImportTest.entry("eco-unknown", "2026-11-20T10:00:00Z",
+                "{\"name\":\"unstated-react\",\"version\":\"18.0.0\"}")), "test");
+        String html = page("/dependencies/react?version=18");
+        String table = html.substring(html.indexOf("aria-label=\"Affected code repo branches\""));
+        table = table.substring(0, table.indexOf("</table>"));
+        assertThat(Pattern.compile("<th scope=\"col\"[^>]*>([^<]+)</th>").matcher(table).results().map(m -> m.group(1)).toList())
+                .containsExactly("Code repo", "Branch", "Package", "Installed version", "Snapshot observed", "Ecosystem");
+        var rows = Pattern.compile("<tr data-href=[^>]*>(.*?)</tr>", Pattern.DOTALL).matcher(table).results().map(m -> m.group(1)).toList();
+        var seen = rows.stream().map(r -> {
+            var c = Pattern.compile("<td[^>]*>(.*?)</td>", Pattern.DOTALL).matcher(r).results()
+                    .map(m -> m.group(1).replaceAll("<[^>]+>", "").trim()).toList();
+            assertThat(c).hasSize(6);
+            assertThat(c.get(0)).isEqualTo(JsonImportTest.REPO);
+            return c.get(1) + "|" + c.get(2) + "|" + c.get(3) + "|" + c.get(5);
+        }).toList();
+        assertThat(seen).containsExactlyInAnyOrder("eco|react|18.2.0|npm", "eco|react|18.1.0|nuget", "eco-unknown|unstated-react|18.0.0|Unknown");
     }
 }
