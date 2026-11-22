@@ -116,6 +116,11 @@ function resizeHandle(label, key, get, set, done, reset) {
   return h;
 }
 
+/** A header's own non-blank text node (its title before any controls are added), if it has one. */
+function headerTitle(cell) {
+  return Array.prototype.find.call(cell.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); });
+}
+
 function initColumns(table, settings) {
   var keys = Object.keys(TABLE_COLUMNS);
   var storageKey = table.dataset.dependencyTable === 'dashboard' ? TABLE_KEY : BRANCH_TABLE_KEY;
@@ -328,7 +333,7 @@ function initColumnOrder(table) {
     var button = cell.querySelector('.th-sort');
     if (!button) {
       button = document.createElement('button'); button.type = 'button'; button.className = 'th-sort';
-      var title = Array.prototype.find.call(cell.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); });
+      var title = headerTitle(cell);
       button.textContent = title ? title.textContent.trim() : cellText(cell);
       if (title) title.replaceWith(button); else cell.prepend(button);
     }
@@ -858,7 +863,7 @@ function initTable(table, opts) {
 
   keys.forEach(function (k) {
     var cell = th[k];
-    var title = Array.prototype.find.call(cell.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); });
+    var title = headerTitle(cell);
     labels[k] = title ? title.textContent.trim() : cellText(cell);
     cell.setAttribute('data-sortable', '');
     cell.setAttribute('data-label', labels[k]);
@@ -1037,17 +1042,13 @@ function storedWidths(text, id) {
   return out;
 }
 
-function widthStorage(method, value) {
-  try { return window.localStorage[method](WIDTHS_KEY, value); } catch (e) { return null; }
-}
-
 function initResize(table) {
   var head = table.tHead && table.tHead.rows[0];
   if (!head || !head.cells.length || !table.offsetWidth) return null;
   var id = table.id || tableNoun(table);
   var cells = table.columnLayout ? table.columnLayout.cells : Array.prototype.slice.call(head.cells);
   var natural = cells.map(function (c) { return Math.round(c.getBoundingClientRect().width); });
-  var saved = storedWidths(widthStorage('getItem'), id);
+  var saved = storedWidths(tableStorage('getItem', null, WIDTHS_KEY), id);
   var widths = natural.map(function (n, i) { return saved[i] || n; });
   var drawn = [];
 
@@ -1065,12 +1066,12 @@ function initResize(table) {
 
   function save() {
     var all = null;
-    try { all = JSON.parse(widthStorage('getItem')); } catch (e) { /* start fresh */ }
+    try { all = JSON.parse(tableStorage('getItem', null, WIDTHS_KEY)); } catch (e) { /* start fresh */ }
     if (!all || typeof all !== 'object' || Array.isArray(all)) all = {};
     var mine = {};
     Object.keys(saved).forEach(function (k) { mine[k] = saved[k]; });
     all[id] = mine;
-    widthStorage('setItem', JSON.stringify(all));
+    tableStorage('setItem', JSON.stringify(all), WIDTHS_KEY);
   }
 
   var handles = cells.map(function (c, i) {

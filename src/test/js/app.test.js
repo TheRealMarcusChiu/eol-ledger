@@ -649,3 +649,13 @@ test('storage uses only its own key', () => {
   ctx.tableStorage('getItem'); ctx.tableStorage('setItem', '{}'); ctx.tableStorage('removeItem');
   assert.deepStrictEqual(calls, [['get', 'eol-ledger.dependencies-table.v1'], ['set', 'eol-ledger.dependencies-table.v1', '{}'], ['remove', 'eol-ledger.dependencies-table.v1']]);
 });
+
+test('header title is the first own non-blank text node, ignoring elements and whitespace', () => {
+  const { headerTitle } = load();
+  const text = (t) => ({ nodeType: 3, textContent: t });
+  const title = text(' Name ');
+  const el = { nodeType: 1, textContent: 'Sort' };
+  assert.strictEqual(headerTitle({ childNodes: [text('\n  '), el, title, text('Other')] }), title);
+  assert.strictEqual(headerTitle({ childNodes: [text(' '), el] }), undefined);
+  assert.strictEqual(headerTitle({ childNodes: [] }), undefined);
+});
