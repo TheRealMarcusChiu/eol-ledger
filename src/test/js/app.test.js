@@ -997,13 +997,19 @@ class FakeText extends FakeNode { constructor(t) { super(); this.nodeType = 3; t
 class FakeEl extends FakeNode {
   constructor(tag) {
     super();
-    Object.assign(this, { nodeType: 1, tagName: tag, attrs: new Map(), childNodes: [], parentNode: null, hidden: false, style: {}, events: {}, className: '', id: '', offsetHeight: 0, offsetWidth: 0 });
+    Object.assign(this, { nodeType: 1, tagName: tag, attrs: new Map(), childNodes: [], parentNode: null, hidden: false, style: {}, events: {}, className: '', id: '', offsetHeight: 0, offsetWidth: 0, dataset: {} });
   }
+  get classList() {
+    const list = () => this.className.split(/\s+/).filter(Boolean);
+    return { add: (...n) => { this.className = [...new Set([...list(), ...n])].join(' '); }, remove: (...n) => { this.className = list().filter(c => !n.includes(c)).join(' '); },
+      contains: n => list().includes(n) };
+  }
+  matches(s) { return selectorMatches(this, s); }
   get textContent() { return this.childNodes.map(c => c.textContent).join(''); }
   set textContent(t) { this.childNodes.slice().forEach(c => c.remove()); this.append(String(t)); }
   get lastChild() { return this.childNodes[this.childNodes.length - 1] || null; }
   get cells() { return this.childNodes.filter(c => c.tagName === 'td' || c.tagName === 'th'); }
-  get rows() { return this.childNodes.filter(c => c.tagName === 'tr'); }
+  get rows() { return this.tagName === 'table' ? this.childNodes.flatMap(c => c.rows || []) : this.childNodes.filter(c => c.tagName === 'tr'); }
   get tHead() { return this.childNodes.find(c => c.tagName === 'thead') || null; }
   get tBodies() { return this.childNodes.filter(c => c.tagName === 'tbody'); }
   insertBefore(n, ref) {
@@ -1034,7 +1040,7 @@ class FakeEl extends FakeNode {
   addEventListener(t, fn) { (this.events[t] ||= []).push(fn); }
   emit(t, e = {}) { (this.events[t] || []).slice().forEach(fn => fn({ target: this, preventDefault() {}, ...e })); }
   focus() {}
-  getBoundingClientRect() { return { top: 0, bottom: 20, left: 0, right: 100 }; }
+  getBoundingClientRect() { return { top: 0, bottom: 20, left: 0, right: 100, width: 100 }; }
 }
 
 function viewDom(href, stored = {}) {
@@ -1053,12 +1059,19 @@ function viewDom(href, stored = {}) {
 }
 
 /** 25 rows: pkg01..pkg25, version 1.N, count N, eol 2026-01-NN; row 25 has no EoL date. */
-function viewTable(id, attrs = {}) {
+function viewTable(id, attrs = {}, { region = null, dataColumns = true } = {}) {
   const main = new FakeEl('main'), wrap = new FakeEl('div'), table = new FakeEl('table'), thead = new FakeEl('thead'), head = new FakeEl('tr'), tbody = new FakeEl('tbody');
   wrap.className = 'table-wrap';
+  if (region) wrap.setAttribute('aria-label', region);
   table.id = id;
   Object.entries(attrs).forEach(([k, v]) => table.setAttribute(k, v));
-  VIEW_KEYS.forEach(k => { const th = new FakeEl('th'); th.setAttribute('data-column', k); th.setAttribute('data-type', VIEW_TYPES[k]); th.append(k.toUpperCase()); head.append(th); });
+  VIEW_KEYS.forEach(k => {
+    const th = new FakeEl('th');
+    if (dataColumns) th.setAttribute('data-column', k);
+    th.setAttribute('data-type', VIEW_TYPES[k]);
+    th.append(k.toUpperCase());
+    head.append(th);
+  });
   for (let i = 1; i <= 25; i++) {
     const tr = new FakeEl('tr'), n = String(i).padStart(2, '0');
     ['pkg' + n, '1.' + i, String(i), i < 25 ? '2026-01-' + n : ''].forEach(v => { const td = new FakeEl('td'); td.append(v); tr.append(td); });
@@ -1204,6 +1217,63 @@ test('values-list search and its match mode reach the address bar at once and hy
   assert.deepStrictEqual([u.q('[data-filter-search="name"]').value, u.q('[data-filter-search-op="name"]').value], ['pkg1', 'exact']);
   assert.deepStrictEqual(u.shown(), range(21, 25));
   assert.strictEqual(u.status(), 'Page 2 of 2');
+});
+
+// The four tables that gained ids keep their former browser-local preference identity (their old tableNoun), so saved
+// column order, visibility and numeric-index widths survive; the ids only name their URL view params.
+const FORMER_ROLES = [
+  { id: 'release-cycles-table', role: 'release cycles', attrs: {}, region: 'Release cycles' },
+  { id: 'affected-branches-table', role: 'affected code repo branches', attrs: {}, region: 'Affected code repo branches' },
+  { id: 'import-history-table', role: 'import runs', attrs: { 'data-noun': 'import runs' }, region: 'Import history' },
+  { id: 'snapshot-timeline-table', role: 'snapshots', attrs: { 'data-noun': 'snapshots' }, region: 'Snapshot timeline' },
+];
+
+test('newly id\'d tables keep reading, saving and resetting their old role-keyed order, visibility and widths; ids stay URL-only', () => {
+  for (const { id, role, attrs, region } of FORMER_ROLES) {
+    const orderKey = 'eol-ledger.table-order.v1.' + encodeURIComponent(role), visibilityKey = 'eol-ledger.table-columns.v1.' + encodeURIComponent(role);
+    const otherWidths = { 'code-repos-table': { 0: 333 } };
+    const { win, ctx } = viewDom('https://x.test/page?keep=1#h', {
+      [orderKey]: JSON.stringify(['EOL:3', 'NAME:0', 'VERSION:1', 'COUNT:2']),
+      [visibilityKey]: JSON.stringify({ VERSION: false }),
+      'eol-ledger.table-widths.v1': JSON.stringify({ ...otherWidths, [role]: { 0: 150, 3: 222 } }),
+    });
+    // the template's explicit preference key: exactly the former noun
+    const t = viewTable(id, { ...attrs, 'data-preference-key': role }, { region, dataColumns: false });
+    t.table.offsetWidth = 500;
+    assert.strictEqual(ctx.tableNoun(t.table), role, id + ' former noun');
+    // production wiring order: header controls, then column order, then widths + visibility
+    ctx.initTable(t.table, { noun: ctx.tableNoun(t.table) });
+    ctx.initColumnOrder(t.table);
+    ctx.initResize(t.table);
+    const head = t.table.tHead.rows[0], cell = label => head.cells.find(c => c.getAttribute('data-label') === label);
+    assert.deepStrictEqual(head.cells.map(c => c.getAttribute('data-label')), ['EOL', 'NAME', 'VERSION', 'COUNT'], id + ' stored order');
+    assert.deepStrictEqual(head.cells.map(c => c.hidden), [false, false, true, false], id + ' stored visibility');
+    assert.deepStrictEqual([cell('NAME').style.width, cell('EOL').style.width, cell('COUNT').style.width], ['150px', '222px', '100px'], id + ' stored widths');
+
+    // later saves go to the same old keys
+    head.emit('keydown', { target: cell('NAME').querySelector('.th-sort'), altKey: true, key: 'ArrowRight' });
+    assert.deepStrictEqual(JSON.parse(win.storage.get(orderKey)), ['EOL:3', 'VERSION:1', 'COUNT:2', 'NAME:0'], id);
+    const count = t.q('[data-column-toggle="COUNT"]');
+    count.checked = false;
+    count.emit('change');
+    assert.deepStrictEqual(JSON.parse(win.storage.get(visibilityKey)), { NAME: true, VERSION: false, COUNT: false, EOL: true }, id);
+    t.q('[data-column-resize="0"]').emit('keydown', { key: 'ArrowRight' });
+    assert.deepStrictEqual(JSON.parse(win.storage.get('eol-ledger.table-widths.v1')), { ...otherWidths, [role]: { 0: 160, 3: 222 } }, id);
+
+    // reset clears those same keys; a width reset rewrites the same role entry
+    t.q('[data-columns-reset]').emit('click');
+    t.q('[data-column-resize="3"]').emit('dblclick');
+    assert.deepStrictEqual([win.storage.has(orderKey), win.storage.has(visibilityKey)], [false, false], id);
+    assert.deepStrictEqual(JSON.parse(win.storage.get('eol-ledger.table-widths.v1')), { ...otherWidths, [role]: { 0: 160 } }, id);
+    assert.deepStrictEqual([...win.storage.keys()].filter(k => k.includes(id) || k.includes(encodeURIComponent(id))), [], id + ' no id-keyed preference');
+    assert.ok(!Object.prototype.hasOwnProperty.call(JSON.parse(win.storage.get('eol-ledger.table-widths.v1')), id), id);
+
+    // the id still names the URL view, and preferences never enter it
+    cell('COUNT').emit('click');
+    assert.deepStrictEqual(viewOf(win, 'view.' + id), { v: 1, sort: { key: 'c2', dir: 'asc' } }, id);
+    assert.deepStrictEqual([...new URL(win.location.href).searchParams.keys()], ['keep', 'view.' + id]);
+    assert.strictEqual(new URL(win.location.href).hash, '#h');
+  }
 });
 
 test('tables keep separate stable namespaces: a later (lazy) table never clobbers another, and an id-less table writes nothing', () => {

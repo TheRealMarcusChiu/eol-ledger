@@ -60,6 +60,16 @@ class MinimalUiTest extends WebTestBase {
             assertThat(java.util.regex.Pattern.compile("<table(?:\\s[^>]*)?>").matcher(html).results()
                     .map(m -> m.group().replaceAll("(?s).*\\sid=\"([^\"]*)\".*", "$1")).toList()).as(url).isEqualTo(ids);
         });
+        // tables that gained an id keep their former browser-local preference identity (the old noun) for order, visibility and widths
+        java.util.Map<String, String> preferenceKeys = java.util.Map.of(
+                "/dependencies/react", "<table id=\"release-cycles-table\" data-preference-key=\"release cycles\">",
+                "/dependencies/react?version=18", "<table id=\"affected-branches-table\" data-preference-key=\"affected code repo branches\">",
+                "/imports", "<table id=\"import-history-table\" data-preference-key=\"import runs\" data-noun=\"import runs\">",
+                "/repos/" + main + "/history", "<table id=\"snapshot-timeline-table\" data-preference-key=\"snapshots\" data-noun=\"snapshots\">");
+        preferenceKeys.forEach((url, tag) -> {
+            try { assertThat(page(url)).as(url).contains(tag); } catch (Exception e) { throw new AssertionError(url, e); }
+        });
+        for (String url : List.of("/", "/repos", "/repos/" + main)) assertThat(page(url)).as(url).doesNotContain("data-preference-key");
     }
 
     @Test

@@ -257,7 +257,7 @@ function initColumnOrder(table) {
   table.querySelectorAll('colgroup').forEach(function (group) {
     if (group.children.length === cells.length) groups.push(Array.prototype.slice.call(group.children));
   });
-  var storageKey = 'eol-ledger.table-order.v1.' + encodeURIComponent(table.dataset.dependencyTable || table.id || tableNoun(table));
+  var storageKey = 'eol-ledger.table-order.v1.' + encodeURIComponent(table.dataset.dependencyTable || prefsId(table));
   var order = columnOrder(tableStorage('getItem', null, storageKey), keys);
   function apply() {
     groups.forEach(function (nodes) {
@@ -1092,6 +1092,11 @@ function initTable(table, opts) {
   applyView();
 }
 
+/** Browser-local preference identity: an explicit data-preference-key (a former noun kept when a table gained an id), else its id, else its noun. */
+function prefsId(t) {
+  return t.getAttribute('data-preference-key') || t.id || tableNoun(t);
+}
+
 /** "3 of 4 code repo branches": the table's data-noun, else its region label in lower case, else "rows". */
 function tableNoun(t) {
   var region = t.closest && t.closest('[aria-label]');
@@ -1114,7 +1119,7 @@ function visibilityPrefs(text, keys) {
 
 function visibilityKey(table) {
   // Table roles (not record URLs or DOM order) also share preferences across branch/product detail pages.
-  return 'eol-ledger.table-columns.v1.' + encodeURIComponent(table.id || tableNoun(table));
+  return 'eol-ledger.table-columns.v1.' + encodeURIComponent(prefsId(table));
 }
 
 function visibilityStorage(table, method, value) {
@@ -1212,7 +1217,7 @@ function storedWidths(text, id) {
 function initResize(table) {
   var head = table.tHead && table.tHead.rows[0];
   if (!head || !head.cells.length || !table.offsetWidth) return null;
-  var id = table.id || tableNoun(table);
+  var id = prefsId(table);
   var cells = table.columnLayout ? table.columnLayout.cells : Array.prototype.slice.call(head.cells);
   var natural = cells.map(function (c) { return Math.round(c.getBoundingClientRect().width); });
   var saved = storedWidths(tableStorage('getItem', null, WIDTHS_KEY), id);
