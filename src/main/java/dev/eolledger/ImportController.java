@@ -22,7 +22,6 @@ import org.springframework.web.servlet.view.RedirectView;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.function.Supplier;
 
 @Controller
 public class ImportController {
@@ -67,7 +66,12 @@ public class ImportController {
         if (file == null || file.isEmpty()) return fail(List.of("Choose a dependency-inventory JSON file to upload."), model, response);
         String text = new String(file.getBytes(), StandardCharsets.UTF_8);
         String source = "upload " + safeName(file.getOriginalFilename());
-        return run(() -> imports.importJson(text, source), model, response, flash);
+        try {
+            flash.addFlashAttribute("message", imports.importJson(text, source).message());
+            return seeOther();
+        } catch (ImportService.ImportFailedException e) {
+            return fail(e.errors(), model, response);
+        }
     }
 
     @PostMapping("/catalog/sync")
@@ -99,15 +103,6 @@ public class ImportController {
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(name).build().toString())
                 .body(ImportService.sample(name));
-    }
-
-    private Object run(Supplier<ImportService.Result> action, Model model, HttpServletResponse response, RedirectAttributes flash) {
-        try {
-            flash.addFlashAttribute("message", action.get().message());
-            return seeOther();
-        } catch (ImportService.ImportFailedException e) {
-            return fail(e.errors(), model, response);
-        }
     }
 
     private String fail(List<String> errors, Model model, HttpServletResponse response) {

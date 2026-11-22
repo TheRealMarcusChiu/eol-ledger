@@ -312,8 +312,12 @@ public class Ledger {
 
     /** The JSON-upload provenance of a snapshot, or null for SBOM-fetched snapshots. */
     public Inline inline(long snapshotId) {
-        String payload = db.sql("SELECT payload FROM snapshot_inventory WHERE snapshot_id = ?").param(snapshotId).query(String.class).optional().orElse(null);
+        String payload = payload(snapshotId);
         return payload == null ? null : parseInline(snapshotId, payload);
+    }
+
+    private String payload(long snapshotId) {
+        return db.sql("SELECT payload FROM snapshot_inventory WHERE snapshot_id = ?").param(snapshotId).query(String.class).optional().orElse(null);
     }
 
     private Inline parseInline(long snapshotId, String payload) {
@@ -350,7 +354,7 @@ public class Ledger {
     /** App ID declared by this snapshot's JSON upload; null for CSV/SBOM snapshots, no snapshot, or none stated. Never falls back to older snapshots. */
     public String appId(Long snapshotId) {
         if (snapshotId == null) return null;
-        String payload = db.sql("SELECT payload FROM snapshot_inventory WHERE snapshot_id = ?").param(snapshotId).query(String.class).optional().orElse(null);
+        String payload = payload(snapshotId);
         if (payload == null) return null;
         // stream only the top-level fields: payload keys are sorted, so appId comes before the (large) dependencies array
         try (JsonParser p = InventoryJson.JSON.createParser(payload)) {
