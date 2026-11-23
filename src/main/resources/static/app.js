@@ -127,7 +127,7 @@ function initColumns(table, settings) {
   var prefs = tablePrefs(tableStorage('getItem', null, storageKey));
   var list = settings.querySelector('.col-settings');
 
-  var col = {}, th = {}, toggle = {}, width = {}, handle = {}, drawn = {};
+  var col = {}, th = {}, toggle = {}, handle = {}, drawn = {};
 
   function headerMin(key) { return headerFloor(th[key]); }
 
@@ -145,7 +145,6 @@ function initColumns(table, settings) {
       col[key].style.width = th[key].style.width = w + 'px';
       toggle[key].checked = p.visible;
       toggle[key].disabled = p.visible && shown.length === 1; // at least one column stays visible
-      width[key].value = w;
       handle[key].setAttribute('aria-valuenow', w);
       if (p.visible) total += w;
     });
@@ -183,19 +182,7 @@ function initColumns(table, settings) {
     box.setAttribute('data-column-toggle', key);
     box.addEventListener('change', function () { prefs[key].visible = box.checked; apply(); save(); });
     show.append(box, ' ' + label);
-    var size = document.createElement('label');
-    var hint = document.createElement('span');
-    hint.className = 'sr-only';
-    hint.textContent = label + ' ';
-    var num = width[key] = document.createElement('input');
-    num.type = 'number';
-    num.min = MIN_WIDTH;
-    num.max = MAX_WIDTH;
-    num.step = 1;
-    num.setAttribute('data-column-width', key);
-    num.addEventListener('change', function () { resize(key, num.valueAsNumber); save(); });
-    size.append(hint, 'width (px) ', num);
-    row.append(show, size);
+    row.append(show);
     list.appendChild(row);
   });
 
@@ -975,8 +962,9 @@ function initTable(table, opts) {
       sortButtons[k].lastChild.textContent = sort && sort.key === k ? (sort.dir === 'asc' ? '↑' : '↓') : '↕';
     });
     if (n !== null) {
-      count.textContent = n + ' of ' + (server ? total : trs.length) + ' ' + noun
-        + (active.length ? ' · filtered by ' + active.map(function (k) { return labels[k]; }).join(', ') : '');
+      count.textContent = active.length
+        ? n + ' matching ' + noun + ' of ' + (server ? total : trs.length) + ' · filtered by ' + active.map(function (k) { return labels[k]; }).join(', ')
+        : n + ' of ' + (server ? total : trs.length) + ' ' + noun;
     }
     var sortMoved = defaultSort ? !(sort && sort.key === defaultSort.key && sort.dir === defaultSort.dir) : !!sort;
     clearAll.hidden = !active.length && !sortMoved;

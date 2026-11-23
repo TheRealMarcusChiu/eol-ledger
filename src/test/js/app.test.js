@@ -1353,6 +1353,62 @@ test('table settings: an icon-only gear named "Table settings" sits right after 
   assert.ok(s.querySelector('svg'));
 });
 
+test('the count says "matching" while a filter is active; zero matches too; clearing restores the plain wording', () => {
+  const { ctx } = viewDom('https://x.test/repos');
+  const t = viewTable('code-repos-table');
+  ctx.initTable(t.table);
+  const count = () => t.q('[data-filter-count]').textContent;
+  assert.strictEqual(count(), '25 of 25 rows');
+  // a filter that keeps all 25 rows: still a filtered result, of which page 1 shows 20
+  t.q('[data-filter-mode="count"]').value = 'range';
+  t.q('[data-filter-mode="count"]').emit('change');
+  t.q('[data-filter-start="count"]').value = '1';
+  t.q('[data-filter-start="count"]').emit('input');
+  assert.strictEqual(count(), '25 matching rows of 25 · filtered by COUNT');
+  assert.strictEqual(t.shown().length, 20);
+  t.q('[data-filter-select-none="name"]').emit('click');
+  assert.strictEqual(count(), '0 matching rows of 25 · filtered by NAME, COUNT');
+  assert.strictEqual(t.shown().length, 0);
+  t.q('[data-filters-clear-all]').emit('click');
+  assert.strictEqual(count(), '25 of 25 rows');
+});
+
+test('dependency table settings list only show/hide checkboxes (no width fields); header resizers still resize and save widths', () => {
+  const { win, ctx } = viewDom('https://x.test/');
+  const keys = vm.runInContext('Object.keys(TABLE_COLUMNS)', ctx);
+  const table = new FakeEl('table'), group = new FakeEl('colgroup'), thead = new FakeEl('thead'), head = new FakeEl('tr'), tbody = new FakeEl('tbody');
+  table.dataset.dependencyTable = 'dashboard';
+  keys.forEach(k => {
+    const c = new FakeEl('col'), th = new FakeEl('th');
+    c.setAttribute('data-column', k);
+    th.setAttribute('data-column', k);
+    th.append(k.toUpperCase());
+    group.append(c);
+    head.append(th);
+  });
+  thead.append(head);
+  table.append(group, thead, tbody);
+  const settings = new FakeEl('details'), list = new FakeEl('div'), reset = new FakeEl('button');
+  list.className = 'col-settings';
+  reset.setAttribute('data-columns-reset', '');
+  settings.append(list, reset);
+  ctx.initColumns(table, settings);
+
+  const inputs = settings.querySelectorAll('input');
+  assert.strictEqual(inputs.length, keys.length, 'one control per column');
+  assert.ok(inputs.every(i => i.type === 'checkbox' && i.hasAttribute('data-column-toggle')), 'only show/hide checkboxes');
+  assert.strictEqual(settings.querySelectorAll('[data-column-width]').length, 0, 'no numeric width fields');
+  assert.doesNotMatch(settings.textContent, /width \(px\)/);
+
+  const th = head.cells[0], handle = th.querySelector('[data-column-resize]');
+  assert.ok(handle, 'every header keeps its resize handle');
+  const before = parseInt(th.style.width, 10);
+  handle.emit('keydown', { key: 'ArrowRight' });
+  assert.strictEqual(parseInt(th.style.width, 10), before + 10);
+  assert.strictEqual(handle.getAttribute('aria-valuenow'), String(before + 10));
+  assert.strictEqual(JSON.parse(win.storage.get('eol-ledger.dependencies-table.v1')).columns[keys[0]].width, before + 10, 'the dragged width is saved');
+});
+
 test('rows per page: a custom size restores from a copied URL, and malformed sizes there fall back to 20', () => {
   for (const [size, shown, status] of [[37, 25, 'Page 1 of 1'], [7, 7, 'Page 1 of 4'], [7.5, 20, 'Page 1 of 2'], [0, 20, 'Page 1 of 2'], [1001, 20, 'Page 1 of 2']]) {
     const { ctx } = viewDom('https://x.test/repos?view.code-repos-table=' + encodeURIComponent(JSON.stringify({ v: 1, size })));

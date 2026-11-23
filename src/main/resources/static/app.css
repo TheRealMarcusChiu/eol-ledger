@@ -624,7 +624,7 @@ th[data-filter-active="true"] .th-filter { background: var(--accent); color: var
 .filter-error { color: var(--ended-ink); margin: 0; font-size: .76rem; }
 .filter-error:empty { display: none; }
 
-/* Table column settings (show/hide; dashboard also has numeric widths). */
+/* Table column settings (show/hide; widths come from the header resize handles). */
 #table-settings, .table-settings { margin: 0 0 .9rem; }
 /* Docked in the filter toolbar (app.js placeSettings): the count takes the slack so Clear all and the gear sit together at the right. */
 .filter-bar [data-filter-count] { margin-right: auto; }
@@ -643,7 +643,6 @@ th[data-filter-active="true"] .th-filter { background: var(--accent); color: var
 .col-settings { display: flex; flex-direction: column; gap: .5rem; margin: .8rem 0 1rem; }
 .col-setting { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem 1.5rem; color: var(--ink-2); }
 .col-setting label { display: inline-flex; align-items: center; gap: .5rem; }
-.col-setting input[type="number"] { width: 6rem; min-height: 2rem; padding: .3rem .5rem; }
 table.cols-sized { table-layout: fixed; min-width: 0; }
 /* Headers never wrap: the column name, its sort arrow and its filter button stay on one line (app.js widens a column to fit). */
 th, th .th-sort { white-space: nowrap; }
