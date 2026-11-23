@@ -28,6 +28,9 @@
 
   load();
   apply();
+  // Tables stream in long before deferred app.js pages them: app.css shows only a first page until each table is ready.
+  root.setAttribute('data-tables-pending', '');
+  if (window.addEventListener) window.addEventListener('load', function () { root.removeAttribute('data-tables-pending'); });
   if (media && media.addEventListener) media.addEventListener('change', function () { if (prefs.mode === 'system') apply(); });
 
   window.EolAppearance = {

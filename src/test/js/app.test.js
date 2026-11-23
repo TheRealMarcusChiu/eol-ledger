@@ -1359,3 +1359,36 @@ test('dashboard: legacy start/end/sort seed the view when it has no param; an ex
   assert.deepStrictEqual([...reload.searchParams], [['keep', '1']]);
   assert.strictEqual(reload.pathname, '/');
 });
+
+const css = fs.readFileSync(path.join(__dirname, '../../main/resources/static/app.css'), 'utf8');
+const themeSource = fs.readFileSync(path.join(__dirname, '../../main/resources/static/theme.js'), 'utf8');
+
+test('pre-paint gate: theme.js (synchronous, JS only) marks tables pending; app.css shows at most the first page until a table is ready', () => {
+  const root = new FakeEl('html'), win = new FakeEl('window');
+  win.localStorage = { getItem() { return null; }, setItem() {} };
+  vm.runInContext(themeSource, vm.createContext({ window: win, document: { documentElement: root } }));
+  assert.strictEqual(root.hasAttribute('data-tables-pending'), true, 'set while the streamed HTML is still parsing');
+  win.emit('load');
+  assert.strictEqual(root.hasAttribute('data-tables-pending'), false, 'a page whose app.js never ran shows every row after load');
+  const ctx = load();
+  assert.strictEqual(vm.runInContext('PAGE_SIZES[0]', ctx), 20);
+  assert.match(css, /html\[data-tables-pending\] main table:not\(\[data-table-ready\]\) > tbody > tr:nth-child\(n \+ 21\) \{ display: none; \}/);
+});
+
+test('a table is marked ready only after its restored URL view (20/50/100 per page) is drawn; empty tables too', () => {
+  for (const [size, shown, status] of [[null, 20, 'Page 1 of 2'], [20, 20, 'Page 1 of 2'], [50, 25, 'Page 1 of 1'], [100, 25, 'Page 1 of 1']]) {
+    const href = 'https://x.test/repos' + (size ? '?view.code-repos-table=' + encodeURIComponent(JSON.stringify({ v: 1, size })) : '');
+    const { ctx } = viewDom(href);
+    const t = viewTable('code-repos-table');
+    let atReady = null;
+    const set = t.table.setAttribute.bind(t.table);
+    t.table.setAttribute = (n, v) => { if (n === 'data-table-ready') atReady = [t.shown().length, t.status(), t.q('[data-page-size]').value]; set(n, v); };
+    ctx.initTable(t.table);
+    assert.deepStrictEqual(atReady, [shown, status, String(size || 20)], 'size ' + size + ': the gate lifts on the restored page, never before');
+  }
+  const { ctx } = viewDom('https://x.test/repos');
+  const e = viewTable('empty-table');
+  e.table.tBodies[0].childNodes.length = 0;
+  ctx.initTable(e.table);
+  assert.strictEqual(e.table.hasAttribute('data-table-ready'), true);
+});

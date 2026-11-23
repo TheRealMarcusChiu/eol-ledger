@@ -662,7 +662,7 @@ function initTable(table, opts) {
   opts = opts || {};
   var head = table.tHead && table.tHead.rows[0];
   var tbody = table.tBodies[0];
-  if (!head || !tbody) return;
+  if (!head || !tbody) return table.setAttribute('data-table-ready', ''); // not paged: nothing to gate
   var trs = Array.prototype.filter.call(tbody.rows, function (tr) { return !tr.hasAttribute('data-empty') && !tr.querySelector('td.empty'); });
   var uid = 't' + (++tableSeq);
   var noun = opts.noun || 'rows';
@@ -722,7 +722,7 @@ function initTable(table, opts) {
   next.addEventListener('click', function () { turn(1, next, prev); });
   sizeSelect.addEventListener('change', function () { size = Number(sizeSelect.value); page = 1; draw(); });
   draw();
-  if (!trs.length) return; // nothing to sort or filter; the page's own empty message stays
+  if (!trs.length) return table.setAttribute('data-table-ready', ''); // nothing to sort or filter; the page's own empty message stays
 
   var cols = Array.prototype.map.call(head.cells, function (cell, i) {
     return { th: cell, index: i, key: cell.getAttribute('data-column') || 'c' + i, type: cell.getAttribute('data-type') || 'text' };
@@ -1090,6 +1090,7 @@ function initTable(table, opts) {
 
   if (param) window.addEventListener('popstate', function () { close(false); applyView(); });
   applyView();
+  table.setAttribute('data-table-ready', ''); // lifts the app.css first-page gate now the restored view is drawn
 }
 
 /** Browser-local preference identity: an explicit data-preference-key (a former noun kept when a table gained an id), else its id, else its noun. */

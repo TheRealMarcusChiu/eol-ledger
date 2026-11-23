@@ -493,6 +493,8 @@ form.inline { display: inline; }
 .pager { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin: .7rem 0 1.4rem; }
 .pager label { display: inline-flex; align-items: center; gap: .5rem; margin-right: auto; }
 .pager button:disabled { opacity: .4; cursor: default; pointer-events: none; }
+/* theme.js sets the flag, app.js marks each table ready after its restored view; at most PAGE_SIZES[0] rows paint before that. */
+html[data-tables-pending] main table:not([data-table-ready]) > tbody > tr:nth-child(n + 21) { display: none; }
 
 .table-wrap {
   overflow-x: auto;
