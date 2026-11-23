@@ -89,19 +89,26 @@ class ClearDataAndSyncTest extends WebTestBase {
     }
 
     @Test
-    void clearWaitsForAnInFlightImportOrCatalogueSync() throws Exception {
-        for (Object monitor : java.util.List.of(imports, catalog)) {
-            seed();
-            Thread clearer = new Thread(imports::clearAll);
-            // holding the monitor stands in for importJson / sync(List) running
-            synchronized (monitor) {
-                clearer.start();
-                while (clearer.getState() != Thread.State.BLOCKED) Thread.sleep(5);
-                assertThat(count("repo_branch")).isEqualTo(3);
-                assertThat(count("product")).isEqualTo(3);
-            }
-            clearer.join(10_000);
-            assertThat(counts().values()).allMatch(n -> n == 0);
+    void clearWaitsForAnInFlightImportButRefusesARunningCatalogueSync() throws Exception {
+        seed();
+        Thread clearer = new Thread(imports::clearAll);
+        // holding the monitor stands in for importJson running
+        synchronized (imports) {
+            clearer.start();
+            while (clearer.getState() != Thread.State.BLOCKED) Thread.sleep(5);
+            assertThat(count("repo_branch")).isEqualTo(3);
+            assertThat(count("product")).isEqualTo(3);
+        }
+        clearer.join(10_000);
+        assertThat(counts().values()).allMatch(n -> n == 0);
+        // a running sync (its work gate held) is never waited for: the clear fails at once and deletes nothing
+        seed();
+        assertThat(catalog.beginWork()).isTrue();
+        try {
+            org.assertj.core.api.Assertions.assertThatThrownBy(imports::clearAll).isInstanceOf(ImportService.ImportFailedException.class);
+            assertThat(count("product")).isEqualTo(3);
+        } finally {
+            catalog.endWork();
         }
     }
 

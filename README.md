@@ -135,6 +135,44 @@ mvn test -Dtest='MySqlStorageTest'
 The URL names the server only (no database). Each run creates one new `eol_test_<random>` database,
 uses only that, and drops only that database at the end. It never touches other databases.
 
+## Dashboard paging and catalogue sync
+
+**EoL Dependencies is paged in the database.** The page and `GET /api/dashboard?view=<state>` read the table
+`dash_row`, a read model with one row per catalogue release cycle (used or not). Each row holds every column's cell
+value exactly as the table filters it (`c_*`) and a natural-order rank for text columns (`r_*`, "3.9" before "3.10",
+case-insensitive, blank last). Counts, filters, sorting and `LIMIT ? OFFSET ?` all run as parameterized SQL. The page
+renders only the current page (20 by default, or 50/100). `<state>` is the same `?view.dependencies-table` JSON the
+address bar holds. The model is rebuilt from the catalogue and the latest snapshots whenever their row counts, newest
+snapshot, last product sync time or the day change. While a sync runs, it is rebuilt at most every 3 s.
+
+| Column | Filter value | Values / text | Range | Sort |
+|---|---|---|---|---|
+| purl, ecosystem, dependency, context, cycle, evidence, source, sbom, status | `c_<col>` | `IN`/`NOT IN`; `LOWER(c) LIKE ? ESCAPE '!'`, `=`, `<>`, `TRIM(c)=''` | rank bounds (`r_<col> BETWEEN`) | `r_<col>`, then `ord` |
+| version | `c_version` | same | rank bounds | `r_version`, `ord` |
+| eol | `c_eol` (`YYYY-MM-DD` or blank) | same | `eol_from` (index `dash_row_eol`) | `ord` (asc) / `eol_from` |
+| repos, branches | `c_repos`, `c_branches` | same on their text | numeric (indexes `dash_row_repos`, `dash_row_branches`) | column, `ord` |
+
+Indexes: `dash_row_ord` (the default page), `dash_row_eol`, `dash_row_repos`, `dash_row_branches`. H2 creates them
+with `CREATE INDEX IF NOT EXISTS`. MySQL declares them inside `CREATE TABLE IF NOT EXISTS`, because MySQL 8 has no
+`CREATE INDEX IF NOT EXISTS`.
+
+Some queries still scan rather than use an index:
+* Contains, ends-with and other `LIKE '%…'` text filters cannot use a B-tree index. They scan `dash_row`, which has
+  about one row per catalogue cycle.
+* Sorting by a ranked text column sorts in the database.
+* A text or version range first reads that column's distinct values to map the bounds onto ranks.
+* Fuzzy filters cannot be written in SQL. They read the ordered key plus that column for the rows the other
+  filters leave, then match in Java.
+
+A column's Values list (`GET /api/dashboard/values?column=<key>`) is loaded when its filter menu first opens.
+
+**Catalogue sync runs in the background.** **Sync catalogue now** calls `POST /catalog/sync/start`, which returns
+`202`, or `409` when a sync or clear is already running. The page then polls `GET /catalog/sync/status`, which
+reports `running`, `phase`, products done/total, release cycles done/total, the current product and the terminal
+result. A reload resumes polling. Without scripts, the form posts to `/catalog/sync` and waits. Only one sync or clear
+runs at a time. A second manual or scheduled sync is refused, and **Clear all data** is refused with a visible message
+while a sync runs. The network fetch holds no database lock.
+
 ## Dependency inventory JSON
 
 A `.json` upload on the Imports page carries each branch's resolved dependencies itself. The root is an array with one object per repository branch:

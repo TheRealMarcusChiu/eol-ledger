@@ -32,7 +32,8 @@ class DashboardTest extends WebTestBase {
         assertThat(rows(html)).isEqualTo(rows(page("/?unused=true")));
         assertThat(html).doesNotContain("release cycles in use");
         // blank initial state: no bounds, no today, empty row hidden
-        assertThat(html).contains("<table id=\"dependencies-table\" data-sort=\"asc\" data-legacy=\"false\" data-dependency-table=\"dashboard\">", "<tr data-empty hidden=\"hidden\">")
+        assertThat(html).contains("<table id=\"dependencies-table\" data-sort=\"asc\" data-legacy=\"false\" data-dependency-table=\"dashboard\""
+                        + " data-server=\"/api/dashboard\" data-total=\"7\" data-matching=\"7\" data-sync-running=\"false\">", "<tr data-empty hidden=\"hidden\">")
                 .doesNotContain(" value=\"2026-11-20\"");
         assertThat(rows(html)).isEqualTo(rows(page("/?start=&end=")));
     }
@@ -94,10 +95,12 @@ class DashboardTest extends WebTestBase {
     void emptyTableRowSpansAllColumns() throws Exception {
         String html = page("/?start=2000-01-01&end=2000-01-02&unused=false");
         assertThat(html).contains("<tr data-empty>\n                <td colspan=\"13\" class=\"empty\">No dependency versions match.</td>");
-        assertThat(shown(html)).isEmpty();
-        assertThat(rows(html)).hasSize(5);
-        assertThat(shown(page("/?start=2000-01-01&end=2000-01-02"))).isEmpty();
-        assertThat(rows(page("/?start=2000-01-01&end=2000-01-02"))).hasSize(7);
+        // the legacy bounds are applied in SQL: only matching rows are rendered, with whole-result counts on the table
+        assertThat(rows(html)).isEmpty();
+        assertThat(html).contains("data-total=\"5\" data-matching=\"0\"");
+        String all = page("/?start=2000-01-01&end=2000-01-02");
+        assertThat(rows(all)).isEmpty();
+        assertThat(all).contains("data-total=\"7\" data-matching=\"0\"");
     }
 
     @Test
@@ -129,10 +132,13 @@ class DashboardTest extends WebTestBase {
     }
 
     @Test
-    void legacyFilteredLinkRendersTheFullRowSetSoClearingRestoresEverything() throws Exception {
+    void legacyFilteredLinkBecomesTheInitialServerFilterAndKeepsTheWholeTotal() throws Exception {
         String html = page("/?start=2026-11-20&end=2026-11-20&sort=desc");
-        // hidden, not dropped: app.js turns the bounds into the EoL date header filter and can clear it in place
-        assertThat(rows(html)).containsExactlyInAnyOrderElementsOf(rows(page("/")));
+        // only the matching page is rendered; app.js turns the same bounds into the EoL date header filter, and clearing it fetches every row
+        assertThat(rows(html)).containsExactly("data-row=\"python 3.10\"");
+        assertThat(html).contains("data-total=\"7\" data-matching=\"1\"");
+        // an explicit view param wins over the legacy bounds
+        assertThat(rows(page("/?start=2026-11-20&end=2026-11-20&view.dependencies-table=%7B%22v%22%3A1%7D"))).hasSize(7);
         assertThat(html).contains("data-start=\"2026-11-20\" data-end=\"2026-11-20\" data-sort=\"desc\" data-legacy=\"true\"");
         // ?unused=true is now the default view; only an explicit used-only link holds fewer rows than the default
         assertThat(page("/?unused=true")).contains("data-legacy=\"false\"", "data-row=\"react 19\"");

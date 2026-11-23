@@ -78,6 +78,33 @@ CREATE TABLE IF NOT EXISTS snapshot_inventory (
     CONSTRAINT fk_snapshot_inventory_snapshot FOREIGN KEY (snapshot_id) REFERENCES snapshot (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
 
+-- Dashboard read model (see schema.sql). MySQL 8 has no CREATE INDEX IF NOT EXISTS, so its indexes are declared inline.
+CREATE TABLE IF NOT EXISTS dash_row (
+    product VARCHAR(200) NOT NULL,
+    cycle VARCHAR(200) NOT NULL,
+    ord INT NOT NULL,
+    c_purl MEDIUMTEXT NOT NULL, r_purl INT,
+    c_ecosystem MEDIUMTEXT NOT NULL, r_ecosystem INT,
+    c_dependency MEDIUMTEXT NOT NULL, r_dependency INT,
+    c_version MEDIUMTEXT NOT NULL, r_version INT,
+    c_eol VARCHAR(10) NOT NULL, eol_from DATE,
+    c_status VARCHAR(200) NOT NULL, r_status INT, status_css VARCHAR(20) NOT NULL,
+    c_repos INT NOT NULL,
+    c_branches INT NOT NULL,
+    c_context MEDIUMTEXT NOT NULL, r_context INT,
+    c_cycle MEDIUMTEXT NOT NULL, r_cycle INT,
+    c_evidence MEDIUMTEXT NOT NULL, r_evidence INT,
+    c_source MEDIUMTEXT NOT NULL, r_source INT,
+    c_sbom MEDIUMTEXT NOT NULL, r_sbom INT,
+    matching MEDIUMTEXT NOT NULL,
+    links LONGTEXT NOT NULL,
+    PRIMARY KEY (product, cycle),
+    UNIQUE KEY dash_row_ord (ord),
+    KEY dash_row_eol (eol_from, ord),
+    KEY dash_row_repos (c_repos, ord),
+    KEY dash_row_branches (c_branches, ord)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+
 CREATE TABLE IF NOT EXISTS import_run (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     ran_at DATETIME(6) NOT NULL,

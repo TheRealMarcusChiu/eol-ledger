@@ -103,7 +103,9 @@
             <dt>Schedule</dt>
             <dd><code th:text="${catalogCron == '-'} ? 'disabled' : ${catalogCron}">cron</code></dd>
         </dl>
-        <form method="post" th:action="@{/catalog/sync}" class="form-gap"><button type="submit">Sync catalogue now</button></form>
+        <form method="post" th:action="@{/catalog/sync}" class="form-gap" data-sync-form
+              th:attr="data-sync-running=${syncRunning}"><button type="submit">Sync catalogue now</button></form>
+        <p data-sync-status role="status" aria-live="polite"></p>
         <details class="help">
             <summary>Help</summary>
             <p>A failed sync keeps the previously synced dates; each product is replaced only when its new data parsed completely.</p>

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -22,6 +23,7 @@ import org.springframework.web.servlet.view.RedirectView;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 public class ImportController {
@@ -53,6 +55,7 @@ public class ImportController {
         model.addAttribute("catalogBase", props.catalog().baseUrl());
         model.addAttribute("catalogMode", "whole catalogue (one request to /products/full)");
         model.addAttribute("catalogCron", catalogCron);
+        model.addAttribute("syncRunning", catalog.active());
         model.addAttribute("registered", db.sql("SELECT count(*) FROM repo_branch").query(Integer.class).single());
         model.addAttribute("runs", db.sql("SELECT ran_at, source, ok, rows_total, new_snapshots, message FROM import_run ORDER BY id DESC LIMIT 25")
                 .query((rs, i) -> new Run(time.read(rs, "ran_at"), rs.getString(2), rs.getBoolean(3),
@@ -73,11 +76,26 @@ public class ImportController {
         }
     }
 
+    /** No-script fallback: runs the sync in this request, then 303 back to Imports. */
     @PostMapping("/catalog/sync")
     RedirectView sync(RedirectAttributes flash) {
         CatalogService.SyncResult r = catalog.sync();
         flash.addFlashAttribute(r.ok() ? "message" : "warning", r.message());
         return seeOther();
+    }
+
+    /** The browser's sync: 202 once the background job started, 409 when a sync or clear is already active. */
+    @PostMapping("/catalog/sync/start")
+    ResponseEntity<Map<String, Object>> startSync() {
+        boolean started = catalog.startAsync();
+        return ResponseEntity.status(started ? HttpStatus.ACCEPTED : HttpStatus.CONFLICT)
+                .body(Map.of("started", started, "status", catalog.progress()));
+    }
+
+    @GetMapping("/catalog/sync/status")
+    @ResponseBody
+    CatalogService.Progress syncStatus() {
+        return catalog.progress();
     }
 
     @PostMapping("/imports/clear")

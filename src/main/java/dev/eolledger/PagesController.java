@@ -2,11 +2,13 @@ package dev.eolledger;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -25,21 +27,24 @@ public class PagesController {
 
     private final Ledger ledger;
     private final CatalogService catalog;
+    private final DashboardQuery dashboard;
 
-    public PagesController(Ledger ledger, CatalogService catalog) {
+    public PagesController(Ledger ledger, CatalogService catalog, DashboardQuery dashboard) {
         this.ledger = ledger;
         this.catalog = catalog;
+        this.dashboard = dashboard;
     }
 
     /**
      * Default view: every synced catalogue release cycle, used or not, with no date bounds (past, future and unknown EoL
      * dates); installed packages without a cycle stay a count. {@code ?unused=false} lists used cycles only.
-     * Legacy start/end/sort links still work: every row is rendered, out-of-range ones carry {@code hidden}, and app.js
-     * takes the same bounds as its initial header filter, so clearing it restores the full list without a reload.
+     * Only the current page is rendered, queried from SQL with the ?view.dependencies-table state (or a legacy link's
+     * start/end/sort as the initial EoL filter and sort); app.js then fetches further pages from /api/dashboard.
      */
     @GetMapping("/")
     String dashboard(@RequestParam(required = false) String start, @RequestParam(required = false) String end,
                      @RequestParam(defaultValue = "asc") String sort, @RequestParam(defaultValue = "true") boolean unused,
+                     @RequestParam(name = "view.dependencies-table", required = false) String view,
                      Model model, HttpServletResponse response) {
         String startText = start == null ? "" : start.trim();
         String endText = end == null ? "" : end.trim();
@@ -66,13 +71,47 @@ public class PagesController {
             model.addAttribute("rows", java.util.List.of());
             return "dashboard";
         }
-        Ledger.Dashboard dash = ledger.dashboard(null, null, desc, unused);
-        List<Ledger.DashRow> rows = dash.rows();
-        model.addAttribute("rows", rows);
-        model.addAttribute("hiddenRows", rows.stream().filter(r -> !Ledger.inRange(r.cycle().eolFrom(), from, to))
-                .map(r -> r.cycle().key()).collect(Collectors.toSet()));
-        model.addAttribute("unmatched", dash.unmatched());
+        if (view == null && (from != null || to != null || desc)) {
+            Map<String, Object> legacy = new HashMap<>(Map.of("v", 1));
+            if (from != null || to != null) legacy.put("filters", Map.of("eol", Map.of("mode", "range",
+                    "startText", from == null ? "" : from.toString(), "endText", to == null ? "" : to.toString())));
+            if (desc) legacy.put("sort", Map.of("key", "eol", "dir", "desc"));
+            view = InventoryJson.JSON.valueToTree(legacy).toString();
+        }
+        DashboardQuery.Page page;
+        try {
+            page = dashboard.page(view, !unused);
+        } catch (IllegalArgumentException e) {
+            response.setStatus(HttpStatus.BAD_REQUEST.value());
+            model.addAttribute("error", e.getMessage());
+            model.addAttribute("rows", List.of());
+            return "dashboard";
+        }
+        model.addAttribute("rows", page.rows());
+        model.addAttribute("page", page);
+        model.addAttribute("api", unused ? "/api/dashboard" : "/api/dashboard?unused=false");
+        model.addAttribute("syncRunning", catalog.active());
+        model.addAttribute("unmatched", dashboard.unmatched());
         return "dashboard";
+    }
+
+    /** One page of the dashboard as JSON: whole-result counts plus only the requested rows. */
+    @GetMapping("/api/dashboard")
+    @ResponseBody
+    ResponseEntity<?> dashboardPage(@RequestParam(required = false) String view, @RequestParam(defaultValue = "true") boolean unused) {
+        try {
+            return ResponseEntity.ok(dashboard.page(view, !unused));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /** One column's distinct values over the whole table, for its Values filter list. */
+    @GetMapping("/api/dashboard/values")
+    @ResponseBody
+    ResponseEntity<?> dashboardValues(@RequestParam String column, @RequestParam(defaultValue = "true") boolean unused) {
+        if (!DashboardQuery.KEYS.contains(column)) return ResponseEntity.badRequest().body(Map.of("error", "Unknown column"));
+        return ResponseEntity.ok(dashboard.values(column, !unused));
     }
 
     /** Old links (/products/{product}?cycle=...) moved permanently to /dependencies/{product}?version=... */

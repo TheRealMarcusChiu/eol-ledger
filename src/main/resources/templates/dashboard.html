@@ -29,21 +29,20 @@
     <th:block th:unless="${error}">
     <th:block th:replace="~{fragments :: dependencyTable(~{dashboard :: dashboardRows}, true)}">
             <tbody th:fragment="dashboardRows">
-            <tr th:each="r : ${rows}" th:with="href=@{/dependencies/{p}(p=${r.cycle().product()},version=${r.cycle().name()})}"
-                th:attr="data-row=${r.cycle().key()},data-repos=${r.repos()},data-branches=${r.branches()},data-href=${href}"
-                th:hidden="${hiddenRows.contains(r.cycle().key())}">
-                <td data-column="purl" th:text="${r.purls()}"></td>
-                <td data-column="ecosystem" th:text="${r.ecosystems()}"></td>
-                <td data-column="dependency" th:attr="data-value=${r.names()}"><a th:href="${href}" th:text="${r.names()}">Python</a></td>
-                <td data-column="version" th:attr="data-value=${r.versions()}" th:text="${r.inventory().isEmpty() ? 'Not installed' : r.versions()}">3.10.5</td>
-                <td data-column="eol" class="date" data-value="" th:attrappend="data-value=${r.cycle().eolFrom()}" th:text="${r.cycle().eolFrom() ?: 'Not published'}">2026-10-31</td>
-                <td data-column="status" th:attr="data-value=${r.eol().text()}" th:insert="~{fragments :: eol(${r.eol()})}"></td>
+            <tr th:each="r : ${rows}" th:with="href=@{/dependencies/{p}(p=${r.product()},version=${r.cycle()})}"
+                th:attr="data-row=${r.key()},data-repos=${r.repos()},data-branches=${r.branches()},data-href=${href}">
+                <td data-column="purl" th:text="${r.purl()}"></td>
+                <td data-column="ecosystem" th:text="${r.ecosystem()}"></td>
+                <td data-column="dependency" th:attr="data-value=${r.dependency()}"><a th:href="${href}" th:text="${r.dependency()}">Python</a></td>
+                <td data-column="version" th:attr="data-value=${r.version()}" th:text="${r.versionText()}">3.10.5</td>
+                <td data-column="eol" class="date" data-value="" th:attrappend="data-value=${r.eol()}" th:text="${r.eolText()}">2026-10-31</td>
+                <td data-column="status" th:attr="data-value=${r.status()}"><span class="eol" th:classappend="${'eol-' + r.statusCss()}" th:text="${r.status()}">status</span></td>
                 <td data-column="repos" class="num" th:attr="data-value=${r.repos()}" th:text="${r.repos()}">1</td>
                 <td data-column="branches" class="num" th:attr="data-value=${r.branches()}" th:text="${r.branches()}">1</td>
-                <td data-column="context" th:text="${r.contexts()}"></td>
-                <td data-column="cycle" th:text="${r.cycle().productLabel() + ' ' + (r.cycle().label() ?: r.cycle().name())}"></td>
+                <td data-column="context" th:text="${r.context()}"></td>
+                <td data-column="cycle" th:text="${r.cycleLabel()}"></td>
                 <td data-column="evidence" class="small"><span th:text="${r.matching()}"></span>
-                    <a th:each="e : ${r.inventory()}" th:href="@{/repos/{b}/deps/{d}(b=${e.branch().id()},d=${e.dep().id()})}" th:text="${e.branch().repoName() + ' / ' + e.branch().branch() + ': Details'}">Details</a></td>
+                    <a th:each="e : ${r.evidence()}" th:href="${e.href()}" th:text="${e.text()}">Details</a></td>
                 <td data-column="source" class="col-source"><th:block th:each="url : ${r.sources()}">
                     <a th:if="${url.link() != null}" th:href="${url.link()}" th:text="${url.text()}" rel="noopener noreferrer"></a>
                     <span th:unless="${url.link() != null}" th:text="${url.text()}"></span><br>
@@ -53,7 +52,7 @@
                     <span th:unless="${url.link() != null}" th:text="${url.text()}"></span><br>
                 </th:block></td>
             </tr>
-            <tr data-empty th:hidden="${rows.size() > hiddenRows.size()}">
+            <tr data-empty th:hidden="${!rows.isEmpty()}">
                 <td colspan="13" class="empty">No dependency versions match.</td>
             </tr>
             </tbody>

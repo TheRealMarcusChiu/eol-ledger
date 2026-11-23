@@ -56,7 +56,7 @@
     </details>
     <div class="table-wrap" tabindex="0" role="region" th:attr="aria-label=${dashboard ? 'EoL Dependencies' : 'Dependencies'}">
     <table th:id="${dashboard ? 'dependencies-table' : 'latest-dependencies-table'}"
-           th:attr="data-start=${dashboard ? start : null},data-end=${dashboard ? end : null},data-sort=${dashboard ? sort : null},data-legacy=${dashboard ? legacy : false},data-dependency-table=${dashboard ? 'dashboard' : 'branch'}">
+           th:attr="data-start=${dashboard ? start : null},data-end=${dashboard ? end : null},data-sort=${dashboard ? sort : null},data-legacy=${dashboard ? legacy : false},data-dependency-table=${dashboard ? 'dashboard' : 'branch'},data-server=${dashboard ? api : null},data-total=${dashboard ? page?.total() : null},data-matching=${dashboard ? page?.matching() : null},data-sync-running=${dashboard ? syncRunning : null}">
         <colgroup>
             <col data-column="purl"><col data-column="ecosystem"><col data-column="dependency"><col data-column="version"><col data-column="eol"><col data-column="status">
             <col data-column="repos"><col data-column="branches"><col data-column="context">

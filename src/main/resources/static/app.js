@@ -263,6 +263,13 @@ function initColumnOrder(table) {
     groups.forEach(function (nodes) {
       order.forEach(function (key) { var node = nodes[keys.indexOf(key)]; node.parentNode.appendChild(node); });
     });
+    // A server table's rows arrive after setup, so they are not in groups: order their cells by data-column instead.
+    if (table.dataset.server) Array.prototype.forEach.call(table.tBodies[0].rows, function (tr) {
+      order.forEach(function (key) {
+        var c = Array.prototype.find.call(tr.cells, function (td) { return td.getAttribute('data-column') === key; });
+        if (c) tr.appendChild(c);
+      });
+    });
     order.forEach(function (key, i) {
       var cell = cells[keys.indexOf(key)], button = cell.querySelector('.th-sort');
       if (button) button.setAttribute('aria-label', (cell.getAttribute('data-label') || cellText(cell)) + ', column ' + (i + 1) + ' of ' + cells.length + '. Alt+Left or Alt+Right to move');
@@ -595,6 +602,7 @@ function encodeView(view, keys, defaultSort, domains) {
       var excluded = domain.filter(function (v) { return !picked['=' + v]; });
       if (JSON.stringify(excluded).length < JSON.stringify(f.selected).length) { delete diff.selected; diff.excluded = excluded; }
     }
+    if (f.excluded && !f.selected) diff.excluded = f.excluded; // server tables: not yet resolved against the column's values
     // An invalid draft keeps the last valid bounds applied: carry them so the URL matches the same rows.
     if (f.error && (f.start !== null || f.end !== null)) { diff.start = f.start; diff.end = f.end; }
     if (Object.keys(diff).length) filters[k] = diff;
@@ -604,6 +612,14 @@ function encodeView(view, keys, defaultSort, domains) {
   if (view.page > 1) out.page = view.page;
   if (view.size !== PAGE_SIZES[0]) out.size = view.size;
   return Object.keys(out).length > 1 ? JSON.stringify(out) : null;
+}
+
+/** An excluded list over a column's values as a selection: null when nothing known is excluded. */
+function resolveExcluded(excluded, domain) {
+  var out = {};
+  excluded.forEach(function (x) { out['=' + x] = true; });
+  var kept = domain.filter(function (x) { return !out['=' + x]; });
+  return kept.length === domain.length ? null : kept;
 }
 
 /** Untrusted URL text to a full view: anything missing, malformed, unknown or of another version falls back to its default. */
@@ -622,12 +638,8 @@ function decodeView(text, keys, types, defaultSort, domains) {
     var s = v.filters[k], f = view.filters[k], domain = domains && domains[k];
     if (has(s, 'mode') && ['values', 'text', 'range'].indexOf(s.mode) >= 0) f.mode = s.mode;
     if (has(s, 'selected') && (s.selected === null || strings(s.selected))) f.selected = s.selected && s.selected.slice();
-    else if (has(s, 'excluded') && strings(s.excluded) && domain) {
-      var out = {};
-      s.excluded.forEach(function (x) { out['=' + x] = true; });
-      var kept = domain.filter(function (x) { return !out['=' + x]; });
-      f.selected = kept.length === domain.length ? null : kept;
-    }
+    else if (has(s, 'excluded') && strings(s.excluded) && domain) f.selected = resolveExcluded(s.excluded, domain);
+    else if (has(s, 'excluded') && strings(s.excluded) && s.excluded.length) f.excluded = s.excluded.slice(); // a server table applies it as NOT IN
     if (has(s, 'searchOp') && ['contains', 'exact', 'fuzzy'].indexOf(s.searchOp) >= 0) f.searchOp = s.searchOp;
     if (has(s, 'op') && has(TEXT_OPS, s.op)) f.op = s.op;
     ['search', 'text', 'startText', 'endText'].forEach(function (n) { if (has(s, n) && typeof s[n] === 'string') f[n] = s[n]; });
@@ -652,6 +664,65 @@ function withParam(href, name, value) {
   return u.href;
 }
 
+/**
+ * One dashboard row from /api/dashboard, shaped like the server-rendered one (same cells, data-value and links), with its
+ * cells in the header's current order and visibility. order: data-column keys left to right; th: key -> header cell;
+ * keys: the template's column order (each cell's original index).
+ */
+function serverRow(r, order, th, keys) {
+  var tr = document.createElement('tr'), cells = {};
+  tr.setAttribute('data-row', r.product + ' ' + r.cycle);
+  tr.setAttribute('data-repos', String(r.repos));
+  tr.setAttribute('data-branches', String(r.branches));
+  tr.setAttribute('data-href', r.href);
+  function td(key, value, cls, text) {
+    var c = document.createElement('td');
+    c.setAttribute('data-column', key);
+    if (cls) c.className = cls;
+    if (value !== null) c.setAttribute('data-value', value);
+    if (text !== null) c.textContent = text;
+    cells[key] = c;
+    return c;
+  }
+  function el(tag, text, href) {
+    var e = document.createElement(tag);
+    if (href) e.setAttribute('href', href);
+    e.textContent = text;
+    return e;
+  }
+  td('purl', null, null, r.purl);
+  td('ecosystem', null, null, r.ecosystem);
+  td('dependency', r.dependency, null, null).appendChild(el('a', r.dependency, r.href));
+  td('version', r.version, null, r.version || 'Not installed');
+  td('eol', r.eol, 'date', r.eol || 'Not published');
+  var status = el('span', r.status);
+  status.className = 'eol eol-' + r.statusCss;
+  td('status', r.status, null, null).appendChild(status);
+  td('repos', String(r.repos), 'num', String(r.repos));
+  td('branches', String(r.branches), 'num', String(r.branches));
+  td('context', null, null, r.context);
+  td('cycle', null, null, r.cycleLabel);
+  var evidence = td('evidence', null, 'small', null);
+  evidence.appendChild(el('span', r.matching));
+  r.evidence.forEach(function (l) { evidence.append(' ', el('a', l.text, l.href)); });
+  [['source', 'col-source', r.sources], ['sbom', 'col-sbom', r.sboms]].forEach(function (s) {
+    var c = td(s[0], null, s[1], null);
+    s[2].forEach(function (u) {
+      var e = el(u.link ? 'a' : 'span', u.text, u.link); // link is already restricted to http(s) by the server
+      if (u.link) e.setAttribute('rel', 'noopener noreferrer');
+      c.append(e, document.createElement('br'), ' ');
+    });
+  });
+  order.forEach(function (key) {
+    var c = cells[key];
+    c.hidden = th[key].hidden;
+    c.originalColumnIndex = keys.indexOf(key);
+    tr.appendChild(c);
+  });
+  if (th.dependency && th.dependency.hidden) tr.tabIndex = 0;
+  return tr;
+}
+
 var tableSeq = 0;
 
 /**
@@ -667,6 +738,9 @@ function initTable(table, opts) {
   var uid = 't' + (++tableSeq);
   var noun = opts.noun || 'rows';
   var defaultSort = opts.defaultSort || null;
+  // A server table (the dashboard) holds only the current page: filters, sort, counts and pages come from its JSON API.
+  var server = table.getAttribute('data-server');
+  var total = Number(table.getAttribute('data-total')) || 0, seq = 0;
 
   // Pages below the table: render() lists every match in display order; draw() shows only the current page of it.
   var matching = trs.map(function (tr, i) { return i; }), page = 1, size = PAGE_SIZES[0];
@@ -692,6 +766,7 @@ function initTable(table, opts) {
   (table.closest('.table-wrap') || table).after(pager);
 
   function draw() {
+    if (server) return fetchPage();
     var p = pageRange(matching.length, page, size);
     page = p.page;
     trs.forEach(function (tr) { tr.hidden = true; }); // hidden rows are display: none, so never tabbable
@@ -721,8 +796,59 @@ function initTable(table, opts) {
   prev.addEventListener('click', function () { turn(-1, prev, next); });
   next.addEventListener('click', function () { turn(1, next, prev); });
   sizeSelect.addEventListener('change', function () { size = Number(sizeSelect.value); page = 1; draw(); });
-  draw();
-  if (!trs.length) return table.setAttribute('data-table-ready', ''); // nothing to sort or filter; the page's own empty message stays
+  if (!server) draw();
+  if (!trs.length && !server) return table.setAttribute('data-table-ready', ''); // nothing to sort or filter; the page's own empty message stays
+
+  /** Fetches the current page for the current view; a newer request makes older answers stale. */
+  function fetchPage() {
+    var mine = ++seq;
+    var text = encodeView({ filters: filters, sort: sort, page: page, size: size }, keys, defaultSort, distinct) || '{"v":1}';
+    table.setAttribute('aria-busy', 'true');
+    return fetch(withParam(new URL(server, window.location.href).href, 'view', text), { headers: { Accept: 'application/json' } })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (p) {
+        if (mine !== seq) return;
+        page = p.page;
+        total = p.total;
+        fillRows(p.rows);
+        where.textContent = 'Page ' + p.page + ' of ' + p.pages;
+        prev.disabled = p.page <= 1;
+        next.disabled = p.page >= p.pages;
+        emptyRow.hidden = p.matching > 0;
+        headerState(p.matching);
+        table.removeAttribute('aria-busy');
+        writeView();
+      })
+      .catch(function (e) {
+        if (mine !== seq) return;
+        table.removeAttribute('aria-busy');
+        count.textContent = 'Could not load ' + noun + ' (' + e.message + '). Change a filter or reload to retry.';
+      });
+  }
+
+  function fillRows(rows) {
+    trs.forEach(function (tr) { tr.remove(); });
+    var order = Array.prototype.map.call(head.cells, function (c) { return c.getAttribute('data-column'); });
+    trs = rows.map(function (r) {
+      var tr = serverRow(r, order, th, keys);
+      tbody.insertBefore(tr, emptyRow);
+      return tr;
+    });
+    clipCells(table);
+    linkRows(table);
+  }
+
+  // While a catalogue sync runs, refresh the shown page as products land (also after a reload during the sync).
+  function followSync() {
+    var last = '';
+    (function tick() {
+      fetch('/catalog/sync/status', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (s) {
+        var sig = s.productsDone + '/' + s.phase;
+        if (sig !== last) { last = sig; if (viewReady) fetchPage(); }
+        if (s.running) setTimeout(tick, 3000);
+      }).catch(function () { setTimeout(tick, 10000); });
+    })();
+  }
 
   var cols = Array.prototype.map.call(head.cells, function (cell, i) {
     return { th: cell, index: i, key: cell.getAttribute('data-column') || 'c' + i, type: cell.getAttribute('data-type') || 'text' };
@@ -773,16 +899,25 @@ function initTable(table, opts) {
   }
 
   function render() {
+    // Every filter or sort change starts again on page 1 of the whole table's matches.
+    page = 1;
+    if (server) {
+      draw(); // the answer updates the count
+      headerState(null);
+      return;
+    }
     var shown = visibleRows(data, filters, types);
     var order = sort ? sortOrder(data.map(function (r) { return r[sort.key]; }), types[sort.key], sort.dir) : data.map(function (r, i) { return i; });
     order.forEach(function (i) { tbody.insertBefore(trs[i], emptyRow); });
-    // Every filter or sort change starts again on page 1 of the whole table's matches.
     matching = order.filter(function (i) { return shown[i]; });
-    page = 1;
     draw();
-    var n = matching.length;
-    emptyRow.hidden = n > 0;
-    var active = keys.filter(function (k) { return filterPredicate(filters[k], types[k]); });
+    emptyRow.hidden = matching.length > 0;
+    headerState(matching.length);
+  }
+
+  /** Header sort/filter indicators and the count line; n is the number of matches, null while a server page loads. */
+  function headerState(n) {
+    var active = keys.filter(function (k) { return filterPredicate(filters[k], types[k]) || (filters[k].mode === 'values' && filters[k].excluded); });
     keys.forEach(function (k) {
       var on = active.indexOf(k) >= 0;
       th[k].setAttribute('data-filter-active', String(on));
@@ -791,8 +926,10 @@ function initTable(table, opts) {
       else th[k].removeAttribute('aria-sort');
       sortButtons[k].lastChild.textContent = sort && sort.key === k ? (sort.dir === 'asc' ? '↑' : '↓') : '↕';
     });
-    count.textContent = n + ' of ' + trs.length + ' ' + noun
-      + (active.length ? ' · filtered by ' + active.map(function (k) { return labels[k]; }).join(', ') : '');
+    if (n !== null) {
+      count.textContent = n + ' of ' + (server ? total : trs.length) + ' ' + noun
+        + (active.length ? ' · filtered by ' + active.map(function (k) { return labels[k]; }).join(', ') : '');
+    }
     var sortMoved = defaultSort ? !(sort && sort.key === defaultSort.key && sort.dir === defaultSort.dir) : !!sort;
     clearAll.hidden = !active.length && !sortMoved;
     clearAll.textContent = active.length ? 'Clear all filters' : 'Reset sort';
@@ -888,8 +1025,26 @@ function initTable(table, opts) {
     openKey = k;
     menus[k].root.hidden = false;
     openButtons[k].setAttribute('aria-expanded', 'true');
+    if (server && !distinct[k] && !menus[k].loading) loadValues(k);
     place();
     menus[k].mode.focus();
+  }
+
+  // A server table's value list is the whole column (not just this page), fetched when its menu first opens.
+  function loadValues(k) {
+    menus[k].loading = true;
+    var u = new URL(server, window.location.href);
+    u.pathname += '/values';
+    u.searchParams.set('column', k);
+    fetch(u.href, { headers: { Accept: 'application/json' } })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (entries) {
+        menus[k].fill(entries);
+        var f = filters[k];
+        if (f.excluded) { f.selected = resolveExcluded(f.excluded, distinct[k]); delete f.excluded; }
+        sync(k);
+      })
+      .catch(function (e) { menus[k].loading = false; menus[k].error.textContent = 'Could not load values (' + e.message + ').'; });
   }
 
   function build(k) {
@@ -921,27 +1076,36 @@ function initTable(table, opts) {
     var none = button('data-filter-select-none', k, 'Select none');
     all.setAttribute('aria-label', 'Select all values');
     none.setAttribute('aria-label', 'Select no values');
-    all.addEventListener('click', function () { f().selected = null; sync(k); render(); });
-    none.addEventListener('click', function () { f().selected = []; sync(k); render(); });
+    all.addEventListener('click', function () { f().selected = null; delete f().excluded; sync(k); render(); });
+    none.addEventListener('click', function () { f().selected = []; delete f().excluded; sync(k); render(); });
     var list = document.createElement('div');
     list.className = 'filter-values';
-    var seen = {};
     var boxes = [];
-    sortOrder(data.map(function (r) { return r[k]; }), type, 'asc').forEach(function (i) {
-      var v = data[i][k];
-      if (seen['=' + v]) return;
-      seen['=' + v] = true;
-      var box = control('input', 'data-filter-value', k);
-      box.type = 'checkbox';
-      box.value = v;
-      box.addEventListener('change', function () { f().selected = toggleValue(f().selected, distinct[k], v, box.checked); render(); });
-      var l = document.createElement('label');
-      // Cell text, e.g. "Not published" for a blank EoL date; "(blank)" when the cell has none.
-      l.append(box, ' ' + (cellText(trs[i].cells[colIndex[k]]) || '(blank)'));
-      list.appendChild(l);
-      boxes.push(box);
-    });
-    distinct[k] = boxes.map(function (b) { return b.value; });
+    // entries: {value, label} in ascending display order; label is the cell text, e.g. "Not published" for a blank EoL date.
+    function fill(entries) {
+      entries.forEach(function (e) {
+        var v = e.value;
+        var box = control('input', 'data-filter-value', k);
+        box.type = 'checkbox';
+        box.value = v;
+        box.addEventListener('change', function () { f().selected = toggleValue(f().selected, distinct[k], v, box.checked); render(); });
+        var l = document.createElement('label');
+        l.append(box, ' ' + (e.label || '(blank)'));
+        list.appendChild(l);
+        boxes.push(box);
+      });
+      distinct[k] = boxes.map(function (b) { return b.value; });
+    }
+    if (!server) {
+      var seen = {}, entries = [];
+      sortOrder(data.map(function (r) { return r[k]; }), type, 'asc').forEach(function (i) {
+        var v = data[i][k];
+        if (seen['=' + v]) return;
+        seen['=' + v] = true;
+        entries.push({ value: v, label: cellText(trs[i].cells[colIndex[k]]) });
+      });
+      fill(entries);
+    }
     var picks = document.createElement('div');
     picks.className = 'actions';
     picks.append(all, none);
@@ -999,7 +1163,7 @@ function initTable(table, opts) {
       if (openKey === k && e.relatedTarget && !root.contains(e.relatedTarget) && e.relatedTarget !== openButtons[k]) close(false);
     });
     menus[k] = { root: root, mode: mode, search: search, searchOp: searchOp, op: op, text: text, start: start, end: end, error: error,
-      boxes: boxes, sections: [vals, txt, rng] };
+      boxes: boxes, sections: [vals, txt, rng], fill: fill };
     return root;
   }
 
@@ -1090,6 +1254,7 @@ function initTable(table, opts) {
 
   if (param) window.addEventListener('popstate', function () { close(false); applyView(); });
   applyView();
+  if (server && table.getAttribute('data-sync-running') === 'true') followSync();
   table.setAttribute('data-table-ready', ''); // lifts the app.css first-page gate now the restored view is drawn
 }
 
@@ -1605,8 +1770,53 @@ function initSettings(topbar, appearance) {
   topbar.appendChild(wrap);
 }
 
+/** One line for a sync status from /catalog/sync/status. */
+function syncText(s) {
+  if (!s.running) return s.message ? (s.ok ? 'Done: ' : 'Failed: ') + s.message : '';
+  if (s.phase === 'saving') {
+    return 'Saving product ' + Math.min(s.productsDone + 1, s.productsTotal) + ' of ' + s.productsTotal + (s.current ? ' (' + s.current + ')' : '')
+      + ' · ' + s.cyclesDone + ' of ' + s.cyclesTotal + ' release cycles saved';
+  }
+  return 'Fetching the catalogue from endoflife.date…';
+}
+
+/**
+ * The Imports page's sync button starts the background job (POST /catalog/sync/start) and polls its status; without
+ * scripts the form posts to /catalog/sync and waits. A reload during a sync resumes polling.
+ */
+function initSync(form) {
+  var out = form.nextElementSibling, button = form.querySelector('button');
+  function poll() {
+    button.disabled = true;
+    fetch('/catalog/sync/status', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (s) {
+      out.textContent = syncText(s);
+      if (s.running) return setTimeout(poll, 1000);
+      button.disabled = false;
+      out.append(' ');
+      var again = document.createElement('a');
+      again.href = window.location.pathname;
+      again.textContent = 'Refresh the page for the updated catalogue facts.';
+      out.appendChild(again);
+    }).catch(function (e) { out.textContent = 'Could not read the sync status (' + e.message + '); retrying…'; setTimeout(poll, 5000); });
+  }
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    button.disabled = true;
+    out.textContent = 'Starting…';
+    fetch('/catalog/sync/start', { method: 'POST', body: new FormData(form), headers: { Accept: 'application/json' } })
+      .then(function (r) {
+        if (r.status !== 202 && r.status !== 409) throw new Error('HTTP ' + r.status);
+        if (r.status === 409) out.textContent = 'A catalogue sync or clear is already running; following it.';
+        poll();
+      })
+      .catch(function (err) { button.disabled = false; out.textContent = 'The sync could not start (' + err.message + ').'; });
+  });
+  if (form.getAttribute('data-sync-running') === 'true') poll();
+}
+
 // Wire-up: the dashboard keeps its column settings; every table on every page gets the same header sort and filters.
 if (document.querySelectorAll) {
+  document.querySelectorAll('form[data-sync-form]').forEach(initSync);
   var topbar = document.querySelector('.topbar');
   if (topbar && window.EolAppearance) initSettings(topbar, window.EolAppearance);
   var dependencyColumns = [];

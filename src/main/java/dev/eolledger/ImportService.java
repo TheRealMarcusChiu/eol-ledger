@@ -59,20 +59,24 @@ public class ImportService {
 
     /** Children before parents, so the foreign keys hold at every step. */
     private static final List<String> DATA_TABLES = List.of("dependency", "snapshot_inventory", "snapshot", "repo_branch", "import_run",
-            "product_identifier", "release_cycle", "product", "sync_status");
+            "product_identifier", "release_cycle", "product", "sync_status", "dash_row");
 
     /**
      * Deletes every imported row and the synced catalogue in one transaction; schema and configuration stay.
-     * Holds this service's monitor (imports) and then the catalogue's (sync), so neither can interleave with the clear.
+     * Holds this service's monitor (imports) and the catalogue's work gate, so neither can interleave with the clear;
+     * a running sync makes it fail at once rather than wait.
      */
     public synchronized void clearAll() {
-        synchronized (catalog) {
-            try {
-                tx.executeWithoutResult(s -> DATA_TABLES.forEach(t -> db.sql("DELETE FROM " + t).update()));
-            } catch (DataAccessException e) {
-                log.warn("Clear all data rolled back", e);
-                throw new ImportFailedException(List.of("Database write failed, so nothing was cleared; see the server log"));
-            }
+        if (!catalog.beginWork()) {
+            throw new ImportFailedException(List.of("A catalogue sync is running, so nothing was cleared. Try again when it has finished."));
+        }
+        try {
+            tx.executeWithoutResult(s -> DATA_TABLES.forEach(t -> db.sql("DELETE FROM " + t).update()));
+        } catch (DataAccessException e) {
+            log.warn("Clear all data rolled back", e);
+            throw new ImportFailedException(List.of("Database write failed, so nothing was cleared; see the server log"));
+        } finally {
+            catalog.endWork();
         }
     }
 

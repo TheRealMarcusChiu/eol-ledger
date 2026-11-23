@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 /**
@@ -62,14 +63,93 @@ public class CatalogService {
         this.time = time;
     }
 
+    /** Live state of the current or last sync, counted at real work boundaries; read by the Imports page poll. */
+    public record Progress(boolean running, String phase, int productsDone, int productsTotal, int cyclesDone, int cyclesTotal,
+                           String current, Instant startedAt, Instant finishedAt, Boolean ok, String message) {
+    }
+
+    // One catalogue writer at a time (sync or clear): a second one is refused, never queued, so no request waits on it.
+    private final AtomicBoolean busy = new AtomicBoolean();
+    private volatile Progress progress = new Progress(false, "idle", 0, 0, 0, 0, null, null, null, null, null);
+
+    boolean beginWork() {
+        return busy.compareAndSet(false, true);
+    }
+
+    void endWork() {
+        busy.set(false);
+    }
+
+    public boolean active() {
+        return busy.get();
+    }
+
+    public Progress progress() {
+        return progress;
+    }
+
     public SyncResult sync() {
         return sync(List.of());
     }
 
-    synchronized SyncResult sync(List<String> products) {
+    SyncResult sync(List<String> products) {
+        if (!beginWork()) return new SyncResult(false, 0, "A catalogue sync is already running; this one was not started.");
+        try {
+            return runAndFinish(products, clock.instant());
+        } finally {
+            endWork();
+        }
+    }
+
+    /** Starts the whole-catalogue sync on a background thread; false when a sync or clear is already active. */
+    public boolean startAsync() {
+        if (!beginWork()) return false;
         Instant started = clock.instant();
+        progress = new Progress(true, "starting", 0, 0, 0, 0, null, started, null, null, null);
+        try {
+            Thread.ofPlatform().daemon().name("catalog-sync").start(() -> {
+                try {
+                    runAndFinish(List.of(), started);
+                } finally {
+                    endWork();
+                }
+            });
+        } catch (RuntimeException | Error e) {
+            finish(started, new SyncResult(false, 0, "Sync could not start: " + e.getMessage()));
+            endWork();
+            throw e;
+        }
+        return true;
+    }
+
+    /** Runs a sync and publishes its terminal state while the caller still owns the work gate, so a later job's progress is never overwritten. */
+    private SyncResult runAndFinish(List<String> products, Instant started) {
+        SyncResult r;
+        try {
+            r = run(products, started);
+        } catch (RuntimeException e) {
+            log.warn("Catalogue sync failed", e);
+            r = new SyncResult(false, progress.productsDone(), "Sync failed: " + e.getMessage());
+        }
+        finish(started, r);
+        return r;
+    }
+
+    private void finish(Instant started, SyncResult r) {
+        Progress p = progress;
+        progress = new Progress(false, r.ok() ? "succeeded" : "failed", p.productsDone(), p.productsTotal(), p.cyclesDone(), p.cyclesTotal(),
+                null, started, clock.instant(), r.ok(), r.message());
+    }
+
+    private void step(String phase, int done, int total, int cyclesDone, int cyclesTotal, String current, Instant started) {
+        progress = new Progress(true, phase, done, total, cyclesDone, cyclesTotal, current, started, null, null, null);
+    }
+
+    private SyncResult run(List<String> products, Instant started) {
         List<String> failures = new ArrayList<>();
         int synced = 0;
+        int cyclesDone = 0;
+        step("fetching", 0, 0, 0, 0, null, started);
         try {
             List<JsonNode> nodes = new ArrayList<>();
             if (products.isEmpty()) {
@@ -95,15 +175,22 @@ public class CatalogService {
                     }
                 }
             }
+            int cyclesTotal = 0;
+            for (JsonNode n : nodes) cyclesTotal += n.path("releases").size();
+            int done = 0;
             for (JsonNode n : nodes) {
                 String name = n.path("name").asText("?");
+                step("saving", done, nodes.size(), cyclesDone, cyclesTotal, name, started);
                 try {
                     save(parse(n));
                     synced++;
+                    cyclesDone += n.path("releases").size();
                 } catch (RuntimeException e) {
                     failures.add(name + " (" + e.getMessage() + ")");
                 }
+                done++;
             }
+            step("saving", done, nodes.size(), cyclesDone, cyclesTotal, null, started);
         } catch (IOException e) {
             failures.add(0, "catalogue fetch failed: " + e.getMessage());
         }
