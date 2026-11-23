@@ -19,11 +19,12 @@ class UnifiedDependencyTableTest extends WebTestBase {
         seed();
         long id = branchId("https://gitlab.com/acme/alpha", "main");
         var expected = List.of(
-                " data-column=\"purl\":Ecosystem / Package URL", " data-column=\"ecosystem\":Ecosystem",
+                " data-column=\"ecosystem\":Ecosystem",
                 " data-column=\"dependency\":Dependency Name", " data-type=\"version\" data-column=\"version\":Version",
                 " data-type=\"date\" data-column=\"eol\":EOL Date", " data-column=\"status\":Status",
                 " data-type=\"number\" class=\"num\" data-column=\"repos\":# Code Repos Using It",
                 " data-type=\"number\" class=\"num\" data-column=\"branches\":# Code Repo Branches Using It",
+                " data-column=\"purl\":Ecosystem / Package URL",
                 " data-column=\"context\":Project context",
                 " data-column=\"cycle\":Upstream cycle", " data-column=\"evidence\":Matching evidence",
                 " data-column=\"source\":Source control", " data-column=\"sbom\":SBOM");
@@ -40,7 +41,7 @@ class UnifiedDependencyTableTest extends WebTestBase {
     @Test void serverRenderedOrderAndCellMeaningWorkWithoutJavascript() throws Exception {
         seed();
         long id = branchId("https://gitlab.com/acme/alpha", "main");
-        var keys = List.of("purl", "ecosystem", "dependency", "version", "eol", "status", "repos", "branches",
+        var keys = List.of("ecosystem", "dependency", "version", "eol", "status", "repos", "branches", "purl",
                 "context", "cycle", "evidence", "source", "sbom");
         for (String path : List.of("/", "/repos/" + id, "/repos/" + id + "/history")) {
             String table = path.equals("/") ? page(path) : AcceptanceRepairTest.depsTable(page(path));
@@ -56,14 +57,14 @@ class UnifiedDependencyTableTest extends WebTestBase {
             String react = rows.stream().filter(r -> r.contains(">react</a>")).findFirst().orElseThrow();
             var cells = Pattern.compile("<td[^>]*>(.*?)</td>", Pattern.DOTALL).matcher(react).results()
                     .map(m -> m.group(1)).toList();
-            assertThat(cells.get(0)).contains("pkg:npm/react@18.2.0");
-            assertThat(cells.get(1)).isEqualTo("npm");
-            assertThat(cells.get(2)).contains(">react</a>");
-            assertThat(cells.get(3)).contains("18.2.0");
-            assertThat(cells.get(4)).contains("2025-01-01");
-            assertThat(cells.get(5)).contains("eol-ended", "Ended");
-            assertThat(cells.get(6)).isEqualTo("1");
-            assertThat(cells.get(7)).isEqualTo(path.equals("/") ? "2" : "1");
+            assertThat(cells.get(0)).isEqualTo("npm");
+            assertThat(cells.get(1)).contains(">react</a>");
+            assertThat(cells.get(2)).contains("18.2.0");
+            assertThat(cells.get(3)).contains("2025-01-01");
+            assertThat(cells.get(4)).contains("eol-ended", "Ended");
+            assertThat(cells.get(5)).isEqualTo("1");
+            assertThat(cells.get(6)).isEqualTo(path.equals("/") ? "2" : "1");
+            assertThat(cells.get(7)).contains("pkg:npm/react@18.2.0");
             assertThat(cells.get(9)).contains("React 18");
             assertThat(cells.get(11)).contains("https://gitlab.com/acme/alpha");
         }

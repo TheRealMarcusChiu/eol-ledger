@@ -24,21 +24,30 @@ test('column order normalizes corrupt, duplicate, unknown and missing identities
 
 const plain = (o) => JSON.parse(JSON.stringify(o));
 const DEFAULTS = {
-  purl: { visible: true, width: 280 }, ecosystem: { visible: true, width: 140 },
+  ecosystem: { visible: true, width: 140 },
   dependency: { visible: true, width: 220 }, version: { visible: true, width: 120 },
   eol: { visible: true, width: 130 }, status: { visible: true, width: 210 },
   repos: { visible: true, width: 120 }, branches: { visible: true, width: 120 },
-  context: { visible: true, width: 240 }, cycle: { visible: true, width: 200 },
+  purl: { visible: true, width: 280 }, context: { visible: true, width: 240 }, cycle: { visible: true, width: 200 },
   evidence: { visible: true, width: 280 }, source: { visible: true, width: 260 }, sbom: { visible: true, width: 260 },
 };
-const ECOSYSTEM_FIRST = ['purl', 'ecosystem', 'dependency', 'version', 'eol', 'status', 'repos', 'branches', 'context', 'cycle', 'evidence', 'source', 'sbom'];
+const DEFAULT_ORDER = ['ecosystem', 'dependency', 'version', 'eol', 'status', 'repos', 'branches', 'purl', 'context', 'cycle', 'evidence', 'source', 'sbom'];
 
-test('shared columns default to ecosystem first; fresh order follows it and complete saved orders are kept', () => {
+test('shared columns default to ecosystem first and Package URL after the branch count; fresh order follows it and complete saved orders are kept', () => {
   const { TABLE_COLUMNS, tablePrefs, columnOrder } = load();
-  assert.deepStrictEqual(plain(Object.keys(TABLE_COLUMNS)), ECOSYSTEM_FIRST);
-  assert.deepStrictEqual(Object.keys(plain(tablePrefs(null))), ECOSYSTEM_FIRST);
+  assert.deepStrictEqual(plain(Object.keys(TABLE_COLUMNS)), DEFAULT_ORDER);
+  assert.deepStrictEqual(Object.keys(plain(tablePrefs(null))), DEFAULT_ORDER);
   const keys = Object.keys(TABLE_COLUMNS);
-  assert.deepStrictEqual(plain(columnOrder(null, keys)), ECOSYSTEM_FIRST);
+  assert.deepStrictEqual(plain(columnOrder(null, keys)), DEFAULT_ORDER);
+  // the server-rendered dependency tables draw the same sequence: shared col/th, branch rows, dashboard rows
+  const templates = path.join(__dirname, '../../main/resources/templates');
+  const fragments = fs.readFileSync(path.join(templates, 'fragments.html'), 'utf8');
+  const dashboard = fs.readFileSync(path.join(templates, 'dashboard.html'), 'utf8');
+  const columns = (html, from, to) => { const s = html.indexOf(from); return [...html.slice(s, html.indexOf(to, s)).matchAll(/data-column="([a-z]+)"/g)].map(m => m[1]); };
+  assert.deepStrictEqual(columns(fragments, '<colgroup>', '</colgroup>'), DEFAULT_ORDER, 'colgroup');
+  assert.deepStrictEqual(columns(fragments, '<thead>', '</thead>'), DEFAULT_ORDER, 'header');
+  assert.deepStrictEqual(columns(fragments, 'th:fragment="inventoryRows"', '</tr>'), DEFAULT_ORDER, 'branch rows');
+  assert.deepStrictEqual(columns(dashboard, 'th:fragment="dashboardRows"', '</tr>'), DEFAULT_ORDER, 'dashboard rows');
   const old = ['dependency', 'version', 'eol', 'status', 'repos', 'branches', 'context', 'purl', 'cycle', 'evidence', 'source', 'sbom'];
   assert.deepStrictEqual(plain(columnOrder(JSON.stringify(old), keys)), old.concat('ecosystem'), 'saved 12-column order kept, ecosystem appended');
   const custom = ['sbom', 'eol', 'dependency', 'purl', 'version', 'status', 'repos', 'branches', 'context', 'cycle', 'evidence', 'source'];
@@ -50,7 +59,7 @@ test('shared columns default to ecosystem first; fresh order follows it and comp
 test('saved 12-column prefs keep their widths and visibility; ecosystem joins visible at 140px', () => {
   const { tablePrefs } = load();
   const columns = {};
-  for (const key of ECOSYSTEM_FIRST.filter((k) => k !== 'ecosystem')) columns[key] = { visible: key !== 'purl', width: 333 };
+  for (const key of DEFAULT_ORDER.filter((k) => k !== 'ecosystem')) columns[key] = { visible: key !== 'purl', width: 333 };
   const p = plain(tablePrefs(JSON.stringify({ columns })));
   for (const key of Object.keys(columns)) assert.deepStrictEqual(p[key], columns[key]);
   assert.deepStrictEqual(p.ecosystem, { visible: true, width: 140 });

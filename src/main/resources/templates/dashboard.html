@@ -31,7 +31,6 @@
             <tbody th:fragment="dashboardRows">
             <tr th:each="r : ${rows}" th:with="href=@{/dependencies/{p}(p=${r.product()},version=${r.cycle()})}"
                 th:attr="data-row=${r.key()},data-repos=${r.repos()},data-branches=${r.branches()},data-href=${href}">
-                <td data-column="purl" th:text="${r.purl()}"></td>
                 <td data-column="ecosystem" th:text="${r.ecosystem()}"></td>
                 <td data-column="dependency" th:attr="data-value=${r.dependency()}"><a th:href="${href}" th:text="${r.dependency()}">Python</a></td>
                 <td data-column="version" th:attr="data-value=${r.version()}" th:text="${r.versionText()}">3.10.5</td>
@@ -39,6 +38,7 @@
                 <td data-column="status" th:attr="data-value=${r.status()}"><span class="eol" th:classappend="${'eol-' + r.statusCss()}" th:text="${r.status()}">status</span></td>
                 <td data-column="repos" class="num" th:attr="data-value=${r.repos()}" th:text="${r.repos()}">1</td>
                 <td data-column="branches" class="num" th:attr="data-value=${r.branches()}" th:text="${r.branches()}">1</td>
+                <td data-column="purl" th:text="${r.purl()}"></td>
                 <td data-column="context" th:text="${r.context()}"></td>
                 <td data-column="cycle" th:text="${r.cycleLabel()}"></td>
                 <td data-column="evidence" class="small"><span th:text="${r.matching()}"></span>
