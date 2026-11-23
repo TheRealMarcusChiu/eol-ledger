@@ -66,13 +66,13 @@ function tableStorage(method, value, key) {
   try { return window.localStorage[method](key || TABLE_KEY, value); } catch (e) { return null; }
 }
 
-/** Narrowest width that keeps a header on one line: its name, sort arrow and filter button plus the cell's padding. */
+/** Narrowest width that keeps a header on one line: its name and sort arrow plus the cell's padding, whose right side holds the filter button and resize handle. */
 function headerFloor(cell) {
-  var first = cell.querySelector('.th-sort'), last = cell.querySelector('.th-filter') || first;
-  if (cell.hidden || !first || !last || !document.createRange) return MIN_WIDTH;
+  var first = cell.querySelector('.th-sort');
+  if (cell.hidden || !first || !document.createRange) return MIN_WIDTH;
   var range = document.createRange();
   range.setStartBefore(first);
-  range.setEndAfter(last);
+  range.setEndAfter(first);
   var cs = window.getComputedStyle(cell);
   var w = range.getBoundingClientRect().width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 2;
   return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.ceil(w)));
@@ -937,6 +937,7 @@ function initTable(table, opts) {
   clearAll.setAttribute('data-filters-clear-all', '');
   clearAll.textContent = 'Clear all filters';
   bar.append(count, clearAll);
+  table.filterBar = bar; // placeSettings docks the table's settings gear after Clear all
   (table.closest('.table-wrap') || table).before(bar);
 
   function reset(k) {
@@ -1409,8 +1410,40 @@ function initVisibility(table, refit) {
     apply();
   });
   settings.append(summary, list, reset);
-  (table.closest('.table-wrap') || table).before(settings);
+  placeSettings(table, settings);
   apply();
+}
+
+/**
+ * Docks a table's settings disclosure (server-rendered or built above) at the end of its filter toolbar, right after
+ * Clear all, as an icon-only gear named "Table settings"; its other children move into one panel the CSS drops down.
+ * A table without a toolbar (no rows) keeps it above the table.
+ */
+function placeSettings(table, settings) {
+  var summary = settings.querySelector('summary'), panel = document.createElement('div');
+  panel.className = 'settings-panel';
+  Array.prototype.slice.call(settings.childNodes).forEach(function (n) { if (n !== summary) panel.appendChild(n); });
+  settings.appendChild(panel);
+  summary.textContent = '';
+  summary.setAttribute('aria-label', 'Table settings');
+  summary.setAttribute('title', 'Table settings');
+  var ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 12 12');
+  svg.setAttribute('aria-hidden', 'true');
+  [[4.3, 2, '1.7 1.68'], [2.2, 1.1, '']].forEach(function (c) { // a toothed ring and a hub: a gear
+    var circle = document.createElementNS(ns, 'circle');
+    circle.setAttribute('cx', '6');
+    circle.setAttribute('cy', '6');
+    circle.setAttribute('r', String(c[0]));
+    circle.setAttribute('fill', 'none');
+    circle.setAttribute('stroke', 'currentColor');
+    circle.setAttribute('stroke-width', String(c[1]));
+    if (c[2]) circle.setAttribute('stroke-dasharray', c[2]);
+    svg.appendChild(circle);
+  });
+  summary.appendChild(svg);
+  if (table.filterBar) table.filterBar.appendChild(settings);
+  else (table.closest('.table-wrap') || table).before(settings);
 }
 
 // ---- Resizable columns on every other table (widths remembered per table in this browser) ----
@@ -1870,12 +1903,14 @@ if (document.querySelectorAll) {
   if (topbar && window.EolAppearance) initSettings(topbar, window.EolAppearance);
   var dependencyColumns = [];
   document.querySelectorAll('table[data-dependency-table]').forEach(function (t) {
-    dependencyColumns.push(initColumns(t, t.closest('.table-wrap').previousElementSibling));
+    t.tableSettings = t.closest('.table-wrap').previousElementSibling;
+    dependencyColumns.push(initColumns(t, t.tableSettings));
   });
   document.querySelectorAll('main table').forEach(function (t) {
     initTable(t, t.hasAttribute('data-dependency-table')
       ? { noun: 'dependencies', defaultSort: { key: 'eol', dir: 'asc' }, legacy: t.dataset.dependencyTable === 'dashboard' }
       : { noun: tableNoun(t) });
+    if (t.tableSettings) placeSettings(t, t.tableSettings);
   });
   dependencyColumns.forEach(function (columns) {
     // Header sort/filter buttons now exist: widen any column whose header would wrap; again once the web fonts have loaded.

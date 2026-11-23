@@ -4,7 +4,7 @@
 <body>
 <header th:replace="~{fragments :: nav('dashboard')}"></header>
 <main id="main">
-    <div class="page-head title-row" data-eyebrow="the ledger · release cycles">
+    <div class="page-head title-row">
         <h1>EoL Dependencies</h1>
         <span class="hint" th:if="${status != null and status.succeededAt() != null}">Updated
             <span th:text="${@view.time(status.succeededAt())}">time</span></span>

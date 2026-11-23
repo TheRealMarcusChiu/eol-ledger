@@ -178,8 +178,8 @@ test('header floor measures the full sort label without a filter on empty tables
   assert.strictEqual(start, sort);
   assert.strictEqual(end, sort, 'range includes the entire sort button');
   cell.querySelector = selector => selector === '.th-sort' ? sort : filter;
-  assert.strictEqual(headerFloor(cell), 260, 'normal filter header keeps its full range');
-  assert.strictEqual(end, filter);
+  assert.strictEqual(headerFloor(cell), 240, 'the filter sits at the right inside the reserved right padding, so only the sort label is measured');
+  assert.strictEqual(end, sort);
   cell.hidden = true;
   assert.strictEqual(headerFloor(cell), 80);
   assert.strictEqual(measurements, 2, 'hidden cells are not measured');
@@ -490,7 +490,8 @@ function columnFixture(saved = new Map()) {
         return { left, right: left + this.w, width: this.w, top: 0, bottom: 30 };
       },
       closest(selector) { return selector === 'th' ? this : null; },
-      querySelector(selector) { return selector === '.th-sort' ? this.button : null; },
+      querySelector(selector) { return selector === '.th-sort' ? this.button : (this.children || []).find(c => c.tagName === selector) || null; },
+      get childNodes() { return this.children || []; },
       querySelectorAll() { return []; },
       matches() { return true; }, focus() {},
       setPointerCapture() { this.captured = true; }, hasPointerCapture() { return this.captured; }, releasePointerCapture() { this.captured = false; },
@@ -519,7 +520,8 @@ function columnFixture(saved = new Map()) {
     elementFromPoint(x, y) {
       if ('hit' in this) return this.hit;
       return heads.find(h => { const r = h.getBoundingClientRect(); return !h.hidden && x >= r.left && x < r.right && y >= r.top && y < r.bottom; }) || null;
-    }, createElement() { const n = node(''); created.push(n); return n; } };
+    }, createElement(tag) { const n = node(''); n.tagName = tag; created.push(n); return n; },
+    createElementNS(ns, tag) { return this.createElement(tag); } };
   const ctx = load(win, doc);
   ctx.initColumnOrder(table);
   const pointer = (target, x, y = 0) => ({ target, button: 0, pointerId: 1, clientX: x, clientY: y, preventDefault() {} });
@@ -1313,6 +1315,42 @@ test('rows per page: saved sizes are per role, invalid or unreadable ones mean 2
   e.q('[data-page-size]').emit('change');
   assert.strictEqual(empty.win.storage.get('eol-ledger.page-size.v1.empty-table'), '12');
   assert.strictEqual(e.table.hasAttribute('data-table-ready'), true);
+});
+
+test('table settings: an icon-only gear named "Table settings" sits right after Clear all in the shared toolbar, for generated and server-rendered settings', () => {
+  const { ctx } = viewDom('https://x.test/repos');
+  const t = viewTable('code-repos-table');
+  ctx.initTable(t.table);
+  ctx.initVisibility(t.table, () => {});
+  const bar = t.q('.filter-bar'), settings = t.q('details.table-settings');
+  assert.strictEqual(settings.parentNode, bar, 'docked in the toolbar, not above the table');
+  assert.deepStrictEqual(bar.childNodes.map(n => n.hasAttribute('data-filter-count') ? 'count' : n.hasAttribute('data-filters-clear-all') ? 'clear' : n.tagName),
+    ['count', 'clear', 'details']);
+  const summary = settings.childNodes[0];
+  assert.strictEqual(summary.tagName, 'summary');
+  assert.strictEqual(summary.getAttribute('aria-label'), 'Table settings');
+  assert.strictEqual(summary.textContent.trim(), '', 'icon only');
+  assert.ok(summary.querySelector('svg'));
+  assert.strictEqual(settings.querySelector('[data-columns-reset]').textContent, 'Reset columns');
+  // still the one working control set: hiding a column from the docked panel hides it
+  const box = t.q('[data-column-toggle="COUNT"]');
+  box.checked = false;
+  box.emit('change');
+  assert.strictEqual(t.th('count').hidden, true);
+  assert.strictEqual(t.q('.filter-bar').querySelectorAll('details').length, 1, 'never duplicated');
+
+  // the dashboard's server-rendered settings move the same way
+  const u = viewTable('dependencies-table');
+  const rendered = new FakeEl('details'), s = new FakeEl('summary');
+  rendered.id = 'table-settings';
+  s.append('Table settings');
+  rendered.append(s);
+  u.table.parentNode.before(rendered);
+  ctx.initTable(u.table);
+  ctx.placeSettings(u.table, rendered);
+  assert.strictEqual(rendered.parentNode, u.q('.filter-bar'));
+  assert.strictEqual(s.getAttribute('aria-label'), 'Table settings');
+  assert.ok(s.querySelector('svg'));
 });
 
 test('rows per page: a custom size restores from a copied URL, and malformed sizes there fall back to 20', () => {
