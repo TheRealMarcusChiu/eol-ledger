@@ -1,6 +1,10 @@
 # Release notes: SQL-paged dashboard and background catalogue sync
 
-Branch `feature/server-paging-live-sync` (base `5bb7c9a`). Not committed, pushed or merged. No server or browser was run.
+Branch `feature/server-paging-live-sync` (base `5bb7c9a`).
+
+**Status:** product commit `f7621574289d94911a9ac476141d7fc4f6e64aaa` was fast-forwarded into `master`, pushed to
+`origin/master` and deployed to production. See "Production acceptance" at the end. The red/green notes below are the
+implementation history; the worker that wrote them ran no server or browser.
 
 ## Scope
 
@@ -241,3 +245,40 @@ Still not covered by this acceptance, and still genuine limits:
   only at startup.
 * **MySQL** DDL and queries were not executed.
 * **Without JavaScript** the first page renders, but the filter, sort and paging controls need JavaScript.
+
+## Production acceptance (deployment-01)
+
+The coordinator deployed and checked production. The evidence files are in
+`/root/projects/eol-ledger-ops/server-paging-live-sync/deployment-01/`: `deployment.json`, `acceptance.json`,
+`live-preservation-detail.json`, `final-ui.json` and `live-pagination/browser-pagination.json`.
+
+* **Deployment.**
+  * URL `http://192.168.111.176:8092`, production PID 282206.
+  * The original working directory (`/root/projects/eol-ledger`), arguments, config and environment were kept.
+  * The JAR is the immutable `final-candidate.jar`, SHA-256
+    `3a9e337a98f77607950c784063ea658a1e57f3b03b3b783e1df4c2484beba23d`.
+* **Backup and restart.**
+  * A fresh cold backup was taken after a clean shutdown: `deployment-01/backup/eol-ledger.mv.db`, SHA-256
+    `05ac59abf69996e50f8e294b820a8dda2967bd22fcdcabc3290bc9715894313b`, plus the previous JAR.
+  * Stop to observed health took 20.384 s; health is UP.
+* **First response.** The raw first response went from 9470 rows (10,991,540 bytes) to 20 rows (26,940 bytes).
+* **Oracle and comparison.**
+  * All 217 old-JS oracle cases pass live, including the counts.
+  * A full old/new comparison over 9470 rows and 13 columns found 0 differences in semantics, values or links.
+  * The initial strict HTML hash comparison failed for one reason only: the new page writes an explicit
+    `data-value="Not installed"`, where the old page had no attribute and fell back to the same cell text. The value
+    is the same. The diagnostic is preserved in the evidence.
+* **Data preserved.** Repos (0) and history (0) are unchanged; the empty state was actually seen before and after.
+* **Live browser checks.**
+  * 20/50/100 page sizes, Next, and the global Python filter (35 of 9470) work.
+  * The Values list showed 9466 distinct values.
+  * Keyboard reorder carried through to fetched rows and survived a reload.
+  * The no-JS first page has 20 rows; there were 0 page errors.
+* **No production writes.** No POST, import, clear or sync was run against production. The real official full sync
+  was tested on isolated instances only.
+* **Other instances.** The coordinator-owned previews on :8098 and :8099 were stopped; :8097 was not touched.
+* **Product tests** for the deployed commit: Maven 210 tests, 0 failures, 12 MySQL skips; Node 69/69. These were local
+  runs; no external CI run is claimed.
+
+The limits listed above still apply: MySQL was never executed, ICU/Unicode collation is approximated, fuzzy filters do
+a residual scan in Java, and the read model refreshes lazily (at most every 3 s during a sync).
