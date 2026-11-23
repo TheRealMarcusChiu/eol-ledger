@@ -1364,10 +1364,10 @@ test('the count says "matching" while a filter is active; zero matches too; clea
   t.q('[data-filter-mode="count"]').emit('change');
   t.q('[data-filter-start="count"]').value = '1';
   t.q('[data-filter-start="count"]').emit('input');
-  assert.strictEqual(count(), '25 matching rows of 25 · filtered by COUNT');
+  assert.strictEqual(count(), '25 matching rows of 25');
   assert.strictEqual(t.shown().length, 20);
   t.q('[data-filter-select-none="name"]').emit('click');
-  assert.strictEqual(count(), '0 matching rows of 25 · filtered by NAME, COUNT');
+  assert.strictEqual(count(), '0 matching rows of 25');
   assert.strictEqual(t.shown().length, 0);
   t.q('[data-filters-clear-all]').emit('click');
   assert.strictEqual(count(), '25 of 25 rows');

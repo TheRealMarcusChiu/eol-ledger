@@ -963,7 +963,7 @@ function initTable(table, opts) {
     });
     if (n !== null) {
       count.textContent = active.length
-        ? n + ' matching ' + noun + ' of ' + (server ? total : trs.length) + ' · filtered by ' + active.map(function (k) { return labels[k]; }).join(', ')
+        ? n + ' matching ' + noun + ' of ' + (server ? total : trs.length)
         : n + ' of ' + (server ? total : trs.length) + ' ' + noun;
     }
     var sortMoved = defaultSort ? !(sort && sort.key === defaultSort.key && sort.dir === defaultSort.dir) : !!sort;
