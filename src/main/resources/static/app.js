@@ -569,11 +569,24 @@ function cellValue(td) {
   return td && td.hasAttribute('data-value') ? td.getAttribute('data-value') : cellText(td);
 }
 
-var PAGE_SIZES = [20, 50, 100];
+var DEFAULT_PAGE_SIZE = 20, MAX_PAGE_SIZE = 1000;
 
-/** Rows start..end of n matching rows on a page: size 20, 50 or 100 (else 20), page clamped to 1..pages; 0 rows is one empty page. */
+/** Rows per page: a whole number 1..1000 (DashboardQuery checks the same on the server). */
+function validPageSize(n) {
+  return typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= MAX_PAGE_SIZE;
+}
+
+/** Typed rows-per-page text to a size, or null: digits only, so "7.5", "1e2" and blanks never apply or truncate. */
+function parsePageSize(text) {
+  var t = String(text == null ? '' : text).trim();
+  if (!/^[0-9]+$/.test(t)) return null;
+  var n = Number(t);
+  return validPageSize(n) ? n : null;
+}
+
+/** Rows start..end of n matching rows on a page: a valid size (else 20), page clamped to 1..pages; 0 rows is one empty page. */
 function pageRange(n, page, size) {
-  if (PAGE_SIZES.indexOf(size) < 0) size = PAGE_SIZES[0];
+  if (!validPageSize(size)) size = DEFAULT_PAGE_SIZE;
   var pages = Math.max(1, Math.ceil(n / size));
   var p = Math.min(pages, Math.max(1, Math.floor(page) || 1));
   return { page: p, pages: pages, start: (p - 1) * size, end: Math.min(n, p * size) };
@@ -610,7 +623,7 @@ function encodeView(view, keys, defaultSort, domains) {
   if (Object.keys(filters).length) out.filters = filters;
   if (JSON.stringify(view.sort) !== JSON.stringify(defaultSort)) out.sort = view.sort;
   if (view.page > 1) out.page = view.page;
-  if (view.size !== PAGE_SIZES[0]) out.size = view.size;
+  if (view.size !== DEFAULT_PAGE_SIZE) out.size = view.size;
   return Object.keys(out).length > 1 ? JSON.stringify(out) : null;
 }
 
@@ -628,7 +641,7 @@ function decodeView(text, keys, types, defaultSort, domains) {
   try { v = JSON.parse(text); } catch (e) { /* defaults */ }
   var view = clearedState(null, null, keys, defaultSort);
   view.page = 1;
-  view.size = PAGE_SIZES[0];
+  view.size = DEFAULT_PAGE_SIZE;
   function has(o, n) { return !!o && typeof o === 'object' && !Array.isArray(o) && Object.prototype.hasOwnProperty.call(o, n); }
   function strings(a) { return Array.isArray(a) && a.every(function (x) { return typeof x === 'string'; }); }
   function bound(x) { return x === null || typeof x === 'string'; }
@@ -653,7 +666,7 @@ function decodeView(text, keys, types, defaultSort, domains) {
   if (has(v, 'sort') && v.sort === null) view.sort = null;
   else if (has(v.sort, 'key') && keys.indexOf(v.sort.key) >= 0 && (v.sort.dir === 'asc' || v.sort.dir === 'desc')) view.sort = { key: v.sort.key, dir: v.sort.dir };
   if (Number.isInteger(v.page) && v.page > 1) view.page = v.page;
-  if (PAGE_SIZES.indexOf(v.size) >= 0) view.size = v.size;
+  if (validPageSize(v.size)) view.size = v.size;
   return view;
 }
 
@@ -743,15 +756,30 @@ function initTable(table, opts) {
   var total = Number(table.getAttribute('data-total')) || 0, seq = 0;
 
   // Pages below the table: render() lists every match in display order; draw() shows only the current page of it.
-  var matching = trs.map(function (tr, i) { return i; }), page = 1, size = PAGE_SIZES[0];
+  var matching = trs.map(function (tr, i) { return i; }), page = 1, size = DEFAULT_PAGE_SIZE;
+  // Browser-local rows per page by table role (like column prefs); only used when the URL has no view param.
+  var sizeKey = 'eol-ledger.page-size.v1.' + encodeURIComponent(prefsId(table));
+  function savedSize() { return parsePageSize(tableStorage('getItem', null, sizeKey)) || DEFAULT_PAGE_SIZE; }
   var pager = document.createElement('nav');
   pager.className = 'pager';
   pager.setAttribute('aria-label', 'Pages of ' + noun);
-  var sizeSelect = document.createElement('select');
-  sizeSelect.setAttribute('data-page-size', '');
-  PAGE_SIZES.forEach(function (n) { sizeSelect.add(new Option(String(n), String(n))); });
+  var sizeInput = document.createElement('input');
+  sizeInput.setAttribute('data-page-size', '');
+  sizeInput.setAttribute('type', 'number');
+  sizeInput.setAttribute('min', '1');
+  sizeInput.setAttribute('max', String(MAX_PAGE_SIZE));
+  sizeInput.setAttribute('step', '1');
+  sizeInput.inputMode = 'numeric';
+  sizeInput.value = String(size);
+  var sizeError = document.createElement('p');
+  sizeError.className = 'filter-error';
+  sizeError.id = 'page-size-error-' + uid;
+  sizeError.setAttribute('data-page-size-error', '');
+  sizeError.setAttribute('aria-live', 'polite');
+  sizeInput.setAttribute('aria-describedby', sizeError.id);
+  sizeInput.setAttribute('aria-invalid', 'false');
   var sizeLabel = document.createElement('label');
-  sizeLabel.append('Rows per page ', sizeSelect);
+  sizeLabel.append('Rows per page ', sizeInput);
   var prev = document.createElement('button'), next = document.createElement('button');
   prev.type = next.type = 'button';
   prev.className = next.className = 'button-quiet';
@@ -762,7 +790,7 @@ function initTable(table, opts) {
   var where = document.createElement('p');
   where.setAttribute('data-page-status', '');
   where.setAttribute('aria-live', 'polite');
-  pager.append(sizeLabel, prev, where, next);
+  pager.append(sizeLabel, sizeError, prev, where, next);
   (table.closest('.table-wrap') || table).after(pager);
 
   function draw() {
@@ -795,9 +823,28 @@ function initTable(table, opts) {
   }
   prev.addEventListener('click', function () { turn(-1, prev, next); });
   next.addEventListener('click', function () { turn(1, next, prev); });
-  sizeSelect.addEventListener('change', function () { size = Number(sizeSelect.value); page = 1; draw(); });
+  // Applied on commit (change, blur, Enter), never per keystroke; an invalid value keeps the last size and says why.
+  function commitSize() {
+    var n = parsePageSize(sizeInput.value);
+    sizeInput.setAttribute('aria-invalid', String(n === null));
+    sizeError.textContent = n === null ? 'Enter a whole number from 1 to ' + MAX_PAGE_SIZE + '; still showing ' + size + ' per page.' : '';
+    if (n === null || n === size) return; // the same committed value (change then blur/Enter) draws once
+    size = n;
+    tableStorage('setItem', String(n), sizeKey);
+    page = 1;
+    draw();
+  }
+  sizeInput.addEventListener('change', commitSize);
+  sizeInput.addEventListener('blur', commitSize);
+  sizeInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); commitSize(); } });
   if (!server) draw();
-  if (!trs.length && !server) return table.setAttribute('data-table-ready', ''); // nothing to sort or filter; the page's own empty message stays
+  if (!trs.length && !server) {
+    // nothing to sort or filter; the page's own empty message stays, but the size control still shows the restored size
+    var emptyText = param ? new URL(window.location.href).searchParams.get(param) : null;
+    size = emptyText !== null ? decodeView(emptyText, [], {}, null).size : savedSize();
+    sizeInput.value = String(size);
+    return table.setAttribute('data-table-ready', '');
+  }
 
   /** Fetches the current page for the current view; a newer request makes older answers stale. */
   function fetchPage() {
@@ -1245,8 +1292,10 @@ function initTable(table, opts) {
     }
     keys.forEach(sync);
     render();
-    size = v.size;
-    sizeSelect.value = String(size);
+    size = text !== null ? v.size : savedSize(); // an explicit URL param always wins, even without a valid size
+    sizeInput.value = String(size);
+    sizeInput.setAttribute('aria-invalid', 'false');
+    sizeError.textContent = '';
     page = v.page;
     viewReady = !!param;
     draw();

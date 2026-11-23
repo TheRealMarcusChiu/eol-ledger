@@ -36,7 +36,8 @@ public class DashboardQuery {
 
     static final List<String> KEYS = List.of("purl", "ecosystem", "dependency", "version", "eol", "status", "repos", "branches",
             "context", "cycle", "evidence", "source", "sbom");
-    static final List<Integer> SIZES = List.of(20, 50, 100);
+    /** Rows per page: any whole number 1..MAX_SIZE, else DEFAULT_SIZE (app.js validPageSize). */
+    static final int DEFAULT_SIZE = 20, MAX_SIZE = 1000;
     static final Set<String> OPS = Set.of("contains", "not-contains", "exact", "not-exact", "starts-with", "ends-with", "fuzzy", "is-blank", "not-blank");
     /** Most values one values filter may list; far above any real column domain. */
     static final int MAX_VALUES = 20_000;
@@ -302,7 +303,7 @@ public class DashboardQuery {
     static View parse(String text) {
         List<Filter> filters = new ArrayList<>();
         String sortKey = "eol", sortDir = "asc";
-        int page = 1, size = 20;
+        int page = 1, size = DEFAULT_SIZE;
         JsonNode v = null;
         try {
             if (text != null) v = JSON.readTree(text);
@@ -346,7 +347,8 @@ public class DashboardQuery {
         JsonNode p = v.get("page");
         if (p != null && p.isIntegralNumber() && p.canConvertToInt() && p.asInt() > 1) page = p.asInt();
         JsonNode z = v.get("size");
-        if (z != null && z.isIntegralNumber() && z.canConvertToInt() && SIZES.contains(z.asInt())) size = z.asInt();
+        // 7.0 is the whole number 7 (as JSON.parse reads it); 7.5 or out-of-range values are rejected, never truncated
+        if (z != null && z.isNumber() && z.canConvertToExactIntegral() && z.canConvertToInt() && z.asInt() >= 1 && z.asInt() <= MAX_SIZE) size = z.asInt();
         return new View(filters, sortKey, sortDir, page, size);
     }
 

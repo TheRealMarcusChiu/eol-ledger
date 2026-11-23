@@ -66,10 +66,31 @@ class DashboardPagingTest extends WebTestBase {
         assertThat(keys(api("{\"v\":1,\"size\":50}"))).hasSize(32);
         // out of range, malformed, unknown version or size: defaults or the last page, never an error
         assertThat(api("{\"v\":1,\"page\":999}").path("page").asInt()).isEqualTo(2);
-        for (String bad : List.of("not json", "{\"v\":2,\"page\":2}", "{\"v\":1,\"page\":-4,\"size\":7}", "[]", "{\"v\":1,\"sort\":{\"key\":\"x;DROP\",\"dir\":\"up\"}}")) {
+        for (String bad : List.of("not json", "{\"v\":2,\"page\":2}", "{\"v\":1,\"page\":-4,\"size\":7.5}", "[]", "{\"v\":1,\"sort\":{\"key\":\"x;DROP\",\"dir\":\"up\"}}")) {
             JsonNode d = api(bad);
             assertThat(keys(d)).as(bad).isEqualTo(keys(p1));
             assertThat(d.path("size").asInt()).isEqualTo(20);
+        }
+    }
+
+    @Test
+    void anyWholePageSizeFromOneToAThousandIsQueriedAsItsSqlLimit() throws Exception {
+        List<String> all = keys(api("{\"v\":1,\"size\":1000}"));
+        assertThat(all).hasSize(32);
+        for (int size : new int[]{1, 7, 13, 37}) {
+            JsonNode p = api("{\"v\":1,\"size\":" + size + ",\"page\":2}");
+            assertThat(p.path("size").asInt()).as("size " + size).isEqualTo(size);
+            assertThat(p.path("pages").asInt()).isEqualTo((32 + size - 1) / size);
+            int page = Math.min(2, p.path("pages").asInt());
+            assertThat(keys(p)).isEqualTo(all.subList((page - 1) * size, Math.min(32, page * size)));
+        }
+        // an integral JSON number in another spelling is the same size, as in the browser
+        assertThat(api("{\"v\":1,\"size\":7.0}").path("size").asInt()).isEqualTo(7);
+        // never truncated, never unbounded: anything else is the default 20
+        for (String bad : List.of("0", "-7", "7.5", "1001", "1e400", "\"37\"", "null", "true", "99999999999")) {
+            JsonNode p = api("{\"v\":1,\"size\":" + bad + "}");
+            assertThat(p.path("size").asInt()).as(bad).isEqualTo(20);
+            assertThat(keys(p)).as(bad).hasSize(20);
         }
     }
 

@@ -373,7 +373,18 @@ test('page range: 20/50/100 per page, last partial page, an empty table is one e
   assert.deepStrictEqual(r(101, 3, 50), { page: 3, pages: 3, start: 100, end: 101 });
 });
 
-test('page range: out-of-range pages clamp, sizes other than 20/50/100 fall back to 20', () => {
+test('page range: any whole number of rows from 1 to 1000 is a page size', () => {
+  const { pageRange } = load();
+  const r = (n, page, size) => plain(pageRange(n, page, size));
+  assert.deepStrictEqual(r(45, 2, 7), { page: 2, pages: 7, start: 7, end: 14 });
+  assert.deepStrictEqual(r(45, 9, 37), { page: 2, pages: 2, start: 37, end: 45 }, 'clamped to the last page');
+  assert.deepStrictEqual(r(300, 4, 75), { page: 4, pages: 4, start: 225, end: 300 });
+  assert.deepStrictEqual(r(1200, 2, 250), { page: 2, pages: 5, start: 250, end: 500 });
+  assert.deepStrictEqual(r(1200, 2, 1000), { page: 2, pages: 2, start: 1000, end: 1200 });
+  assert.deepStrictEqual(r(3, 1, 1), { page: 1, pages: 3, start: 0, end: 1 });
+});
+
+test('page range: out-of-range pages clamp, sizes outside whole 1..1000 fall back to 20', () => {
   const { pageRange } = load();
   const r = (n, page, size) => plain(pageRange(n, page, size));
   assert.deepStrictEqual(r(21, 5, 20), { page: 2, pages: 2, start: 20, end: 21 }, 'past the end after results shrink');
@@ -381,7 +392,7 @@ test('page range: out-of-range pages clamp, sizes other than 20/50/100 fall back
   assert.deepStrictEqual(r(21, -3, 20), r(21, 1, 20));
   assert.deepStrictEqual(r(21, NaN, 20), r(21, 1, 20));
   assert.deepStrictEqual(r(0, 4, 100), { page: 1, pages: 1, start: 0, end: 0 });
-  for (const bad of [0, -20, 10, 25, 1e9, NaN, '50', undefined]) assert.deepStrictEqual(r(45, 1, bad), r(45, 1, 20), String(bad));
+  for (const bad of [0, -20, 7.5, 1001, 1e9, NaN, Infinity, '50', undefined, null]) assert.deepStrictEqual(r(45, 1, bad), r(45, 1, 20), String(bad));
 });
 
 test('a page holds the filtered and sorted rows of the whole table, not of the previous page', () => {
@@ -879,7 +890,8 @@ test('view state: malformed, other-version, unknown and hostile input falls back
   const ctx = load();
   const defaults = plain(ctx.decodeView(null, VIEW_KEYS, VIEW_TYPES, EOL_ASC));
   for (const text of [undefined, '', 'x', 'null', '[]', '42', '"v"', '{}', '{"v":2,"sort":null,"page":2}', '{"v":"1","page":2}', '{"sort":null}',
-    '{"v":1,"filters":[1],"sort":"name","page":"2","size":"50"}', '{"v":1,"page":0,"size":30}', '{"v":1,"page":2.5,"size":-20}', '{"v":1,"page":-1}',
+    '{"v":1,"filters":[1],"sort":"name","page":"2","size":"50"}', '{"v":1,"page":0,"size":1001}', '{"v":1,"page":2.5,"size":-20}', '{"v":1,"page":-1}',
+    '{"v":1,"size":0}', '{"v":1,"size":7.5}', '{"v":1,"size":"37"}', '{"v":1,"size":1e400}', '{"v":1,"size":null}',
     '{"v":1,"sort":{"key":"nope","dir":"asc"}}', '{"v":1,"sort":{"key":"name","dir":"up"}}', '{"v":1,"sort":{"key":"__proto__","dir":"asc"}}',
     '{"v":1,"filters":{"nope":{"mode":"text","text":"a"},"name":{"mode":"regex","op":"matches","searchOp":"near","selected":[1,"a"],"text":5,"search":{}}}}',
     '{"v":1,"filters":{"name":{"op":"__proto__","selected":"a"},"__proto__":{"mode":"text"},"constructor":{"mode":"text"}},"__proto__":{"page":3}}']) {
@@ -887,9 +899,25 @@ test('view state: malformed, other-version, unknown and hostile input falls back
   }
   assert.strictEqual(vm.runInContext('({}).mode === undefined && ({}).page === undefined', ctx), true);
   // valid fields survive next to invalid ones
-  const mixed = ctx.decodeView('{"v":1,"filters":{"name":{"mode":"text","op":"bogus","text":"py"}},"page":2,"size":30}', VIEW_KEYS, VIEW_TYPES, EOL_ASC);
+  const mixed = ctx.decodeView('{"v":1,"filters":{"name":{"mode":"text","op":"bogus","text":"py"}},"page":2,"size":1001}', VIEW_KEYS, VIEW_TYPES, EOL_ASC);
   assert.deepStrictEqual(plain(mixed.filters.name), Object.assign(plain(ctx.emptyFilter()), { mode: 'text', text: 'py' }));
   assert.deepStrictEqual([mixed.page, mixed.size], [2, 20]);
+});
+
+test('view state: any whole page size 1..1000 round-trips; 20 is the default and encodes to nothing', () => {
+  const ctx = load();
+  for (const size of [1, 7, 37, 50, 75, 100, 250, 1000]) {
+    const v = ctx.decodeView(JSON.stringify({ v: 1, size }), VIEW_KEYS, VIEW_TYPES, EOL_ASC);
+    assert.strictEqual(v.size, size);
+    assert.deepStrictEqual(JSON.parse(ctx.encodeView(v, VIEW_KEYS, EOL_ASC)), { v: 1, size });
+  }
+  assert.strictEqual(ctx.encodeView(ctx.decodeView('{"v":1,"size":20}', VIEW_KEYS, VIEW_TYPES, EOL_ASC), VIEW_KEYS, EOL_ASC), null);
+});
+
+test('page size input text: only whole numbers 1..1000 apply, never truncated', () => {
+  const { parsePageSize } = load();
+  for (const [text, want] of [['7', 7], [' 37 ', 37], ['1000', 1000], ['1', 1], ['007', 7]]) assert.strictEqual(parsePageSize(text), want, text);
+  for (const text of ['', ' ', '0', '-5', '7.5', '7.0', '1001', '1e2', 'Infinity', 'NaN', 'abc', '12abc']) assert.strictEqual(parsePageSize(text), null, text);
 });
 
 test('view state: range bounds go through the same validators; invalid ones show their error and constrain nothing', () => {
@@ -1172,6 +1200,130 @@ test('every sort, filter and page change mirrors the address bar; clearing remov
   assert.ok(win.writes.length > 0 && win.writes.every(s => s === win.history.state), 'replaceState keeps the entry\'s own state');
 });
 
+test('rows per page: a labelled number field applies whole 1..1000 on change, blur or Enter only, once; invalid input keeps the last size', () => {
+  const { win, ctx } = viewDom('https://x.test/repos');
+  const t = viewTable('code-repos-table'), other = viewTable('other-table');
+  ctx.initTable(t.table);
+  ctx.initTable(other.table);
+  const size = t.q('[data-page-size]'), p = 'view.code-repos-table';
+  assert.strictEqual(size.tagName, 'input');
+  assert.deepStrictEqual(['type', 'min', 'max', 'step'].map(a => size.getAttribute(a)), ['number', '1', '1000', '1']);
+  assert.strictEqual(size.value, '20');
+  assert.strictEqual(size.parentNode.tagName, 'label');
+  assert.match(size.parentNode.textContent, /Rows per page/);
+  let draws = 0;
+  const range = ctx.pageRange;
+  ctx.pageRange = function () { draws++; return range.apply(this, arguments); };
+
+  size.value = '7';
+  size.emit('input'); // typing a digit applies nothing
+  assert.strictEqual(draws, 0);
+  assert.strictEqual(t.shown().length, 20);
+  size.emit('change');
+  assert.deepStrictEqual(t.shown(), ['pkg01', 'pkg02', 'pkg03', 'pkg04', 'pkg05', 'pkg06', 'pkg07']);
+  assert.strictEqual(t.status(), 'Page 1 of 4');
+  assert.strictEqual(viewOf(win, p).size, 7);
+  size.emit('blur'); // the same committed value: no second draw
+  size.emit('keydown', { key: 'Enter' });
+  assert.strictEqual(draws, 1);
+
+  t.q('[data-page-next]').emit('click');
+  const error = t.q('[data-page-size-error]');
+  for (const bad of ['', '0', '-3', '7.5', '1001', '1e2']) {
+    const before = draws;
+    size.value = bad;
+    size.emit('change');
+    assert.strictEqual(draws, before, bad + ' must not redraw');
+    assert.strictEqual(size.getAttribute('aria-invalid'), 'true', bad);
+    assert.match(error.textContent, /whole number from 1 to 1000/, bad);
+    assert.strictEqual(viewOf(win, p).size, 7, bad);
+    assert.strictEqual(t.status(), 'Page 2 of 4', bad);
+  }
+  assert.strictEqual(size.getAttribute('aria-describedby'), error.id);
+  size.value = '12';
+  size.emit('keydown', { key: 'Enter' });
+  assert.strictEqual(size.getAttribute('aria-invalid'), 'false');
+  assert.strictEqual(error.textContent, '');
+  assert.strictEqual(t.status(), 'Page 1 of 3', 'a new size starts on page 1');
+  assert.strictEqual(viewOf(win, p).size, 12);
+  // the other table on the page keeps its own size
+  assert.strictEqual(other.q('[data-page-size]').value, '20');
+  assert.strictEqual(other.shown().length, 20);
+  assert.strictEqual(viewOf(win, 'view.other-table'), null);
+});
+
+test('rows per page: a committed size is remembered per table role and restored when the URL has no view param; a URL param always wins', () => {
+  const first = viewDom('https://x.test/repos');
+  const t = viewTable('code-repos-table');
+  first.ctx.initTable(t.table);
+  t.q('[data-page-size]').value = '37';
+  t.q('[data-page-size]').emit('change');
+  assert.strictEqual(first.win.storage.get('eol-ledger.page-size.v1.code-repos-table'), '37');
+  const saved = Object.fromEntries(first.win.storage);
+
+  // navigating back to the plain page restores 37 from storage; the address bar then mirrors the shown view
+  const back = viewDom('https://x.test/repos', saved);
+  const u = viewTable('code-repos-table');
+  back.ctx.initTable(u.table);
+  assert.deepStrictEqual([u.q('[data-page-size]').value, u.shown().length, u.status()], ['37', 25, 'Page 1 of 1']);
+  assert.deepStrictEqual(viewOf(back.win, 'view.code-repos-table'), { v: 1, size: 37 });
+
+  // an explicit param wins, even one without a size or with an invalid one: those mean the default 20
+  for (const view of ['{"v":1}', '{"v":1,"size":7.5}', '{"v":1,"size":0}', '%7Bbroken']) {
+    const linked = viewDom('https://x.test/repos?view.code-repos-table=' + (view.startsWith('%') ? view : encodeURIComponent(view)), saved);
+    const w = viewTable('code-repos-table');
+    linked.ctx.initTable(w.table);
+    assert.strictEqual(w.q('[data-page-size]').value, '20', view);
+    assert.strictEqual(w.shown().length, 20, view);
+  }
+  const linked = viewDom('https://x.test/repos?view.code-repos-table=' + encodeURIComponent('{"v":1,"size":7}'), saved);
+  const x = viewTable('code-repos-table');
+  linked.ctx.initTable(x.table);
+  assert.strictEqual(x.q('[data-page-size]').value, '7');
+});
+
+test('rows per page: saved sizes are per role, invalid or unreadable ones mean 20, failing storage never breaks paging, empty tables restore too', () => {
+  for (const bad of ['0', '7.5', '1001', 'abc', '']) {
+    const { ctx } = viewDom('https://x.test/repos', { 'eol-ledger.page-size.v1.code-repos-table': bad });
+    const t = viewTable('code-repos-table');
+    ctx.initTable(t.table);
+    assert.strictEqual(t.q('[data-page-size]').value, '20', JSON.stringify(bad));
+  }
+  // another role keeps its own size
+  const roles = viewDom('https://x.test/repos', { 'eol-ledger.page-size.v1.code-repos-table': '37' });
+  const other = viewTable('other-table');
+  roles.ctx.initTable(other.table);
+  assert.strictEqual(other.q('[data-page-size]').value, '20');
+  // throwing storage: defaults, and a committed size still applies
+  const broken = viewDom('https://x.test/repos');
+  broken.win.localStorage = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); }, removeItem() { throw new Error('blocked'); } };
+  const b = viewTable('code-repos-table');
+  broken.ctx.initTable(b.table);
+  assert.strictEqual(b.q('[data-page-size]').value, '20');
+  b.q('[data-page-size]').value = '7';
+  b.q('[data-page-size]').emit('change');
+  assert.strictEqual(b.shown().length, 7);
+  // a table with no rows still shows and keeps its role's size
+  const empty = viewDom('https://x.test/repos', { 'eol-ledger.page-size.v1.empty-table': '7' });
+  const e = viewTable('empty-table');
+  e.table.tBodies[0].childNodes.length = 0;
+  empty.ctx.initTable(e.table);
+  assert.strictEqual(e.q('[data-page-size]').value, '7');
+  e.q('[data-page-size]').value = '12';
+  e.q('[data-page-size]').emit('change');
+  assert.strictEqual(empty.win.storage.get('eol-ledger.page-size.v1.empty-table'), '12');
+  assert.strictEqual(e.table.hasAttribute('data-table-ready'), true);
+});
+
+test('rows per page: a custom size restores from a copied URL, and malformed sizes there fall back to 20', () => {
+  for (const [size, shown, status] of [[37, 25, 'Page 1 of 1'], [7, 7, 'Page 1 of 4'], [7.5, 20, 'Page 1 of 2'], [0, 20, 'Page 1 of 2'], [1001, 20, 'Page 1 of 2']]) {
+    const { ctx } = viewDom('https://x.test/repos?view.code-repos-table=' + encodeURIComponent(JSON.stringify({ v: 1, size })));
+    const t = viewTable('code-repos-table');
+    ctx.initTable(t.table);
+    assert.deepStrictEqual([t.shown().length, t.status(), t.q('[data-page-size]').value], [shown, status, String(shown === 25 ? 37 : shown)], String(size));
+  }
+});
+
 test('values mode: none selected ([]) and a partial selection round-trip through the URL; select all is null again', () => {
   const { win, ctx } = viewDom('https://x.test/repos');
   const t = viewTable('code-repos-table');
@@ -1371,7 +1523,7 @@ test('pre-paint gate: theme.js (synchronous, JS only) marks tables pending; app.
   win.emit('load');
   assert.strictEqual(root.hasAttribute('data-tables-pending'), false, 'a page whose app.js never ran shows every row after load');
   const ctx = load();
-  assert.strictEqual(vm.runInContext('PAGE_SIZES[0]', ctx), 20);
+  assert.strictEqual(vm.runInContext('DEFAULT_PAGE_SIZE', ctx), 20);
   assert.match(css, /html\[data-tables-pending\] main table:not\(\[data-table-ready\]\) > tbody > tr:nth-child\(n \+ 21\) \{ display: none; \}/);
 });
 

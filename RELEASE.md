@@ -6,6 +6,25 @@ Branch `feature/server-paging-live-sync` (base `5bb7c9a`).
 `origin/master` and deployed to production. See "Production acceptance" at the end. The red/green notes below are the
 implementation history; the worker that wrote them ran no server or browser.
 
+**Follow-up on branch `feature/custom-rows-per-page` (base `5ae6352`), not committed:** "Rows per page" is now a
+number field instead of the 20/50/100 select, on every paged table.
+* **Control.** A labelled `type=number` field (min 1, max 1000, step 1, default 20).
+* **When it applies.** On change, blur or Enter, never per keystroke. Committing the same value again does not redraw.
+* **Invalid input.** Blank, 0, negative, fractional, `1e2` or over 1000 never applies or fetches. The last size
+  stays, the field is marked `aria-invalid`, and a linked message explains the range.
+* **Validation rule.** The browser (`validPageSize` / `parsePageSize`) and the server (`DashboardQuery.parse`) both
+  accept only whole numbers 1..1000, without truncating. Anything else in a URL becomes 20. Old URLs with 20, 50
+  or 100 still work.
+* **Remembered per table role.** A committed valid size is saved in browser-local storage under
+  `eol-ledger.page-size.v1.<role>`, using the same role identity as the column preferences (`prefsId`).
+  * It is restored only when the URL has no view param for that table.
+  * An explicit view param always wins. A param without a valid size means 20.
+  * Unreadable, invalid or blocked storage also means 20.
+  * Empty tables restore and save their size too.
+  * Filters and the current page are never stored.
+* **Mobile width.** The field is 6rem wide so it fits a 320px screen.
+* **Not browser-checked here.** The tests ran against the fake DOM and the Java API only.
+
 ## Scope
 
 ### Dashboard paging in SQL
