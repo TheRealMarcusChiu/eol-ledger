@@ -1382,6 +1382,87 @@ test('the count says "matching" while a filter is active; zero matches too; clea
   assert.strictEqual(count(), '25 of 25 rows');
 });
 
+test('/repos eight columns: Version and SBOM Format inserted, yet a saved c3 filter, Provider:3 order and width slot 3 stay on Provider', () => {
+  // exactly the /repos header: DOM order with its data-preference-index (old six kept 0-5, new Version 6 and SBOM Format 7)
+  const HEADERS = ['App ID', 'Code repo', 'Branch', 'Version', 'Provider', 'SBOM Format', 'Packages', 'Latest snapshot'];
+  const INDEXES = [0, 1, 2, 6, 3, 7, 4, 5];
+  const ROWS = [['A1', 'https://g/a', 'main', '1.0', 'gitlab', 'Inventory JSON', '3', '2026-01-01'],
+    ['A2', 'https://g/b', 'main', '2.0', 'github', 'CycloneDX 1.6 JSON', '5', '2026-01-02'],
+    ['A3', 'https://g/c', 'dev', '—', 'gitlab', '—', '1', '2026-01-03']];
+  const make = (href, stored) => {
+    const dom = viewDom(href, stored);
+    const main = new FakeEl('main'), wrap = new FakeEl('div'), table = new FakeEl('table'), thead = new FakeEl('thead'), head = new FakeEl('tr'), tbody = new FakeEl('tbody');
+    wrap.className = 'table-wrap';
+    table.id = 'code-repos-table';
+    HEADERS.forEach((h, i) => { const th = new FakeEl('th'); th.setAttribute('data-preference-index', String(INDEXES[i])); th.append(h); head.append(th); });
+    ROWS.forEach(r => { const tr = new FakeEl('tr'); r.forEach(v => { const td = new FakeEl('td'); td.append(v); tr.append(td); }); tbody.append(tr); });
+    thead.append(head);
+    table.append(thead, tbody);
+    wrap.append(table);
+    main.append(wrap);
+    table.offsetWidth = 900;
+    dom.ctx.initTable(table);
+    const th = name => head.cells.find(c => c.getAttribute('data-label') === name);
+    const shown = () => tbody.rows.filter(tr => !tr.hidden && !tr.hasAttribute('data-empty')).map(tr => tr.cells[0].textContent);
+    return { ...dom, table, head, th, shown };
+  };
+  // an old copied URL filtering c3 still filters Provider, not Version
+  const a = make('https://x.test/repos?view.code-repos-table=' + encodeURIComponent('{"v":1,"filters":{"c3":{"selected":["github"]}}}'));
+  assert.deepStrictEqual(a.shown(), ['A2']);
+  assert.strictEqual(a.th('Provider').getAttribute('data-filter-active'), 'true');
+  assert.strictEqual(a.th('Version').getAttribute('data-filter-active'), 'false');
+
+  // an old custom order Provider:3 first keeps Provider; the new columns join in DOM order; reset restores the eight default
+  const b = make('https://x.test/repos', { 'eol-ledger.table-order.v1.code-repos-table': '["Provider:3","App ID:0","Code repo:1","Branch:2","Packages:4","Latest snapshot:5"]' });
+  b.ctx.initColumnOrder(b.table);
+  const labels = () => b.head.cells.map(c => c.getAttribute('data-label'));
+  assert.deepStrictEqual(labels(), ['Provider', 'App ID', 'Code repo', 'Branch', 'Packages', 'Latest snapshot', 'Version', 'SBOM Format']);
+  b.table.columnLayout.reset();
+  assert.deepStrictEqual(labels(), HEADERS);
+
+  // a numeric width saved in slot 3 is read for Provider, resized and written back to slot 3, and reset deletes slot 3
+  const c = make('https://x.test/repos', { 'eol-ledger.table-widths.v1': '{"code-repos-table":{"3":222}}' });
+  c.ctx.initResize(c.table);
+  const provider = c.th('Provider'), handle = provider.querySelector('[data-column-resize]');
+  assert.strictEqual(provider.style.width, '222px');
+  assert.strictEqual(handle.getAttribute('data-column-resize'), '3');
+  handle.emit('keydown', { key: 'ArrowRight' });
+  assert.deepStrictEqual(JSON.parse(c.win.storage.get('eol-ledger.table-widths.v1')), { 'code-repos-table': { 3: 232 } });
+  handle.emit('dblclick');
+  assert.deepStrictEqual(JSON.parse(c.win.storage.get('eol-ledger.table-widths.v1')), { 'code-repos-table': {} });
+});
+
+test('the global Settings panel takes over the same server-rendered Imports link, keeping its URL and current-page state', () => {
+  const { win, ctx } = viewDom('https://x.test/imports');
+  const topbar = new FakeEl('header'), nav = new FakeEl('nav'), imports = new FakeEl('a');
+  imports.setAttribute('href', '/ctx/imports');
+  imports.setAttribute('data-settings-imports', '');
+  imports.setAttribute('aria-current', 'page');
+  imports.className = 'button-quiet';
+  imports.append('Imports');
+  topbar.append(nav, imports);
+  ctx.initSettings(topbar, { get() { return { mode: 'dark', theme: 'ledger' }; }, set() {} });
+  const panel = topbar.querySelector('#settings-panel') || topbar.querySelector('.settings-panel');
+  assert.strictEqual(panel.getAttribute('aria-label'), 'Settings');
+  assert.ok(panel.contains(imports), 'the same anchor, moved into the panel');
+  assert.strictEqual(topbar.querySelectorAll('[data-settings-imports]').length, 1, 'never duplicated');
+  assert.strictEqual(imports.getAttribute('href'), '/ctx/imports');
+  assert.strictEqual(imports.getAttribute('aria-current'), 'page');
+  assert.ok(panel.querySelector('[data-theme]'), 'appearance controls stay');
+  const toggle = topbar.querySelector('.settings-toggle');
+  // a 320x568 phone with the panel starting at 177.781px: it may only be as tall as the room below it, less 16px
+  win.innerHeight = 568;
+  panel.getBoundingClientRect = () => ({ top: 177.781, bottom: 588.234, left: 0, right: 300, width: 300 });
+  toggle.emit('click');
+  assert.strictEqual(panel.hidden, false);
+  assert.strictEqual(panel.style.maxHeight, (568 - 177.781 - 16) + 'px');
+  win.innerHeight = 150; // a resize while open refits; never below 0
+  win.emit('resize');
+  assert.strictEqual(panel.style.maxHeight, '0px');
+  toggle.emit('click');
+  assert.strictEqual(panel.hidden, true);
+});
+
 test('dependency table settings list only show/hide checkboxes (no width fields); header resizers still resize and save widths', () => {
   const { win, ctx } = viewDom('https://x.test/');
   const keys = vm.runInContext('Object.keys(TABLE_COLUMNS)', ctx);

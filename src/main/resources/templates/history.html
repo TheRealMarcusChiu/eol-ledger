@@ -36,7 +36,7 @@
         <th:block th:if="${selected != null}">
             <h2>Snapshot observed <span th:text="${@view.time(selected.observedAt())}">time</span></h2>
             <p class="notice">Historical packages; EoL dates and status use today's endoflife.date data.</p>
-            <p class="small muted">SBOM: <span th:if="${inline != null}">Inline JSON upload</span><code th:unless="${inline != null}" th:text="${selected.sbomUrl()}">url</code>.
+            <p class="small muted">SBOM: <span th:if="${inline != null}">Inline upload</span><code th:unless="${inline != null}" th:text="${selected.sbomUrl()}">url</code>.
                 <span th:text="${selected.depCount()}">5</span> packages.</p>
             <section th:if="${inline != null}" class="panel" aria-label="Snapshot provenance">
                 <dl th:replace="~{fragments :: inlineFacts(${inline})}"></dl>

@@ -98,6 +98,21 @@ public class ImportService {
         return commit(entries, source);
     }
 
+    /**
+     * Imports one SBOM file as the inventory of one repository branch named by the operator: the file becomes one
+     * dependency-inventory JSON entry and then takes exactly the JSON path (validation, history, one transaction).
+     */
+    public synchronized Result importSbom(String text, String fileName, SbomInventory.Meta meta, String source) {
+        List<InventoryJson.Entry> entries;
+        try {
+            entries = InventoryJson.parse(SbomInventory.toInventoryJson(text, fileName, meta));
+        } catch (ImportFailedException e) {
+            recordRun(source, false, 0, 0, String.join("; ", e.errors()));
+            throw e;
+        }
+        return commit(entries, source);
+    }
+
     private Result commit(List<InventoryJson.Entry> entries, String source) {
         int rows = entries.size();
         Instant now = clock.instant();

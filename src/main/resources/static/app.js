@@ -66,6 +66,12 @@ function tableStorage(method, value, key) {
   try { return window.localStorage[method](key || TABLE_KEY, value); } catch (e) { return null; }
 }
 
+/** A header's stable preference identity: its data-preference-index (kept when columns are inserted before it), else its position. */
+function prefIndex(cell, i) {
+  var p = cell.getAttribute('data-preference-index');
+  return p !== null && /^\d+$/.test(p) ? Number(p) : i;
+}
+
 /** Narrowest width that keeps a header on one line: its name and sort arrow plus the cell's padding, whose right side holds the filter button and resize handle. */
 function headerFloor(cell) {
   var first = cell.querySelector('.th-sort');
@@ -231,7 +237,7 @@ function initColumnOrder(table) {
   var head = table.tHead && table.tHead.rows[0];
   if (!head || !head.cells.length) return;
   var cells = Array.prototype.slice.call(head.cells);
-  var keys = cells.map(function (cell, i) { return cell.getAttribute('data-column') || (cell.getAttribute('data-label') || cellText(cell)) + ':' + i; });
+  var keys = cells.map(function (cell, i) { return cell.getAttribute('data-column') || (cell.getAttribute('data-label') || cellText(cell)) + ':' + prefIndex(cell, i); });
   var groups = [cells];
   Array.prototype.forEach.call(table.rows, function (row) {
     if (row !== head && row.cells.length === cells.length && !row.querySelector('td.empty')) {
@@ -885,7 +891,7 @@ function initTable(table, opts) {
   }
 
   var cols = Array.prototype.map.call(head.cells, function (cell, i) {
-    return { th: cell, index: i, key: cell.getAttribute('data-column') || 'c' + i, type: cell.getAttribute('data-type') || 'text' };
+    return { th: cell, index: i, key: cell.getAttribute('data-column') || 'c' + prefIndex(cell, i), type: cell.getAttribute('data-type') || 'text' };
   });
   var keys = cols.map(function (c) { return c.key; });
   var types = {}, th = {}, colIndex = {};
@@ -1457,7 +1463,8 @@ function initResize(table) {
   var cells = table.columnLayout ? table.columnLayout.cells : Array.prototype.slice.call(head.cells);
   var natural = cells.map(function (c) { return Math.round(c.getBoundingClientRect().width); });
   var saved = storedWidths(tableStorage('getItem', null, WIDTHS_KEY), id);
-  var widths = natural.map(function (n, i) { return saved[i] || n; });
+  var ids = cells.map(prefIndex); // stored widths are keyed by preference index, not current position
+  var widths = natural.map(function (n, i) { return saved[ids[i]] || n; });
   var drawn = [];
 
   function apply() {
@@ -1484,11 +1491,11 @@ function initResize(table) {
 
   var handles = cells.map(function (c, i) {
     var label = c.getAttribute('data-label') || cellText(c);
-    var h = resizeHandle(label, String(i),
+    var h = resizeHandle(label, String(ids[i]),
       function () { return drawn[i]; },
-      function (w) { widths[i] = saved[i] = clampWidth(w, widths[i]); apply(); },
+      function (w) { widths[i] = saved[ids[i]] = clampWidth(w, widths[i]); apply(); },
       save,
-      function () { widths[i] = natural[i]; delete saved[i]; apply(); save(); });
+      function () { widths[i] = natural[i]; delete saved[ids[i]]; apply(); save(); });
     c.appendChild(h);
     return h;
   });
@@ -1764,7 +1771,7 @@ function initSettings(topbar, appearance) {
   panel.id = 'settings-panel';
   panel.className = 'settings-panel';
   panel.setAttribute('role', 'dialog');
-  panel.setAttribute('aria-label', 'Appearance settings');
+  panel.setAttribute('aria-label', 'Settings');
   panel.hidden = true;
 
   var title = document.createElement('p');
@@ -1809,6 +1816,9 @@ function initSettings(topbar, appearance) {
   note.className = 'settings-note';
   note.textContent = 'Saved in this browser. Status colours (ended, ends soon, supported) never change.';
   panel.append(title, modes.el, themes.el, note);
+  // The server-rendered Imports link (shown in the top bar without scripts) moves into this panel: same href and aria-current.
+  var imports = topbar.querySelector('[data-settings-imports]');
+  if (imports) panel.append(imports);
 
   function sync() {
     var cur = appearance.get();
@@ -1816,9 +1826,13 @@ function initSettings(topbar, appearance) {
     Object.keys(themes.buttons).forEach(function (k) { themes.buttons[k].setAttribute('aria-pressed', String(cur.theme === k)); });
   }
 
+  // the panel scrolls itself instead of running past the bottom of a short screen
+  function fit() { panel.style.maxHeight = Math.max(0, window.innerHeight - panel.getBoundingClientRect().top - 16) + 'px'; }
+
   function open() {
     sync();
     panel.hidden = false;
+    fit();
     toggle.setAttribute('aria-expanded', 'true');
     var pressed = panel.querySelector('[aria-pressed="true"]');
     (pressed || panel.querySelector('button')).focus();
@@ -1835,6 +1849,7 @@ function initSettings(topbar, appearance) {
   document.addEventListener('pointerdown', function (e) { if (!wrap.contains(e.target)) close(false); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !panel.hidden) { e.preventDefault(); close(true); } });
   wrap.addEventListener('focusout', function (e) { if (e.relatedTarget && !wrap.contains(e.relatedTarget)) close(false); });
+  window.addEventListener('resize', function () { if (!panel.hidden) fit(); });
 
   wrap.append(toggle, panel);
   topbar.appendChild(wrap);

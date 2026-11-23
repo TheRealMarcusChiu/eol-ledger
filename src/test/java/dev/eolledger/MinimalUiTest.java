@@ -109,7 +109,8 @@ class MinimalUiTest extends WebTestBase {
                     .doesNotContain(">Cycles</a>", "Repositories", "repositories", ">Release cycles</", "EoL Packages");
         }
         assertThat(page("/")).contains("<title>EoL Dependencies · EoL Ledger</title>", "<h1>EoL Dependencies</h1>", "># Code Repos Using It</th>");
-        assertThat(page("/repos")).contains("<title>Code repos · EoL Ledger</title>", "<h1>Code repos</h1>", "2</span> code repos,",
+        // the code repo / branch count subtitle was removed on purpose; the table lists the branches
+        assertThat(page("/repos")).contains("<title>Code repos · EoL Ledger</title>", "<h1>Code repos</h1>",
                 ">Code repo</th>", "aria-label=\"Code repo branches\"");
         for (String url : List.of("/repos/" + main, "/repos/" + main + "/history", "/repos/" + main + "/deps/" + coreId)) {
             assertThat(page(url)).as(url).contains("<a href=\"/repos\">Code repos</a>");

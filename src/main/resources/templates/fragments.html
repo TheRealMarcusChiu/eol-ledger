@@ -18,8 +18,9 @@
     <nav aria-label="Main">
         <a th:href="@{/}" th:attr="aria-current=${active == 'dashboard'} ? 'page' : null">EoL Dependencies</a>
         <a th:href="@{/repos}" th:attr="aria-current=${active == 'repos'} ? 'page' : null">Code repos</a>
-        <a th:href="@{/imports}" th:attr="aria-current=${active == 'imports'} ? 'page' : null">Imports</a>
     </nav>
+    <!--/* Without scripts this link stays in the top bar; app.js moves this same link into the Settings panel. */-->
+    <a class="button-quiet" data-settings-imports th:href="@{/imports}" th:attr="aria-current=${active == 'imports'} ? 'page' : null">Imports</a>
 </header>
 
 <span th:fragment="eol(e)" class="eol" th:classappend="${'eol-' + e.css()}" th:text="${e.text()}">status</span>
@@ -27,7 +28,7 @@
 <!--/* What a JSON-uploaded snapshot declared about itself; nothing here was fetched. */-->
 <dl th:fragment="inlineFacts(inline)" class="facts">
     <dt>Inventory source</dt>
-    <dd>Inline JSON upload <span class="muted">(re-upload to update)</span></dd>
+    <dd>Inline upload <span class="muted">(re-upload to update)</span></dd>
     <dt>App ID</dt>
     <dd th:text="${inline.appId() ?: 'Not stated'}">APP-1</dd>
     <dt>Projects / modules</dt>
@@ -109,7 +110,7 @@
                 <a th:href="${detail}" th:if="${d.cycle() != null}">Details</a></td>
             <td data-column="source" class="col-source"><a th:if="${repoLink}" th:href="${repoLink}" th:text="${repoUrl}" rel="noopener noreferrer">repo</a><span th:unless="${repoLink}" th:text="${repoUrl}">repo</span></td>
             <td data-column="sbom" class="col-sbom"><a th:if="${sbomLink}" th:href="${sbomLink}" th:text="${sbomUrl}" rel="noopener noreferrer">sbom</a><span
-                    th:if="${sbomUrl == T(dev.eolledger.ImportService).INLINE}">Inline JSON upload</span><code
+                    th:if="${sbomUrl == T(dev.eolledger.ImportService).INLINE}">Inline upload</span><code
                     th:unless="${sbomLink != null or sbomUrl == T(dev.eolledger.ImportService).INLINE}" th:text="${sbomUrl}">classpath:samples/x.json</code></td>
         </tr>
         <tr th:if="${deps.isEmpty()}"><td colspan="13" class="empty">No packages in this snapshot.</td></tr>

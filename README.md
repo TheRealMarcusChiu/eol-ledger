@@ -173,6 +173,51 @@ result. A reload resumes polling. Without scripts, the form posts to `/catalog/s
 runs at a time. A second manual or scheduled sync is refused, and **Clear all data** is refused with a visible message
 while a sync runs. The network fetch holds no database lock.
 
+## SBOM import
+
+**Imports → Import SBOM** uploads one SBOM file for one code repo branch: `POST /imports/sbom` (multipart, CSRF).
+The fields are `file`, `name` (repository name), `url` (http(s) repository URL), `branch` (required; no default is
+assumed), `provider` (optional, default `other`) and `appId` (optional). The repository and branch always come from
+these fields, never from the document. The file becomes one dependency-inventory JSON entry and then takes exactly the
+JSON import path: the same validation, import history, single transaction and per-branch snapshot history. An
+unchanged re-upload adds no snapshot. Success redirects back to Imports (303); a rejected file returns the Imports page
+with the reasons (400) and changes nothing but the history row.
+
+The format is detected from the content, not the file name:
+
+| Format | Serializations | Versions | Packages taken |
+|---|---|---|---|
+| CycloneDX | JSON (`bomFormat`, `specVersion`), XML (`http://cyclonedx.org/schema/bom/1.x`) | 1.4, 1.5, 1.6 | Every component, including nested and unreachable ones. Not the `metadata.component` root, `file`/`data` components or services. |
+| SPDX | JSON (`spdxVersion`), tag-value | 2.2, 2.3 | Every package, including the described root (`name`, `versionInfo`/`PackageVersion`, `purl` external ref). Not files, snippets or relationships. Tag-value sections and multi-line `<text>` values are honoured. |
+| SWID | ISO/IEC 19770-2:2015 XML | 2015 | The one `SoftwareIdentity` (`name`, `version`). Not its payload files. `Link` hrefs are never followed. |
+
+Rules:
+* Never packages: components of type `file`, `data`, `service` or `license`, and top-level services.
+* Present but mistyped is rejected, not ignored: a nested `components` that is not an array (including `null`), a
+  non-text `purl`/`group`/`bom-ref`/`SPDXID`/`referenceLocator`, a non-array `externalRefs`, or two different purls
+  on one SPDX package.
+* **Code repos** shows the application **Version** and **SBOM Format** of each branch's latest snapshot:
+  * The version comes from CycloneDX `metadata.component.version`, from the one SPDX package the document describes
+    (`documentDescribes` or `DESCRIBES` relationships; none or several means `—`), or from the SWID root `version`.
+  * Dependency-inventory JSON may give an optional root `version` (string, at most 200 characters) and shows the
+    format "Inventory JSON".
+* Every package needs a name and a version; one without them rejects the whole file.
+* A purl without a version gets the package version (percent-encoded, before any qualifiers). A purl whose version
+  differs from the package version is rejected.
+* Ecosystems are set only for purl types `pypi`, `maven`, `npm` and `nuget`; other purls are kept as they are.
+* An empty `components`/`packages` array deliberately empties the branch. A missing one is rejected, so a truncated
+  file never clears a branch.
+
+Limits:
+* XML with a DOCTYPE (DTD or entities) or any XInclude element is refused, and external resources are never resolved.
+* At most 10 MB of UTF-8 per file and 50,000 packages.
+* XML may be at most 32 **elements** deep, counting every element and not only components. Each nested CycloneDX
+  component uses two levels (`components` and `component`). JSON components may nest at most 32 levels.
+* Inside `<components>` only CycloneDX `<component>` elements are allowed; this is not full schema validation.
+* A SWID upload must hold exactly one `SoftwareIdentity`; embedded or multiple tags are rejected.
+* Not supported: SPDX 3 (JSON-LD), SPDX RDF/XML/YAML, CycloneDX before 1.4 and protobuf. Licence and archive contents
+  are not validated.
+
 ## Dependency inventory JSON
 
 A `.json` upload on the Imports page carries each branch's resolved dependencies itself. The root is an array with one object per repository branch:

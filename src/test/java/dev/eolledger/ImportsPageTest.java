@@ -44,9 +44,10 @@ class ImportsPageTest extends IntegrationTest {
         String html = mvc.perform(get("/imports")).andReturn().getResponse().getContentAsString();
         String main = html.substring(html.indexOf("<main"), html.indexOf("</main>"));
         String upload = main.substring(main.indexOf("aria-labelledby=\"upload-h\""), main.indexOf("</section>", main.indexOf("aria-labelledby=\"upload-h\"")));
-        // the actions row: Import file, then Import History right after it, nothing else
+        // the actions row: Import file, Import SBOM, then Import History, nothing else
         String actions = upload.substring(upload.indexOf("<div class=\"actions\">"), upload.indexOf("</div>", upload.indexOf("<div class=\"actions\">")));
         assertThat(actions.replaceAll("\\s+", " ")).isEqualTo("<div class=\"actions\"> <button type=\"button\" popovertarget=\"import-dialog\">Import file</button>"
+                + " <button type=\"button\" popovertarget=\"sbom-dialog\">Import SBOM</button>"
                 + " <button type=\"button\" class=\"button-quiet\" popovertarget=\"history-dialog\">Import History</button> ");
         // exactly one history table, inside the closed native popover the button targets, with a title and a Close button
         assertThat(main.split("data-noun=\"import runs\"", -1)).hasSize(2);

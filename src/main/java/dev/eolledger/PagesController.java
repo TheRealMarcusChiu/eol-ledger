@@ -154,10 +154,10 @@ public class PagesController {
     String repos(Model model) {
         List<Ledger.Branch> branches = ledger.branches();
         model.addAttribute("branches", branches);
-        Map<Long, String> appIds = new HashMap<>();
-        for (Ledger.Branch b : branches) appIds.put(b.id(), ledger.appId(b.snapshotId()));
-        model.addAttribute("appIds", appIds);
-        model.addAttribute("repoCount", branches.stream().map(Ledger.Branch::repoUrl).distinct().count());
+        // latest snapshot only: one payload read per branch for App ID, version and SBOM format together
+        Map<Long, Ledger.Facts> facts = new HashMap<>();
+        for (Ledger.Branch b : branches) facts.put(b.id(), ledger.facts(b.snapshotId()));
+        model.addAttribute("facts", facts);
         model.addAttribute("zone", ledger.zone());
         return "repos";
     }

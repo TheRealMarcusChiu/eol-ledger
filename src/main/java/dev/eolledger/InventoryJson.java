@@ -111,6 +111,10 @@ public final class InventoryJson {
         e.put("url", url);
         e.put("provider", provider);
         text(e, "appId", "", 200, false);
+        // the application/repository version (never an SBOM schema or dependency version); optional, trimmed
+        String version = text(e, "version", "", 200, false);
+        if (version != null && version.isBlank()) e.remove("version");
+        else if (version != null) e.put("version", version.trim());
         text(e, "localRepository", "", 1000, false);
         if (e.has("schemaVersion") && !(e.get("schemaVersion").isInt() && e.get("schemaVersion").asInt() == 1)) throw new IllegalArgumentException("schemaVersion must be 1");
         if (e.has("demo") && !e.get("demo").isBoolean()) throw new IllegalArgumentException("\"demo\" must be true or false");

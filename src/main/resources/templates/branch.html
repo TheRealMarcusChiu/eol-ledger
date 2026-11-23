@@ -20,7 +20,7 @@
             <dt>Branch</dt>
             <dd><code th:text="${b.branch()}">main</code></dd>
             <dt>SBOM</dt>
-            <dd th:if="${b.sbomUrl() == T(dev.eolledger.ImportService).INLINE}">Inline JSON upload <span class="muted">(nothing fetched)</span></dd>
+            <dd th:if="${b.sbomUrl() == T(dev.eolledger.ImportService).INLINE}">Inline upload <span class="muted">(nothing fetched)</span></dd>
             <dd th:unless="${b.sbomUrl() == T(dev.eolledger.ImportService).INLINE}"><a th:if="${b.sbomLink()}" th:href="${b.sbomLink()}" th:text="${b.sbomUrl()}" rel="noopener noreferrer">sbom</a>
                 <code th:unless="${b.sbomLink()}" th:text="${b.sbomUrl()}">sbom</code></dd>
             <dt>Latest snapshot</dt>

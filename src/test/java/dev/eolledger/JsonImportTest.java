@@ -294,14 +294,16 @@ class JsonImportTest extends WebTestBase {
                 .andExpect(content().string(containsString("DEMO-1001")))
                 .andExpect(content().string(containsString("worker-gradle")))
                 .andExpect(content().string(containsString("Gradle")))
-                .andExpect(content().string(containsString("Inline JSON upload")))
+                .andExpect(content().string(containsString("Inline upload")))
+                .andExpect(content().string(not(containsString("Inline JSON upload"))))
                 .andExpect(content().string(containsString("synthetic demo")))
                 .andExpect(content().string(containsString("worker-gradle: runtimeClasspath, transitive (depth 2)")))
                 .andExpect(content().string(containsString("backend-maven: compile, direct")))
                 .andExpect(content().string(not(containsString("inline:json-upload"))));
         mvc.perform(get("/repos/" + id + "/history")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("DEMO-1001")))
-                .andExpect(content().string(containsString("Inline JSON upload")));
+                .andExpect(content().string(containsString("Inline upload")))
+                .andExpect(content().string(not(containsString("Inline JSON upload"))));
     }
 
     @Test

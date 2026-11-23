@@ -76,6 +76,23 @@ public class ImportController {
         }
     }
 
+    /** One SBOM file (CycloneDX, SPDX or SWID) for one repository branch the operator names; same history and 303/400 contract as /imports. */
+    @PostMapping("/imports/sbom")
+    Object uploadSbom(@RequestParam(required = false) MultipartFile file, @RequestParam(required = false) String name,
+                      @RequestParam(required = false) String url, @RequestParam(required = false) String branch,
+                      @RequestParam(required = false) String provider, @RequestParam(required = false) String appId,
+                      Model model, HttpServletResponse response, RedirectAttributes flash) throws IOException {
+        if (file == null || file.isEmpty()) return fail(List.of("Choose an SBOM file to upload."), model, response);
+        String source = "sbom " + safeName(file.getOriginalFilename());
+        try {
+            var meta = new SbomInventory.Meta(name, url, branch, provider, appId);
+            flash.addFlashAttribute("message", imports.importSbom(new String(file.getBytes(), StandardCharsets.UTF_8), file.getOriginalFilename(), meta, source).message());
+            return seeOther();
+        } catch (ImportService.ImportFailedException e) {
+            return fail(e.errors(), model, response);
+        }
+    }
+
     /** No-script fallback: runs the sync in this request, then 303 back to Imports. */
     @PostMapping("/catalog/sync")
     RedirectView sync(RedirectAttributes flash) {

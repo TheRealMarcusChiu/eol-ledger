@@ -120,7 +120,7 @@ public class Ledger {
     public record Evidence(Branch branch, Dep dep, String context, String sbom) { }
     public record Source(String url) {
         public String link() { return safeLink(url); }
-        public String text() { return ImportService.INLINE.equals(url) ? "Inline JSON upload" : url; }
+        public String text() { return ImportService.INLINE.equals(url) ? "Inline upload" : url; }
     }
 
     public record DashRow(Cycle cycle, int repos, int branches, Eol eol, List<Evidence> inventory) {
@@ -354,25 +354,46 @@ public class Ledger {
 
     /** App ID declared by this snapshot's JSON upload; null for CSV/SBOM snapshots, no snapshot, or none stated. Never falls back to older snapshots. */
     public String appId(Long snapshotId) {
-        if (snapshotId == null) return null;
-        String payload = payload(snapshotId);
-        if (payload == null) return null;
-        // stream only the top-level fields: payload keys are sorted, so appId comes before the (large) dependencies array
+        return facts(snapshotId).appId();
+    }
+
+    /**
+     * What one snapshot's upload declared about the code repo itself: App ID, application version and the SBOM format it
+     * came from ("Inventory JSON" for a dependency-inventory upload; all null when there is no stored upload).
+     */
+    public record Facts(String appId, String version, String format) {
+    }
+
+    /** One query and one streaming pass over the top-level fields; the dependency rows are skipped, never parsed into objects. */
+    public Facts facts(Long snapshotId) {
+        String payload = snapshotId == null ? null : payload(snapshotId);
+        if (payload == null) return new Facts(null, null, null);
+        String appId = null, version = null, format = null;
         try (JsonParser p = InventoryJson.JSON.createParser(payload)) {
-            if (p.nextToken() != JsonToken.START_OBJECT) return null;
+            if (p.nextToken() != JsonToken.START_OBJECT) return new Facts(null, null, null);
             while (p.nextToken() == JsonToken.FIELD_NAME) {
                 String field = p.currentName();
                 JsonToken value = p.nextToken();
-                if (field.equals("appId")) {
-                    String id = value == JsonToken.VALUE_STRING ? p.getText() : null;
-                    return id == null || id.isBlank() ? null : id;
+                String text = value == JsonToken.VALUE_STRING ? p.getText() : null;
+                switch (field) {
+                    case "appId" -> appId = text;
+                    case "version" -> version = text;
+                    case "sbom" -> {
+                        if (value != JsonToken.START_OBJECT) p.skipChildren();
+                        else while (p.nextToken() == JsonToken.FIELD_NAME) {
+                            String f = p.currentName();
+                            if (p.nextToken() == JsonToken.VALUE_STRING && f.equals("format")) format = p.getText();
+                            else p.skipChildren();
+                        }
+                    }
+                    default -> p.skipChildren();
                 }
-                p.skipChildren();
             }
-            return null;
         } catch (IOException ex) {
             throw new IllegalStateException("stored inventory payload of snapshot " + snapshotId + " is not JSON", ex);
         }
+        return new Facts(appId == null || appId.isBlank() ? null : appId, version == null || version.isBlank() ? null : version,
+                format == null || format.isBlank() ? "Inventory JSON" : format); // the declared sbom.format, whoever wrote it
     }
 
     static String ecosystem(String purl) {

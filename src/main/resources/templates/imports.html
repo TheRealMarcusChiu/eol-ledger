@@ -19,6 +19,7 @@
         <h2 id="upload-h">Code Repo &amp; dependency Data</h2>
         <div class="actions">
             <button type="button" popovertarget="import-dialog">Import file</button>
+            <button type="button" popovertarget="sbom-dialog">Import SBOM</button>
             <button type="button" class="button-quiet" popovertarget="history-dialog">Import History</button>
         </div>
         <!--/* Native popover: opens from the button above with no script; Esc or Cancel closes it. */-->
@@ -84,6 +85,54 @@
                 real endoflife.date catalogue.</p>
             <p><a class="button-quiet" th:href="@{/imports/samples/demo-dependency-inventory.json}" download>Download demo JSON</a></p>
         </details>
+        <!--/* One SBOM file for one repository branch the operator names: the document's own metadata is never used to guess it. */-->
+        <div id="sbom-dialog" class="import-dialog" popover role="dialog" aria-labelledby="sbom-dialog-h">
+            <h3 id="sbom-dialog-h">Import an SBOM for one code repo branch</h3>
+            <form method="post" th:action="@{/imports/sbom}" enctype="multipart/form-data">
+                <div class="field">
+                    <label for="sbom-file">SBOM file</label>
+                    <input id="sbom-file" name="file" type="file" required aria-describedby="sbom-h">
+                </div>
+                <div class="field">
+                    <label for="sbom-name">Repository name</label>
+                    <input id="sbom-name" name="name" type="text" required maxlength="300">
+                </div>
+                <div class="field">
+                    <label for="sbom-url">Repository URL (http or https)</label>
+                    <input id="sbom-url" name="url" type="url" required maxlength="1000">
+                </div>
+                <div class="field">
+                    <label for="sbom-branch">Branch (required, no default)</label>
+                    <input id="sbom-branch" name="branch" type="text" required maxlength="500">
+                </div>
+                <div class="field">
+                    <label for="sbom-provider">Provider</label>
+                    <select id="sbom-provider" name="provider">
+                        <option th:each="p : ${providers}" th:value="${p}" th:text="${p}" th:selected="${p == 'other'}">other</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="sbom-app-id">App ID (optional)</label>
+                    <input id="sbom-app-id" name="appId" type="text" maxlength="200">
+                </div>
+                <p class="hint">The branch's inventory becomes exactly the packages in the file. If the file or any package is invalid, nothing is imported.</p>
+                <div class="actions">
+                    <button type="submit">Upload and import</button>
+                    <button type="button" class="button-quiet" popovertarget="sbom-dialog" popovertargetaction="hide">Cancel</button>
+                </div>
+                <details class="help">
+                    <summary>SBOM help</summary>
+                    <p id="sbom-h">Supported (detected from the content, not the file name; nothing referenced in the file is fetched):
+                        CycloneDX 1.4, 1.5 and 1.6 as JSON or XML (every component, nested or unreachable, except the
+                        <code>metadata.component</code> root and <code>file</code>/<code>data</code> components);
+                        SPDX 2.2 and 2.3 as JSON or tag-value (every package, including the described root; files are not packages);
+                        and an ISO/IEC 19770-2:2015 SWID tag holding exactly one SoftwareIdentity (its software, not its payload files).
+                        Every package needs a name and version. A purl without a version gets the package version.
+                        An empty <code>components</code>/<code>packages</code> array deliberately empties the branch; a missing one is rejected.
+                        Not supported: SPDX 3, SPDX RDF/XML/YAML, CycloneDX before 1.4, XML with a DOCTYPE.</p>
+                </details>
+            </form>
+        </div>
     </section>
 
     <section class="panel" aria-labelledby="sync-h">
