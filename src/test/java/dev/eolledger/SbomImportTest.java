@@ -345,6 +345,52 @@ class SbomImportTest extends IntegrationTest {
         }
     }
 
+    /** Each bundled demo SBOM: file name -> media type, SBOM Format shown, application version shown, imported packages. */
+    static final java.util.Map<String, List<Object>> DEMOS = new java.util.LinkedHashMap<>();
+    static {
+        DEMOS.put("demo-cyclonedx-1.6.json", List.of("application/json", "CycloneDX 1.6 JSON", "1.0.0", List.of("django 3.2.25 pkg:pypi/django@3.2.25")));
+        DEMOS.put("demo-cyclonedx-1.6.xml", List.of("application/xml", "CycloneDX 1.6 XML", "1.0.0", List.of("django 3.2.25 pkg:pypi/django@3.2.25")));
+        // SPDX: the described root application is a package too
+        DEMOS.put("demo-spdx-2.3.json", List.of("application/json", "SPDX-2.3 JSON", "1.0.0",
+                List.of("demo-sbom-app 1.0.0 -", "django 3.2.25 pkg:pypi/django@3.2.25")));
+        DEMOS.put("demo-spdx-2.3.spdx", List.of("text/plain", "SPDX-2.3 tag-value", "1.0.0",
+                List.of("demo-sbom-app 1.0.0 -", "django 3.2.25 pkg:pypi/django@3.2.25")));
+        // SWID: the tag describes Django itself, so its version is the shown version and it carries no purl
+        DEMOS.put("demo-swid-2015.swidtag", List.of("application/xml", "ISO/IEC 19770-2:2015 SWID", "3.2.25", List.of("django 3.2.25 -")));
+    }
+
+    @Test
+    void individualImportListsEveryDemoSbomAsAVisibleDownloadLink() throws Exception {
+        String html = mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/imports")).andReturn().getResponse().getContentAsString();
+        String individual = html.substring(html.indexOf("aria-labelledby=\"sbom-upload-h\""), html.indexOf("</section>", html.indexOf("aria-labelledby=\"sbom-upload-h\"")));
+        assertThat(individual).contains("<h3>Demo SBOM files</h3>", "example.invalid");
+        for (String name : DEMOS.keySet()) assertThat(individual).contains("href=\"/imports/samples/" + name + "\" download>");
+        assertThat(individual).doesNotContain("<table");
+    }
+
+    @Test
+    void everyDemoSbomDownloadsAsAnAttachmentAndImportsIdempotently() throws Exception {
+        for (var demo : DEMOS.entrySet()) {
+            String name = demo.getKey();
+            var res = mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/imports/samples/" + name))
+                    .andExpect(status().isOk()).andReturn().getResponse();
+            assertThat(res.getContentType()).as(name).startsWith((String) demo.getValue().get(0));
+            assertThat(res.getHeader("Content-Disposition")).isEqualTo("attachment; filename=\"" + name + "\"");
+            String body = new String(res.getContentAsByteArray(), StandardCharsets.UTF_8);
+            // the SWID tag carries no purl (the adapter reads none from SWID); the other four name Django by purl
+            if (name.endsWith(".swidtag")) assertThat(body).as(name).doesNotContain("pkg:");
+            else assertThat(body).as(name).contains("pkg:pypi/django@3.2.25");
+            upload(name, body, "main").andExpect(status().isSeeOther());
+            assertThat(db.sql("SELECT branch FROM repo_branch").query(String.class).single()).as(name).isEqualTo("main");
+            assertThat(db.sql("SELECT source FROM import_run ORDER BY id DESC LIMIT 1").query(String.class).single()).as(name).isEqualTo("sbom " + name);
+            assertThat(latest()).as(name).isEqualTo(demo.getValue().get(3));
+            assertThat(reposRow()).as(name).containsEntry("format", (String) demo.getValue().get(1)).containsEntry("version", (String) demo.getValue().get(2));
+            int snapshots = count("snapshot");
+            upload(name, body, "main").andExpect(status().isSeeOther());
+            assertThat(count("snapshot")).as(name + " re-import").isEqualTo(snapshots);
+        }
+    }
+
     @Test
     void importsPageOffersTheSbomFormNextToTheUnchangedJsonForm() throws Exception {
         String html = mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/imports"))

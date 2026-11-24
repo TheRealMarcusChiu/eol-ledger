@@ -1,0 +1,28 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "type": "application",
+      "bom-ref": "demo-sbom-app",
+      "name": "demo-sbom-app",
+      "version": "1.0.0",
+      "description": "Fictional illustrative demo application for EoL Ledger; hand-written, not produced by a build or resolver."
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/django@3.2.25",
+      "name": "django",
+      "version": "3.2.25",
+      "purl": "pkg:pypi/django@3.2.25"
+    }
+  ],
+  "dependencies": [
+    { "ref": "demo-sbom-app", "dependsOn": ["pkg:pypi/django@3.2.25"] },
+    { "ref": "pkg:pypi/django@3.2.25", "dependsOn": [] }
+  ]
+}

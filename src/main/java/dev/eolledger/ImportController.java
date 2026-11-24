@@ -132,9 +132,9 @@ public class ImportController {
 
     @GetMapping("/imports/samples/{name}")
     ResponseEntity<String> sample(@PathVariable String name) {
-        if (!ImportService.SAMPLE.equals(name)) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        if (!ImportService.SAMPLES.containsKey(name)) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.parseMediaType(ImportService.SAMPLES.get(name)))
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(name).build().toString())
                 .body(ImportService.sample(name));
     }

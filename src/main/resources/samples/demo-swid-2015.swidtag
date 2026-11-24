@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fictional illustrative demo SWID tag for EoL Ledger; hand-written, not produced by an installer or build. -->
+<SoftwareIdentity xmlns="http://standards.iso.org/iso/19770/-2/2015/schema.xsd"
+    name="django" version="3.2.25" versionScheme="multipartnumeric"
+    tagId="example.invalid-eol-ledger-demo-django-3.2.25">
+  <Entity name="EoL Ledger demo (fictional)" regid="example.invalid" role="tagCreator"/>
+</SoftwareIdentity>

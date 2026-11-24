@@ -4,8 +4,10 @@
 <body>
 <header th:replace="~{fragments :: nav('imports')}"></header>
 <main id="main">
-    <div class="page-head">
+    <div class="page-head title-row">
         <h1>Imports</h1>
+        <!--/* One history for both kinds of import; the closed popover follows the two import sections. */-->
+        <button type="button" class="button-quiet" popovertarget="history-dialog">Import History</button>
     </div>
 
     <div th:if="${message}" class="notice notice-ok" role="status" th:text="${message}">done</div>
@@ -16,11 +18,9 @@
     </div>
 
     <section class="panel" aria-labelledby="upload-h">
-        <h2 id="upload-h">Code Repo &amp; dependency Data</h2>
+        <h2 id="upload-h">Bulk import</h2>
         <div class="actions">
             <button type="button" popovertarget="import-dialog">Import file</button>
-            <button type="button" popovertarget="sbom-dialog">Import SBOM</button>
-            <button type="button" class="button-quiet" popovertarget="history-dialog">Import History</button>
         </div>
         <!--/* Native popover: opens from the button above with no script; Esc or Cancel closes it. */-->
         <div id="import-dialog" class="import-dialog" popover role="dialog" aria-labelledby="import-dialog-h">
@@ -36,32 +36,6 @@
                     <button type="button" class="button-quiet" popovertarget="import-dialog" popovertargetaction="hide">Cancel</button>
                 </div>
             </form>
-        </div>
-        <!--/* The import history lives only in this popover (closed until the button above opens it; Esc, Close or a click outside closes it). */-->
-        <div id="history-dialog" class="import-dialog history-dialog" popover role="dialog" aria-labelledby="history-dialog-h">
-            <div class="dialog-head">
-                <h3 id="history-dialog-h">Import History</h3>
-                <button type="button" class="button-quiet" popovertarget="history-dialog" popovertargetaction="hide">Close</button>
-            </div>
-            <div class="table-wrap" tabindex="0" role="region" aria-label="Import history">
-                <table id="import-history-table" data-preference-key="import runs" data-noun="import runs">
-                    <thead>
-                    <tr><th scope="col" data-type="datetime">When</th><th scope="col">Source</th><th scope="col">Result</th>
-                        <th scope="col" data-type="number" class="num">Rows</th><th scope="col" data-type="number" class="num">New snapshots</th><th scope="col">Details</th></tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="r : ${runs}">
-                        <td class="date small" th:text="${@view.time(r.ranAt())}">time</td>
-                        <td th:text="${r.source()}">upload</td>
-                        <td><span class="eol" th:classappend="${r.ok()} ? 'eol-ok' : 'eol-ended'" th:text="${r.ok()} ? 'Imported' : 'Rejected'">ok</span></td>
-                        <td class="num" th:text="${r.rows()}">4</td>
-                        <td class="num" th:text="${r.newSnapshots()}">4</td>
-                        <td class="small" th:text="${r.message()}">message</td>
-                    </tr>
-                    <tr th:if="${runs.isEmpty()}"><td colspan="6" class="empty">No imports yet.</td></tr>
-                    </tbody>
-                </table>
-            </div>
         </div>
         <details class="help">
             <summary>Format help</summary>
@@ -85,6 +59,23 @@
                 real endoflife.date catalogue.</p>
             <p><a class="button-quiet" th:href="@{/imports/samples/demo-dependency-inventory.json}" download>Download demo JSON</a></p>
         </details>
+    </section>
+
+    <section class="panel" aria-labelledby="sbom-upload-h">
+        <h2 id="sbom-upload-h">Individual import</h2>
+        <div class="actions">
+            <button type="button" popovertarget="sbom-dialog">Import SBOM</button>
+        </div>
+        <h3>Demo SBOM files</h3>
+        <p class="hint">Fictional, hand-written illustrations (each lists Django 3.2.25), not real build output. Import one with a name,
+            URL and branch of your choosing, for example <code>https://example.invalid/demo/sbom</code> on <code>main</code>.</p>
+        <p class="actions">
+            <a class="button-quiet" th:href="@{/imports/samples/demo-cyclonedx-1.6.json}" download>CycloneDX 1.6 JSON</a>
+            <a class="button-quiet" th:href="@{/imports/samples/demo-cyclonedx-1.6.xml}" download>CycloneDX 1.6 XML</a>
+            <a class="button-quiet" th:href="@{/imports/samples/demo-spdx-2.3.json}" download>SPDX 2.3 JSON</a>
+            <a class="button-quiet" th:href="@{/imports/samples/demo-spdx-2.3.spdx}" download>SPDX 2.3 tag-value</a>
+            <a class="button-quiet" th:href="@{/imports/samples/demo-swid-2015.swidtag}" download>SWID tag (ISO/IEC 19770-2:2015)</a>
+        </p>
         <!--/* One SBOM file for one repository branch the operator names: the document's own metadata is never used to guess it. */-->
         <div id="sbom-dialog" class="import-dialog" popover role="dialog" aria-labelledby="sbom-dialog-h">
             <h3 id="sbom-dialog-h">Import an SBOM for one code repo branch</h3>
@@ -134,6 +125,33 @@
             </form>
         </div>
     </section>
+
+    <!--/* The import history lives only in this popover (closed until the page-head button opens it; Esc, Close or a click outside closes it). */-->
+    <div id="history-dialog" class="import-dialog history-dialog" popover role="dialog" aria-labelledby="history-dialog-h">
+        <div class="dialog-head">
+            <h3 id="history-dialog-h">Import History</h3>
+            <button type="button" class="button-quiet" popovertarget="history-dialog" popovertargetaction="hide">Close</button>
+        </div>
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Import history">
+            <table id="import-history-table" data-preference-key="import runs" data-noun="import runs">
+                <thead>
+                <tr><th scope="col" data-type="datetime">When</th><th scope="col">Source</th><th scope="col">Result</th>
+                    <th scope="col" data-type="number" class="num">Rows</th><th scope="col" data-type="number" class="num">New snapshots</th><th scope="col">Details</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="r : ${runs}">
+                    <td class="date small" th:text="${@view.time(r.ranAt())}">time</td>
+                    <td th:text="${r.source()}">upload</td>
+                    <td><span class="eol" th:classappend="${r.ok()} ? 'eol-ok' : 'eol-ended'" th:text="${r.ok()} ? 'Imported' : 'Rejected'">ok</span></td>
+                    <td class="num" th:text="${r.rows()}">4</td>
+                    <td class="num" th:text="${r.newSnapshots()}">4</td>
+                    <td class="small" th:text="${r.message()}">message</td>
+                </tr>
+                <tr th:if="${runs.isEmpty()}"><td colspan="6" class="empty">No imports yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
     <section class="panel" aria-labelledby="sync-h">
         <h2 id="sync-h">endoflife.date Catalogue</h2>

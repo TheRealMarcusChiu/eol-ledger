@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fictional illustrative demo SBOM for EoL Ledger; hand-written, not produced by a build or resolver. -->
+<bom xmlns="http://cyclonedx.org/schema/bom/1.6" serialNumber="urn:uuid:9b0f6a3c-2d1e-4f7a-8c55-1a2b3c4d5e6f" version="1">
+  <metadata>
+    <component type="application" bom-ref="demo-sbom-app">
+      <name>demo-sbom-app</name>
+      <version>1.0.0</version>
+    </component>
+  </metadata>
+  <components>
+    <component type="library" bom-ref="pkg:pypi/django@3.2.25">
+      <name>django</name>
+      <version>3.2.25</version>
+      <purl>pkg:pypi/django@3.2.25</purl>
+    </component>
+  </components>
+  <dependencies>
+    <dependency ref="demo-sbom-app">
+      <dependency ref="pkg:pypi/django@3.2.25"/>
+    </dependency>
+    <dependency ref="pkg:pypi/django@3.2.25"/>
+  </dependencies>
+</bom>

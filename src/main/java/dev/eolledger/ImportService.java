@@ -170,12 +170,21 @@ public class ImportService {
                 .update();
     }
 
-    /** The one downloadable bundled sample: the resolved demo dependency-inventory JSON. */
+    /** The bulk demo: the resolved demo dependency-inventory JSON. */
     static final String SAMPLE = "demo-dependency-inventory.json";
 
-    /** Bundled sample text (only the fixed name under classpath:samples/). */
+    /** Every downloadable bundled sample (the only names ever served) and its media type; the SBOMs are fictional illustrations. */
+    static final java.util.Map<String, String> SAMPLES = java.util.Map.of(
+            SAMPLE, "application/json",
+            "demo-cyclonedx-1.6.json", "application/json",
+            "demo-cyclonedx-1.6.xml", "application/xml",
+            "demo-spdx-2.3.json", "application/json",
+            "demo-spdx-2.3.spdx", "text/plain",
+            "demo-swid-2015.swidtag", "application/xml");
+
+    /** Bundled sample text (only the fixed names under classpath:samples/). */
     public static String sample(String name) {
-        if (!SAMPLE.equals(name)) throw new IllegalArgumentException("unknown sample");
+        if (!SAMPLES.containsKey(name)) throw new IllegalArgumentException("unknown sample");
         try (InputStream in = new ClassPathResource("samples/" + name).getInputStream()) {
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {

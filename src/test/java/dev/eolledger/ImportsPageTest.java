@@ -40,19 +40,29 @@ class ImportsPageTest extends IntegrationTest {
     }
 
     @Test
-    void importHistoryIsOnePopoverOpenedBesideImportFileAndTheDemoDownloadSitsInFormatHelp() throws Exception {
+    void bulkAndIndividualImportAreSeparateSectionsWithOneSharedClosedImportHistory() throws Exception {
         String html = mvc.perform(get("/imports")).andReturn().getResponse().getContentAsString();
         String main = html.substring(html.indexOf("<main"), html.indexOf("</main>"));
-        String upload = main.substring(main.indexOf("aria-labelledby=\"upload-h\""), main.indexOf("</section>", main.indexOf("aria-labelledby=\"upload-h\"")));
-        // the actions row: Import file, Import SBOM, then Import History, nothing else
-        String actions = upload.substring(upload.indexOf("<div class=\"actions\">"), upload.indexOf("</div>", upload.indexOf("<div class=\"actions\">")));
-        assertThat(actions.replaceAll("\\s+", " ")).isEqualTo("<div class=\"actions\"> <button type=\"button\" popovertarget=\"import-dialog\">Import file</button>"
-                + " <button type=\"button\" popovertarget=\"sbom-dialog\">Import SBOM</button>"
-                + " <button type=\"button\" class=\"button-quiet\" popovertarget=\"history-dialog\">Import History</button> ");
+        java.util.function.Function<String, String> section = id ->
+                main.substring(main.indexOf("aria-labelledby=\"" + id + "\""), main.indexOf("</section>", main.indexOf("aria-labelledby=\"" + id + "\"")));
+        String upload = section.apply("upload-h"), individual = section.apply("sbom-upload-h");
+        String history = "<button type=\"button\" class=\"button-quiet\" popovertarget=\"history-dialog\">Import History</button>";
+        // Bulk import, then Individual import, then the catalogue; each section opens only its own dialog
+        assertThat(main.indexOf("aria-labelledby=\"upload-h\"")).isLessThan(main.indexOf("aria-labelledby=\"sbom-upload-h\""));
+        assertThat(main.indexOf("aria-labelledby=\"sbom-upload-h\"")).isLessThan(main.indexOf("aria-labelledby=\"sync-h\""));
+        assertThat(upload).contains("<h2 id=\"upload-h\">Bulk import</h2>", "<button type=\"button\" popovertarget=\"import-dialog\">Import file</button>")
+                .doesNotContain("popovertarget=\"sbom-dialog\"", "popovertarget=\"history-dialog\"");
+        assertThat(individual).contains("<h2 id=\"sbom-upload-h\">Individual import</h2>", "<button type=\"button\" popovertarget=\"sbom-dialog\">Import SBOM</button>",
+                        "<summary>SBOM help</summary>")
+                .doesNotContain("popovertarget=\"import-dialog\"", "popovertarget=\"history-dialog\"", "Download demo JSON", "<details class=\"help\" open");
+        // one shared Import History button in the page head, outside both sections
+        assertThat(main.split(java.util.regex.Pattern.quote(history), -1)).hasSize(2);
+        assertThat(main.indexOf(history)).isLessThan(main.indexOf("<section"));
         // exactly one history table, inside the closed native popover the button targets, with a title and a Close button
         assertThat(main.split("data-noun=\"import runs\"", -1)).hasSize(2);
         assertThat(main.split("aria-label=\"Import history\"", -1)).hasSize(2);
-        String dialog = upload.substring(upload.indexOf("<div id=\"history-dialog\""), upload.indexOf("<details"));
+        String dialog = main.substring(main.indexOf("<div id=\"history-dialog\""), main.indexOf("</table>", main.indexOf("<div id=\"history-dialog\"")));
+        assertThat(upload + individual).doesNotContain("id=\"history-dialog\"");
         assertThat(dialog).contains("class=\"import-dialog history-dialog\" popover role=\"dialog\" aria-labelledby=\"history-dialog-h\"",
                 "<h3 id=\"history-dialog-h\">Import History</h3>", "popovertarget=\"history-dialog\" popovertargetaction=\"hide\">Close</button>",
                 "data-noun=\"import runs\"", ">When</th>", ">New snapshots</th>", ">Details</th>", "No imports yet.");
@@ -73,7 +83,7 @@ class ImportsPageTest extends IntegrationTest {
         String upload = html.substring(html.indexOf("aria-labelledby=\"upload-h\""), html.indexOf("</section>", html.indexOf("aria-labelledby=\"upload-h\"")));
         assertThat(upload).contains("href=\"/imports/samples/demo-dependency-inventory.json\"", ">Download demo JSON</a>", ">Import file</button>");
         // the file chooser lives only in the popup that "Import file" opens (native popover, no script needed)
-        assertThat(upload).contains("<h2 id=\"upload-h\">Code Repo &amp; dependency Data</h2>");
+        assertThat(upload).contains("<h2 id=\"upload-h\">Bulk import</h2>");
         assertThat(upload).contains("<button type=\"button\" popovertarget=\"import-dialog\">Import file</button>");
         String dialog = upload.substring(upload.indexOf("id=\"import-dialog\""));
         assertThat(dialog).contains("popover", "type=\"file\"", ">Upload and import</button>", "popovertargetaction=\"hide\"");

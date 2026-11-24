@@ -1,0 +1,30 @@
+SPDXVersion: SPDX-2.3
+DataLicense: CC0-1.0
+SPDXID: SPDXRef-DOCUMENT
+DocumentName: demo-sbom-app-1.0.0
+DocumentNamespace: https://example.invalid/spdx/demo-sbom-app-1.0.0
+DocumentComment: <text>Fictional illustrative demo SBOM for EoL Ledger; hand-written, not produced by a build or resolver.</text>
+Creator: Organization: EoL Ledger demo (fictional)
+Created: 2026-01-01T00:00:00Z
+Relationship: SPDXRef-DOCUMENT DESCRIBES SPDXRef-demo-sbom-app
+
+PackageName: demo-sbom-app
+SPDXID: SPDXRef-demo-sbom-app
+PackageVersion: 1.0.0
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+
+PackageName: django
+SPDXID: SPDXRef-django
+PackageVersion: 3.2.25
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+ExternalRef: PACKAGE-MANAGER purl pkg:pypi/django@3.2.25
+
+Relationship: SPDXRef-demo-sbom-app DEPENDS_ON SPDXRef-django

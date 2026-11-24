@@ -175,6 +175,26 @@ while a sync runs. The network fetch holds no database lock.
 
 ## SBOM import
 
+The Imports page has two sections. **Bulk import** takes one dependency-inventory JSON for any number of branches
+(`POST /imports`) and offers the bulk demo JSON in its Format help. **Individual import** takes one SBOM for one branch.
+**Import History** in the page head lists both kinds of import.
+
+Individual import links five demo SBOMs, served from `GET /imports/samples/{name}` as attachments:
+* `demo-cyclonedx-1.6.json`
+* `demo-cyclonedx-1.6.xml`
+* `demo-spdx-2.3.json`
+* `demo-spdx-2.3.spdx`
+* `demo-swid-2015.swidtag`
+
+They live in `src/main/resources/samples/`. They are fictional, hand-written illustrations, not build or resolver
+output. Each lists Django 3.2.25 (`pkg:pypi/django@3.2.25`).
+* The CycloneDX and SPDX files describe the application `demo-sbom-app` 1.0.0. SPDX also lists that application as a
+  package.
+* The SWID tag describes Django itself.
+
+Import one with a name, URL and branch of your choosing, for example `https://example.invalid/demo/sbom` on `main`.
+Only these five names and the bulk demo JSON are served; any other name is a 404.
+
 **Imports → Import SBOM** uploads one SBOM file for one code repo branch: `POST /imports/sbom` (multipart, CSRF).
 The fields are `file`, `name` (repository name), `url` (http(s) repository URL), `branch` (required; no default is
 assumed), `provider` (optional, default `other`) and `appId` (optional). The repository and branch always come from
