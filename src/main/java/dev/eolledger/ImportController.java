@@ -84,9 +84,17 @@ public class ImportController {
                       Model model, HttpServletResponse response, RedirectAttributes flash) throws IOException {
         if (file == null || file.isEmpty()) return fail(List.of("Choose an SBOM file to upload."), model, response);
         String source = "sbom " + safeName(file.getOriginalFilename());
+        String text;
+        try {
+            // strict: a lenient decode would turn different invalid bytes into the same text, and so the same partial identity
+            text = StandardCharsets.UTF_8.newDecoder().onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT).decode(java.nio.ByteBuffer.wrap(file.getBytes())).toString();
+        } catch (java.nio.charset.CharacterCodingException e) {
+            return fail(List.of("The SBOM file is not valid UTF-8, so nothing was imported."), model, response);
+        }
         try {
             var meta = new SbomInventory.Meta(name, url, branch, provider, appId);
-            flash.addFlashAttribute("message", imports.importSbom(new String(file.getBytes(), StandardCharsets.UTF_8), file.getOriginalFilename(), meta, source).message());
+            flash.addFlashAttribute("message", imports.importSbom(text, file.getOriginalFilename(), meta, source).message());
             return seeOther();
         } catch (ImportService.ImportFailedException e) {
             return fail(e.errors(), model, response);

@@ -32,6 +32,18 @@ final class SbomInventory {
 
     /** The repository branch the SBOM describes, as typed by the operator (never guessed from the document). */
     record Meta(String name, String url, String branch, String provider, String appId) {
+        /** Each field trimmed; blank or missing is null (never a default). */
+        Meta {
+            name = blankToNull(name);
+            url = blankToNull(url);
+            branch = blankToNull(branch);
+            provider = blankToNull(provider);
+            appId = blankToNull(appId);
+        }
+
+        private static String blankToNull(String s) {
+            return s == null || s.isBlank() ? null : s.trim();
+        }
     }
 
     static final int MAX_PACKAGES = 50_000;
@@ -73,11 +85,11 @@ final class SbomInventory {
         if (!s.errors.isEmpty()) throw new ImportService.ImportFailedException(s.errors);
 
         ObjectNode e = InventoryJson.JSON.createObjectNode();
-        e.put("name", meta.name());
-        e.put("url", meta.url());
-        e.put("branch", meta.branch());
-        if (meta.provider() != null && !meta.provider().isBlank()) e.put("provider", meta.provider());
-        if (meta.appId() != null && !meta.appId().isBlank()) e.put("appId", meta.appId().trim());
+        if (meta.name() != null) e.put("name", meta.name());
+        if (meta.url() != null) e.put("url", meta.url());
+        if (meta.branch() != null) e.put("branch", meta.branch());
+        if (meta.provider() != null) e.put("provider", meta.provider());
+        if (meta.appId() != null) e.put("appId", meta.appId());
         if (s.appVersion != null) e.put("version", s.appVersion);
         ObjectNode sbom = e.putObject("sbom");
         sbom.put("format", s.format);

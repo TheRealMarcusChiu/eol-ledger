@@ -92,8 +92,8 @@ class SbomImportTest extends IntegrationTest {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("repeats a key")));
         upload("bom.json", CDX_JSON.replace("pkg:npm/react@18.2.0", "pkg:npm/react@17.0.0"), "main").andExpect(status().isBadRequest())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("conflicts with its purl version 17.0.0")));
-        upload("bom.json", CDX_JSON, null).andExpect(status().isBadRequest())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("branch is required")));
+        upload("bom.json", CDX_JSON, "has space").andExpect(status().isBadRequest())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("must not contain spaces")));
         upload("notes.txt", "hello", "main").andExpect(status().isBadRequest())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("not a supported SBOM")));
         // no CSRF token: refused before anything runs
@@ -103,6 +103,125 @@ class SbomImportTest extends IntegrationTest {
         assertThat(List.of(count("snapshot"), count("dependency"))).containsExactly(snapshots, deps);
         assertThat(count("import_run")).isEqualTo(runs + 7);
         assertThat(db.sql("SELECT count(*) FROM import_run WHERE ok = FALSE AND source = 'sbom bom.json'").query(Integer.class).single()).isEqualTo(6);
+    }
+
+    ResultActions fileOnly(String fileName, String body, String... params) throws Exception {
+        var req = multipart("/imports/sbom").file(new MockMultipartFile("file", fileName, "application/octet-stream", body.getBytes(StandardCharsets.UTF_8))).with(csrf());
+        for (int i = 0; i < params.length; i += 2) req.param(params[i], params[i + 1]);
+        return mvc.perform(req);
+    }
+
+    String get(String path) throws Exception {
+        return mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(path)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+    }
+
+    @Test
+    void onlyTheFileIsRequiredAndMissingMetadataStaysNullEverywhere() throws Exception {
+        fileOnly("bom.json", CDX_JSON).andExpect(status().isSeeOther()).andExpect(redirectedUrl("/imports"));
+        var row = db.sql("SELECT id, repo_url, branch, repo_name, provider FROM repo_branch").query().singleRow();
+        assertThat(row.get("REPO_URL")).isNull();
+        assertThat(row.get("BRANCH")).isNull();
+        assertThat(row.get("REPO_NAME")).isNull();
+        assertThat(row.get("PROVIDER")).isNull();
+        String payload = db.sql("SELECT payload FROM snapshot_inventory").query(String.class).single();
+        assertThat(payload).doesNotContain("\"appId\"", "\"url\":\"http", "\"branch\"", "\"name\":\"bom", "\"provider\"");
+        long id = ((Number) row.get("ID")).longValue();
+        // every view still renders, with an em dash for missing metadata and the detail/history reachable by ID
+        String repos = get("/repos");
+        assertThat(repos).contains("href=\"/repos/" + id + "\"").doesNotContain(">null<", "href=\"null\"");
+        String branch = get("/repos/" + id);
+        assertThat(branch).contains("—").doesNotContain(">null<", "null @", "@ null");
+        get("/repos/" + id + "/history");
+        long dep = db.sql("SELECT id FROM dependency WHERE name = 'react'").query(Long.class).single();
+        assertThat(get("/repos/" + id + "/deps/" + dep)).doesNotContain(">null<", "null @");
+        assertThat(get("/")).doesNotContain(">null<");
+        // the file is still required, and nothing gets a default
+        fileOnly("bom.json", "").andExpect(status().isBadRequest())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Choose an SBOM file")));
+        assertThat(count("repo_branch")).isEqualTo(1);
+    }
+
+    List<String> rows() {
+        return db.sql("SELECT COALESCE(repo_name, '-') || '|' || COALESCE(repo_url, '-') || '|' || COALESCE(branch, '-') || '|' || COALESCE(provider, '-') || '|' || CASE WHEN import_key IS NULL THEN 'tuple' ELSE 'key' END FROM repo_branch ORDER BY id")
+                .query(String.class).list();
+    }
+
+    @Test
+    void malformedUtf8IsRejectedBeforeAnyWriteSoInvalidBytesCanNeverShareAnIdentity() throws Exception {
+        byte[] valid = CDX_JSON.getBytes(StandardCharsets.UTF_8);
+        int at = CDX_JSON.indexOf("left-pad");
+        for (byte[] bad : List.of(new byte[]{(byte) 0xFF}, new byte[]{(byte) 0xFE}, new byte[]{(byte) 0xC3})) {
+            byte[] body = new byte[valid.length + bad.length];
+            System.arraycopy(valid, 0, body, 0, at);
+            System.arraycopy(bad, 0, body, at, bad.length);
+            System.arraycopy(valid, at, body, at + bad.length, valid.length - at);
+            mvc.perform(multipart("/imports/sbom").file(new MockMultipartFile("file", "bad.json", "application/json", body)).with(csrf()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().string(org.hamcrest.Matchers.containsString("not valid UTF-8")));
+        }
+        byte[] xml = CDX_XML.replace("guava", "gu\u0000ava").getBytes(StandardCharsets.UTF_8);
+        xml[CDX_XML.indexOf("guava") + 2] = (byte) 0x80; // a lone continuation byte inside otherwise valid XML
+        mvc.perform(multipart("/imports/sbom").file(new MockMultipartFile("file", "bad.xml", "application/xml", xml)).with(csrf()))
+                .andExpect(status().isBadRequest());
+        assertThat(List.of(count("repo_branch"), count("snapshot"), count("dependency"))).containsExactly(0, 0, 0);
+        // valid UTF-8 (including non-ASCII) still imports unchanged
+        fileOnly("ok.json", CDX_JSON.replace("left-pad", "left-päd")).andExpect(status().isSeeOther());
+        assertThat(count("repo_branch")).isEqualTo(1);
+    }
+
+    @Test
+    void eachOptionalFieldStandsAloneBlanksAreNullAndSuppliedValuesAreStillValidated() throws Exception {
+        fileOnly("a.json", CDX_JSON, "name", "  Alpha  ", "url", " ", "branch", "", "provider", "", "appId", "  ").andExpect(status().isSeeOther());
+        fileOnly("a.json", CDX_JSON, "url", "HTTPS://GitLab.com/acme/alpha.git/").andExpect(status().isSeeOther());
+        fileOnly("a.json", CDX_JSON, "branch", "dev").andExpect(status().isSeeOther());
+        fileOnly("a.json", CDX_JSON, "provider", "GitHub").andExpect(status().isSeeOther());
+        fileOnly("a.json", CDX_JSON, "appId", "APP-7").andExpect(status().isSeeOther());
+        assertThat(rows()).containsExactly("Alpha|-|-|-|key", "-|https://gitlab.com/acme/alpha|-|-|key", "-|-|dev|-|key", "-|-|-|github|key", "-|-|-|-|key");
+        long app = db.sql("SELECT id FROM repo_branch ORDER BY id DESC LIMIT 1").query(Long.class).single();
+        assertThat(get("/repos")).contains(">Alpha</td>", ">APP-7</td>", "href=\"/repos/" + app + "\"");
+        int runs = count("import_run");
+        // supplied values keep every existing check; each rejection changes nothing but the history
+        fileOnly("a.json", CDX_JSON, "url", "https://user:pw@gitlab.com/a").andExpect(status().isBadRequest());
+        fileOnly("a.json", CDX_JSON, "url", "https://gitlab.com/a?x=1").andExpect(status().isBadRequest());
+        fileOnly("a.json", CDX_JSON, "url", "ftp://gitlab.com/a").andExpect(status().isBadRequest());
+        fileOnly("a.json", CDX_JSON, "provider", "sourceforge").andExpect(status().isBadRequest());
+        fileOnly("a.json", CDX_JSON, "branch", "a b").andExpect(status().isBadRequest());
+        fileOnly("a.json", CDX_JSON, "name", "x".repeat(301)).andExpect(status().isBadRequest());
+        fileOnly("a.json", CDX_JSON, "appId", "x".repeat(201)).andExpect(status().isBadRequest());
+        mvc.perform(multipart("/imports/sbom").file(new MockMultipartFile("file", "a.json", "application/json", CDX_JSON.getBytes(StandardCharsets.UTF_8))))
+                .andExpect(status().isForbidden());
+        assertThat(count("repo_branch")).isEqualTo(5);
+        assertThat(count("import_run")).isEqualTo(runs + 7);
+    }
+
+    @Test
+    void partialIdentityIsTheFileAndSuppliedMetadataNeverTheFileNameAndNeverMergesWithOthers() throws Exception {
+        fileOnly("a.json", CDX_JSON, "name", "Alpha").andExpect(status().isSeeOther());
+        fileOnly("renamed.json", CDX_JSON, "name", " Alpha ").andExpect(status().isSeeOther());
+        assertThat(count("repo_branch")).isEqualTo(1);
+        int snapshots = count("snapshot");
+        fileOnly("renamed.json", CDX_JSON, "name", "Alpha").andExpect(status().isSeeOther());
+        assertThat(count("snapshot")).isEqualTo(snapshots);
+        // a different document under the same file name and the same fields is a separate entry
+        fileOnly("a.json", CDX_JSON.replace("1.3.0", "1.3.1"), "name", "Alpha").andExpect(status().isSeeOther());
+        // the same document with different (or no) metadata is separate too: NULLs never merge imports
+        fileOnly("a.json", CDX_JSON).andExpect(status().isSeeOther());
+        fileOnly("a.json", CDX_JSON, "name", "Beta").andExpect(status().isSeeOther());
+        fileOnly("a.json", CDX_JSON, "url", REPO).andExpect(status().isSeeOther());
+        assertThat(count("repo_branch")).isEqualTo(5);
+        // a complete URL + branch never attaches to a partial row, and a partial import never overwrites the complete one
+        upload("bom.json", CDX_JSON, "main").andExpect(status().isSeeOther());
+        fileOnly("a.json", CDX_JSON, "url", REPO, "provider", "gitlab", "name", "Alpha").andExpect(status().isSeeOther());
+        assertThat(count("repo_branch")).isEqualTo(7);
+        assertThat(rows()).contains("Alpha|https://gitlab.com/acme/alpha|main|gitlab|tuple", "-|https://gitlab.com/acme/alpha|-|-|key");
+        upload("bom.json", CDX_JSON.replace("1.3.0", "2.0.0"), "main").andExpect(status().isSeeOther());
+        assertThat(count("repo_branch")).isEqualTo(7);
+        assertThat(latest()).contains("left-pad 2.0.0 -");
+        // every partial row keeps its own key; the dashboard counts each unknown-URL row as its own repository
+        assertThat(db.sql("SELECT count(DISTINCT import_key) FROM repo_branch WHERE import_key IS NOT NULL").query(Integer.class).single()).isEqualTo(6);
+        assertThat(db.sql("SELECT import_key FROM repo_branch WHERE import_key IS NOT NULL").query(String.class).list()).allMatch(k -> k.matches("[0-9a-f]{64}"));
+        assertThat(get("/repos")).doesNotContain(">null<", db.sql("SELECT import_key FROM repo_branch WHERE import_key IS NOT NULL LIMIT 1").query(String.class).single());
     }
 
     // SPDX 2.3 JSON test data: the described root package is a package too; files and relationships are not packages.
@@ -323,14 +442,15 @@ class SbomImportTest extends IntegrationTest {
     @Test
     void reposTableHasEightAlignedColumnsWithStablePreferenceIndexesAndNoSubtitle() throws Exception {
         String html = mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/repos")).andReturn().getResponse().getContentAsString();
-        assertThat(html).doesNotContain("class=\"lede\"").contains("<td colspan=\"8\" class=\"empty\">");
+        assertThat(html).doesNotContain("class=\"lede\"").contains("<td colspan=\"9\" class=\"empty\">");
+        // Repository name is new index 8 after App ID; indexes 0..7 stay on their columns, so saved prefs and URL filters keep working
         assertThat(java.util.regex.Pattern.compile("<th scope=\"col\" data-preference-index=\"(\\d)\"[^>]*>([^<]+)</th>").matcher(html).results()
                 .map(m -> m.group(1) + ":" + m.group(2)).toList())
-                .containsExactly("0:App ID", "1:Code repo", "2:Branch", "6:Version", "3:Provider", "7:SBOM Format", "4:Packages", "5:Latest snapshot");
+                .containsExactly("0:App ID", "8:Repository name", "1:Code repo", "2:Branch", "6:Version", "3:Provider", "7:SBOM Format", "4:Packages", "5:Latest snapshot");
         // the application version sorts and range-filters as a version, like every other Version column
         assertThat(html).contains("<th scope=\"col\" data-preference-index=\"6\" data-type=\"version\">Version</th>");
         upload("bom.json", CDX_JSON, "main").andExpect(status().isSeeOther());
-        assertThat(reposRow().keySet()).containsExactly("appid", "repo", "branch", "version", "provider", "format", "packages", "snapshot");
+        assertThat(reposRow().keySet()).containsExactly("appid", "name", "repo", "branch", "version", "provider", "format", "packages", "snapshot");
     }
 
     @Test
@@ -392,6 +512,27 @@ class SbomImportTest extends IntegrationTest {
     }
 
     @Test
+    void everyDemoFormatImportsFileOnlyAndWithFullMetadataKeepingItsApplicationVersion() throws Exception {
+        for (var demo : DEMOS.entrySet()) {
+            String name = demo.getKey(), body = ImportService.sample(name);
+            fileOnly(name, body).andExpect(status().isSeeOther());
+            long id = db.sql("SELECT id FROM repo_branch ORDER BY id DESC LIMIT 1").query(Long.class).single();
+            assertThat(db.sql("SELECT count(*) FROM repo_branch WHERE id = ? AND repo_url IS NULL AND branch IS NULL AND repo_name IS NULL AND provider IS NULL")
+                    .param(id).query(Integer.class).single()).as(name).isEqualTo(1);
+            String row = get("/repos").split("data-href=\"/repos/" + id + "\"")[1].split("</tr>")[0];
+            assertThat(row).as(name).contains(">" + demo.getValue().get(2) + "</td>", ">" + demo.getValue().get(1) + "</td>").doesNotContain("null");
+            get("/repos/" + id);
+            get("/repos/" + id + "/history");
+        }
+        // with every field supplied the complete tuple path is unchanged, and the version still comes from the document
+        fileOnly("demo-spdx-2.3.json", ImportService.sample("demo-spdx-2.3.json"), "name", "Demo", "url", REPO, "branch", "main", "provider", "gitlab", "appId", "APP-1")
+                .andExpect(status().isSeeOther());
+        assertThat(rows()).last().isEqualTo("Demo|" + REPO + "|main|gitlab|tuple");
+        assertThat(reposRow()).containsEntry("version", "1.0.0").containsEntry("appid", "APP-1").containsEntry("name", "Demo");
+        assertThat(get("/")).doesNotContain(">null<");
+    }
+
+    @Test
     void importsPageOffersTheSbomFormNextToTheUnchangedJsonForm() throws Exception {
         String html = mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/imports"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
@@ -399,11 +540,15 @@ class SbomImportTest extends IntegrationTest {
                 "<div id=\"sbom-dialog\" class=\"import-dialog\" popover role=\"dialog\" aria-labelledby=\"sbom-dialog-h\">",
                 "action=\"/imports/sbom\" enctype=\"multipart/form-data\"", "name=\"_csrf\"",
                 "<input id=\"sbom-file\" name=\"file\" type=\"file\" required",
-                "<input id=\"sbom-name\" name=\"name\" type=\"text\" required",
-                "<input id=\"sbom-url\" name=\"url\" type=\"url\" required",
-                "<input id=\"sbom-branch\" name=\"branch\" type=\"text\" required",
+                "<input id=\"sbom-name\" name=\"name\" type=\"text\" maxlength=\"300\">",
+                "<input id=\"sbom-url\" name=\"url\" type=\"url\" maxlength=\"1000\">",
+                "<input id=\"sbom-branch\" name=\"branch\" type=\"text\" maxlength=\"500\">",
                 "<select id=\"sbom-provider\" name=\"provider\">", "<input id=\"sbom-app-id\" name=\"appId\" type=\"text\"",
                 "<details class=\"help\">", "one SoftwareIdentity");
+        // only the file is required, and the provider defaults to nothing (never "other")
+        String form = html.substring(html.indexOf("action=\"/imports/sbom\""), html.indexOf("</form>", html.indexOf("action=\"/imports/sbom\"")));
+        assertThat(form.split(" required[ >]", -1)).hasSize(2);
+        assertThat(form).contains("<option value=\"\" selected>Not specified</option>", "<option value=\"other\">other</option>").doesNotContain("\"other\" selected");
         // the dependency-inventory JSON form is untouched
         assertThat(html).contains("<div id=\"import-dialog\" class=\"import-dialog\" popover role=\"dialog\" aria-labelledby=\"import-dialog-h\">",
                 "<input id=\"file\" name=\"file\" type=\"file\" accept=\".json,application/json\" required aria-describedby=\"json-h\">");

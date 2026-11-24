@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
  * The model is rebuilt from {@link Ledger#dashboard} whenever the catalogue, the inventories or the day change.
  */
 @Service
+@org.springframework.context.annotation.DependsOn("schemaUpgrade")
 public class DashboardQuery {
 
     static final List<String> KEYS = List.of("purl", "ecosystem", "dependency", "version", "eol", "status", "repos", "branches",
@@ -167,7 +168,7 @@ public class DashboardQuery {
             Ledger.DashRow r = rows.get(i);
             Ledger.Cycle c = r.cycle();
             List<Link> evidence = r.inventory().stream().map(e -> new Link("/repos/" + e.branch().id() + "/deps/" + e.dep().id(),
-                    e.branch().repoName() + " / " + e.branch().branch() + ": Details")).toList();
+                    e.branch().nameText() + " / " + e.branch().branchText() + ": Details")).toList();
             List<Url> sources = r.sources().stream().map(s -> new Url(s.text(), s.link())).toList();
             List<Url> sboms = r.sboms().stream().map(s -> new Url(s.text(), s.link())).toList();
             links.add(new Links(evidence, sources, sboms));

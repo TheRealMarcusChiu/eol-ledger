@@ -68,6 +68,15 @@ public final class InventoryJson {
     }
 
     public static List<Entry> parse(String text) {
+        return parse(text, false);
+    }
+
+    /** One SBOM-built entry: name, url, branch and provider may each be absent (null, never defaulted); supplied values are validated as in {@link #parse}. */
+    static List<Entry> parseSbom(String text) {
+        return parse(text, true);
+    }
+
+    private static List<Entry> parse(String text, boolean optionalRepo) {
         JsonNode root;
         try {
             root = JSON.readTree(text.startsWith("﻿") ? text.substring(1) : text);
@@ -82,7 +91,7 @@ public final class InventoryJson {
         Set<String> seen = new HashSet<>();
         for (int i = 0; i < root.size(); i++) {
             try {
-                Entry e = entry(root.get(i));
+                Entry e = entry(root.get(i), optionalRepo);
                 if (!seen.add(e.row().repoUrl() + "\n" + e.row().branch())) throw new IllegalArgumentException("duplicate url + branch in this file");
                 out.add(e);
             } catch (IllegalArgumentException e) {
@@ -93,23 +102,24 @@ public final class InventoryJson {
         return out;
     }
 
-    private static Entry entry(JsonNode n) {
+    private static Entry entry(JsonNode n, boolean optionalRepo) {
         if (!n.isObject()) throw new IllegalArgumentException("must be an object");
         ObjectNode e = (ObjectNode) canonical(n);
         sortRows(e, "projects");
         sortRows(e, "dependencies");
-        String name = text(e, "name", "", 300, true);
-        String url = normalizeRepoUrl(text(e, "url", "", 1000, true));
-        if (url == null) throw new IllegalArgumentException("url must be an http(s) URL with a host and no credentials, query or fragment");
+        String name = text(e, "name", "", 300, !optionalRepo);
+        String rawUrl = text(e, "url", "", 1000, !optionalRepo);
+        String url = rawUrl == null ? null : normalizeRepoUrl(rawUrl);
+        if (rawUrl != null && url == null) throw new IllegalArgumentException("url must be an http(s) URL with a host and no credentials, query or fragment");
         String branch = text(e, "branch", "", 500, false);
-        if (branch == null || branch.isEmpty() || !branch.chars().allMatch(c -> c > 32 && c != 127)) {
+        if ((branch != null || !optionalRepo) && (branch == null || branch.isEmpty() || !branch.chars().allMatch(c -> c > 32 && c != 127))) {
             throw new IllegalArgumentException("branch is required and must not contain spaces or control characters (no default branch is assumed)");
         }
         String provider = text(e, "provider", "", 50, false);
-        provider = provider == null ? "other" : provider.trim().toLowerCase(Locale.ROOT).replaceAll("[\\s_]+", "-");
-        if (!PROVIDERS.contains(provider)) throw new IllegalArgumentException("provider must be one of " + String.join(", ", PROVIDERS));
-        e.put("url", url);
-        e.put("provider", provider);
+        provider = provider == null ? (optionalRepo ? null : "other") : provider.trim().toLowerCase(Locale.ROOT).replaceAll("[\\s_]+", "-");
+        if (provider != null && !PROVIDERS.contains(provider)) throw new IllegalArgumentException("provider must be one of " + String.join(", ", PROVIDERS));
+        if (url != null) e.put("url", url);
+        if (provider != null) e.put("provider", provider);
         text(e, "appId", "", 200, false);
         // the application/repository version (never an SBOM schema or dependency version); optional, trimmed
         String version = text(e, "version", "", 200, false);
@@ -181,7 +191,7 @@ public final class InventoryJson {
 
         ObjectNode identity = e.deepCopy();
         if (identity.get("sbom") instanceof ObjectNode s) s.remove("generatedAt"); // regeneration time alone is not an inventory change
-        return new Entry(new Row(name.trim(), url, provider, branch, ImportService.INLINE), flat, write(e), sha256("inline-json\n" + write(identity)));
+        return new Entry(new Row(name == null ? null : name.trim(), url, provider, branch, ImportService.INLINE), flat, write(e), sha256("inline-json\n" + write(identity)));
     }
 
     private static Dep dep(JsonNode d, String at, Set<String> paths) {
@@ -289,7 +299,7 @@ public final class InventoryJson {
         }
     }
 
-    private static String sha256(String s) {
+    static String sha256(String s) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(s.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException e) {

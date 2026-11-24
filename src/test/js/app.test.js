@@ -1382,13 +1382,13 @@ test('the count says "matching" while a filter is active; zero matches too; clea
   assert.strictEqual(count(), '25 of 25 rows');
 });
 
-test('/repos eight columns: Version and SBOM Format inserted, yet a saved c3 filter, Provider:3 order and width slot 3 stay on Provider', () => {
-  // exactly the /repos header: DOM order with its data-preference-index (old six kept 0-5, new Version 6 and SBOM Format 7)
-  const HEADERS = ['App ID', 'Code repo', 'Branch', 'Version', 'Provider', 'SBOM Format', 'Packages', 'Latest snapshot'];
-  const INDEXES = [0, 1, 2, 6, 3, 7, 4, 5];
-  const ROWS = [['A1', 'https://g/a', 'main', '1.0', 'gitlab', 'Inventory JSON', '3', '2026-01-01'],
-    ['A2', 'https://g/b', 'main', '2.0', 'github', 'CycloneDX 1.6 JSON', '5', '2026-01-02'],
-    ['A3', 'https://g/c', 'dev', '—', 'gitlab', '—', '1', '2026-01-03']];
+test('/repos nine columns: Version, SBOM Format and Repository name inserted, yet a saved c3 filter, Provider:3 order and width slot 3 stay on Provider', () => {
+  // exactly the /repos header: DOM order with its data-preference-index (old six kept 0-5, Version 6, SBOM Format 7, Repository name 8)
+  const HEADERS = ['App ID', 'Repository name', 'Code repo', 'Branch', 'Version', 'Provider', 'SBOM Format', 'Packages', 'Latest snapshot'];
+  const INDEXES = [0, 8, 1, 2, 6, 3, 7, 4, 5];
+  const ROWS = [['A1', 'Alpha', 'https://g/a', 'main', '1.0', 'gitlab', 'Inventory JSON', '3', '2026-01-01'],
+    ['A2', '—', 'https://g/b', 'main', '2.0', 'github', 'CycloneDX 1.6 JSON', '5', '2026-01-02'],
+    ['A3', 'Gamma', '—', '—', '—', '—', '—', '1', '2026-01-03']];
   const make = (href, stored) => {
     const dom = viewDom(href, stored);
     const main = new FakeEl('main'), wrap = new FakeEl('div'), table = new FakeEl('table'), thead = new FakeEl('thead'), head = new FakeEl('tr'), tbody = new FakeEl('tbody');
@@ -1416,9 +1416,18 @@ test('/repos eight columns: Version and SBOM Format inserted, yet a saved c3 fil
   const b = make('https://x.test/repos', { 'eol-ledger.table-order.v1.code-repos-table': '["Provider:3","App ID:0","Code repo:1","Branch:2","Packages:4","Latest snapshot:5"]' });
   b.ctx.initColumnOrder(b.table);
   const labels = () => b.head.cells.map(c => c.getAttribute('data-label'));
-  assert.deepStrictEqual(labels(), ['Provider', 'App ID', 'Code repo', 'Branch', 'Packages', 'Latest snapshot', 'Version', 'SBOM Format']);
+  assert.deepStrictEqual(labels(), ['Provider', 'App ID', 'Code repo', 'Branch', 'Packages', 'Latest snapshot', 'Repository name', 'Version', 'SBOM Format']);
   b.table.columnLayout.reset();
   assert.deepStrictEqual(labels(), HEADERS);
+  // a saved order from the eight-column release keeps every column it knew; Repository name joins without a reset
+  const e = make('https://x.test/repos', { 'eol-ledger.table-order.v1.code-repos-table': '["Version:6","App ID:0","Code repo:1","Branch:2","Provider:3","SBOM Format:7","Packages:4","Latest snapshot:5"]' });
+  e.ctx.initColumnOrder(e.table);
+  assert.deepStrictEqual(e.head.cells.map(c => c.getAttribute('data-label')),
+    ['Version', 'App ID', 'Code repo', 'Branch', 'Provider', 'SBOM Format', 'Packages', 'Latest snapshot', 'Repository name']);
+  // a filter on the new column 8 reaches the address bar as c8 and leaves c0..c7 alone
+  const f = make('https://x.test/repos?view.code-repos-table=' + encodeURIComponent('{"v":1,"filters":{"c8":{"selected":["Gamma"]}}}'));
+  assert.deepStrictEqual(f.shown(), ['A3']);
+  assert.strictEqual(f.th('Repository name').getAttribute('data-filter-active'), 'true');
 
   // a numeric width saved in slot 3 is read for Provider, resized and written back to slot 3, and reset deletes slot 3
   const c = make('https://x.test/repos', { 'eol-ledger.table-widths.v1': '{"code-repos-table":{"3":222}}' });

@@ -412,6 +412,9 @@ form.inline { display: inline; }
 /* Import popup (imports page): a native [popover], centred over a dimmed page. */
 .import-dialog {
   width: min(34rem, calc(100vw - 2rem));
+  /* a tall form (e.g. the SBOM dialog with its help open) scrolls inside the dialog instead of running off a short screen */
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
   margin: auto;
   padding: 1.6rem 1.7rem 1.5rem;
   background: var(--surface);

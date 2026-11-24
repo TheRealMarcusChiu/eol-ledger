@@ -85,28 +85,30 @@
                     <input id="sbom-file" name="file" type="file" required aria-describedby="sbom-h">
                 </div>
                 <div class="field">
-                    <label for="sbom-name">Repository name</label>
-                    <input id="sbom-name" name="name" type="text" required maxlength="300">
+                    <label for="sbom-name">Repository name (optional)</label>
+                    <input id="sbom-name" name="name" type="text" maxlength="300">
                 </div>
                 <div class="field">
-                    <label for="sbom-url">Repository URL (http or https)</label>
-                    <input id="sbom-url" name="url" type="url" required maxlength="1000">
+                    <label for="sbom-url">Repository URL (optional, http or https)</label>
+                    <input id="sbom-url" name="url" type="url" maxlength="1000">
                 </div>
                 <div class="field">
-                    <label for="sbom-branch">Branch (required, no default)</label>
-                    <input id="sbom-branch" name="branch" type="text" required maxlength="500">
+                    <label for="sbom-branch">Branch (optional, no default)</label>
+                    <input id="sbom-branch" name="branch" type="text" maxlength="500">
                 </div>
                 <div class="field">
-                    <label for="sbom-provider">Provider</label>
+                    <label for="sbom-provider">Provider (optional)</label>
                     <select id="sbom-provider" name="provider">
-                        <option th:each="p : ${providers}" th:value="${p}" th:text="${p}" th:selected="${p == 'other'}">other</option>
+                        <option value="" selected>Not specified</option>
+                        <option th:each="p : ${providers}" th:value="${p}" th:text="${p}">other</option>
                     </select>
                 </div>
                 <div class="field">
                     <label for="sbom-app-id">App ID (optional)</label>
                     <input id="sbom-app-id" name="appId" type="text" maxlength="200">
                 </div>
-                <p class="hint">The branch's inventory becomes exactly the packages in the file. If the file or any package is invalid, nothing is imported.</p>
+                <p class="hint">Only the file is required; nothing is guessed from it or its name. Without both URL and branch, the same file with the same details updates the same entry.
+                    The branch's inventory becomes exactly the packages in the file. If the file or any package is invalid, nothing is imported.</p>
                 <div class="actions">
                     <button type="submit">Upload and import</button>
                     <button type="button" class="button-quiet" popovertarget="sbom-dialog" popovertargetaction="hide">Cancel</button>

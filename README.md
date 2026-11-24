@@ -192,13 +192,18 @@ output. Each lists Django 3.2.25 (`pkg:pypi/django@3.2.25`).
   package.
 * The SWID tag describes Django itself.
 
-Import one with a name, URL and branch of your choosing, for example `https://example.invalid/demo/sbom` on `main`.
+Import one on its own, or with a name, URL and branch of your choosing, for example `https://example.invalid/demo/sbom` on `main`.
 Only these five names and the bulk demo JSON are served; any other name is a 404.
 
 **Imports → Import SBOM** uploads one SBOM file for one code repo branch: `POST /imports/sbom` (multipart, CSRF).
-The fields are `file`, `name` (repository name), `url` (http(s) repository URL), `branch` (required; no default is
-assumed), `provider` (optional, default `other`) and `appId` (optional). The repository and branch always come from
-these fields, never from the document. The file becomes one dependency-inventory JSON entry and then takes exactly the
+Only `file` is required. `name` (repository name), `url` (http(s) repository URL), `branch`, `provider` and `appId`
+are each optional; a missing or blank one is stored as unknown (shown as —), never defaulted (no `other` provider, no
+`main` branch) and never taken from the document or the file name. A supplied value gets the same checks as in the
+JSON import (length, http(s) URL without credentials, query or fragment, known provider, branch without spaces).
+With both `url` and `branch` the import updates that branch exactly as a JSON import would. Without both, identity is
+conservative: the entry is keyed by the file's content plus the supplied fields, so re-uploading the same file with
+the same fields (under any file name) updates the same entry, while a different file, or the same file with other
+fields, is always a separate entry. Such an entry never merges with, or overwrites, a branch that has a URL and branch. The file becomes one dependency-inventory JSON entry and then takes exactly the
 JSON import path: the same validation, import history, single transaction and per-branch snapshot history. An
 unchanged re-upload adds no snapshot. Success redirects back to Imports (303); a rejected file returns the Imports page
 with the reasons (400) and changes nothing but the history row.
@@ -377,7 +382,7 @@ release cycles. EoL dates still come only from a real catalogue sync; the app sh
 * Cycles without a published EoL date are labelled "No EoL date announced" or "Ended (date not
   published)". They never pass a date range; Values and the blank operators can select them.
 * **Code repos** counts distinct repository URLs. A repo with two branches on the same cycle counts
-  once. **Branches** counts branches.
+  once; an SBOM import without a URL counts as its own repo. **Branches** counts branches.
 
 ## Code repos page
 

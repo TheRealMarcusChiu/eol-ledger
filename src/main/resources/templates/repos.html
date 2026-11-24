@@ -13,6 +13,7 @@
             <thead>
             <tr>
                 <th scope="col" data-preference-index="0">App ID</th>
+                <th scope="col" data-preference-index="8">Repository name</th>
                 <th scope="col" data-preference-index="1">Code repo</th>
                 <th scope="col" data-preference-index="2">Branch</th>
                 <th scope="col" data-preference-index="6" data-type="version">Version</th>
@@ -26,18 +27,19 @@
             <!--/* The whole row opens the branch (app.js, mouse and Enter); the repo URL is a separate external link. */-->
             <tr th:each="b : ${branches}" th:with="href=@{/repos/{id}(id=${b.id()})},f=${facts.get(b.id())}" th:attr="data-href=${href}">
                 <td data-column="appid" th:text="${f.appId() ?: '—'}">APP-1</td>
+                <td data-column="name" th:text="${b.nameText()}">Alpha</td>
                 <td data-column="repo" class="col-source"><a th:if="${b.repoLink()}" th:href="${b.repoLink()}" th:text="${b.repoUrl()}"
-                        rel="noopener noreferrer">url</a><span th:unless="${b.repoLink()}" th:text="${b.repoUrl()}">url</span></td>
-                <td data-column="branch"><span th:text="${b.branch()}">main</span>
+                        rel="noopener noreferrer">url</a><span th:unless="${b.repoLink()}" th:text="${b.urlText()}">url</span></td>
+                <td data-column="branch"><span th:text="${b.branchText()}">main</span>
                     <noscript><a th:href="${href}">Details</a></noscript></td>
                 <td data-column="version" th:text="${f.version() ?: '—'}">1.2.3</td>
-                <td data-column="provider" th:text="${b.provider()}">gitlab</td>
+                <td data-column="provider" th:text="${b.providerText()}">gitlab</td>
                 <td data-column="format" th:text="${f.format() ?: '—'}">CycloneDX 1.6 JSON</td>
                 <td data-column="packages" class="num" th:text="${b.depCount()}">5</td>
                 <td data-column="snapshot" class="date small" th:with="seen=${@view.time(b.observedAt())}" th:data-value="${seen}" th:text="${b.observedAt() != null} ? ${seen} : 'No snapshot yet'">time</td>
             </tr>
             <tr th:if="${branches.isEmpty()}">
-                <td colspan="8" class="empty">No code repos yet. <a th:href="@{/imports}">Upload a dependency-inventory JSON</a>.</td>
+                <td colspan="9" class="empty">No code repos yet. <a th:href="@{/imports}">Upload a dependency-inventory JSON</a>.</td>
             </tr>
             </tbody>
         </table>

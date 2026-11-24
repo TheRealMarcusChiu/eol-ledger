@@ -55,8 +55,8 @@
             </thead>
             <tbody>
             <tr th:each="a : ${affected}" th:with="href=@{/repos/{id}(id=${a.branch().id()})}" th:attr="data-href=${href}">
-                <td class="col-source" th:text="${a.branch().repoUrl()}">url</td>
-                <td><a th:href="${href}" th:text="${a.branch().branch()}">main</a></td>
+                <td class="col-source" th:text="${a.branch().urlText()}">url</td>
+                <td><a th:href="${href}" th:text="${a.branch().branchText()}">main</a></td>
                 <td th:text="${a.dep().name()}">python</td>
                 <td><code th:text="${a.dep().displayVersion()}">3.10.5</code></td>
                 <td class="date small" th:text="${@view.time(a.branch().observedAt())}">time</td>

@@ -44,13 +44,16 @@ CREATE TABLE IF NOT EXISTS sync_status (
 
 CREATE TABLE IF NOT EXISTS repo_branch (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    repo_url VARCHAR(1000) NOT NULL,
-    branch VARCHAR(500) NOT NULL,
-    repo_name VARCHAR(300) NOT NULL,
-    provider VARCHAR(50) NOT NULL,
+    repo_url VARCHAR(1000),
+    branch VARCHAR(500),
+    repo_name VARCHAR(300),
+    provider VARCHAR(50),
     sbom_url VARCHAR(2000) NOT NULL,
-    identity_key BINARY(64) AS (CONCAT(UNHEX(SHA2(repo_url, 256)), UNHEX(SHA2(branch, 256)))) STORED NOT NULL,
-    UNIQUE KEY uq_repo_branch (identity_key)
+    -- NULL when URL or branch is unknown (CONCAT of NULL), so only complete tuples are unique here
+    identity_key BINARY(64) AS (CONCAT(UNHEX(SHA2(repo_url, 256)), UNHEX(SHA2(branch, 256)))) STORED,
+    import_key VARCHAR(64),
+    UNIQUE KEY uq_repo_branch (identity_key),
+    UNIQUE KEY uq_repo_branch_import_key (import_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
 
 CREATE TABLE IF NOT EXISTS snapshot (

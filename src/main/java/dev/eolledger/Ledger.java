@@ -36,6 +36,7 @@ import java.util.TreeSet;
  * shortcut: loads the catalogue and latest inventories (one query each) per request; fine for thousands of branches, add caching beyond that.
  */
 @Service
+@org.springframework.context.annotation.DependsOn("schemaUpgrade")
 public class Ledger {
 
     public record Branch(long id, String repoName, String repoUrl, String provider, String branch, String sbomUrl,
@@ -47,6 +48,15 @@ public class Ledger {
         public String sbomLink() {
             return safeLink(sbomUrl);
         }
+
+        /** Shown text for metadata an SBOM import may leave unknown. */
+        public String nameText() { return repoName == null ? "—" : repoName; }
+        public String branchText() { return branch == null ? "—" : branch; }
+        public String urlText() { return repoUrl == null ? "—" : repoUrl; }
+        public String providerText() { return provider == null ? "—" : provider; }
+
+        /** Distinct-repository identity: the URL, else this branch row alone (unknown URLs never merge). */
+        String repoKey() { return repoUrl != null ? repoUrl : "#" + id; }
     }
 
     public record Cycle(String product, String productLabel, String productLink, String name, String label, LocalDate releaseDate,
@@ -133,7 +143,7 @@ public class Ledger {
         public String purls() { return values(e -> e.dep().ecosystem() == null ? e.dep().purl() : e.dep().ecosystem() + " / " + e.dep().purl()); }
         public String ecosystems() { String s = values(e -> e.dep().ecosystem()); return s.isEmpty() ? "Unknown" : s; }
         public String matching() { return values(e -> e.dep().match().evidence()); }
-        public List<Source> sources() { return inventory.stream().map(e -> e.branch().repoUrl()).distinct().sorted().map(Source::new).toList(); }
+        public List<Source> sources() { return inventory.stream().map(e -> e.branch().repoUrl()).filter(Objects::nonNull).distinct().sorted().map(Source::new).toList(); }
         public List<Source> sboms() { return inventory.stream().map(Evidence::sbom).filter(Objects::nonNull).distinct().sorted().map(Source::new).toList(); }
     }
 
@@ -254,7 +264,7 @@ public class Ledger {
             FROM repo_branch b LEFT JOIN snapshot s ON s.id = (""" + LATEST_SNAPSHOT + ")\n";
 
     public List<Branch> branches() {
-        return db.sql(BRANCH_SQL + " ORDER BY lower(b.repo_name), b.repo_url, b.branch").query((rs, i) -> branch(rs)).list();
+        return db.sql(BRANCH_SQL + " ORDER BY lower(b.repo_name), b.repo_url, b.branch, b.id").query((rs, i) -> branch(rs)).list();
     }
 
     public Branch branch(long id) {
@@ -347,9 +357,9 @@ public class Ledger {
         }
         Map<String, String> joined = new HashMap<>();
         contexts.forEach((k, v) -> joined.put(k, String.join("; ", v)));
-        String url = e.path("url").asText();
+        String url = e.path("url").textValue();
         return new Inline(e.path("appId").textValue(), e.path("sbom").path("url").textValue(), e.path("sbom").path("generatedAt").textValue(),
-                e.path("demo").asBoolean() || java.net.URI.create(url).getHost().endsWith(".invalid"), e.path("localRepository").textValue(), projects, joined);
+                e.path("demo").asBoolean() || url != null && java.net.URI.create(url).getHost().endsWith(".invalid"), e.path("localRepository").textValue(), projects, joined);
     }
 
     /** App ID declared by this snapshot's JSON upload; null for CSV/SBOM snapshots, no snapshot, or none stated. Never falls back to older snapshots. */
@@ -424,7 +434,7 @@ public class Ledger {
                 unmatched++;
                 continue;
             }
-            repos.computeIfAbsent(c.key(), k -> new HashSet<>()).add(a.branch().repoUrl());
+            repos.computeIfAbsent(c.key(), k -> new HashSet<>()).add(a.branch().repoKey());
             branchIds.computeIfAbsent(c.key(), k -> new HashSet<>()).add(a.branch().id());
             Inline inline = provenance.get(a.branch().snapshotId());
             inventory.computeIfAbsent(c.key(), k -> new ArrayList<>()).add(new Evidence(a.branch(), a.dep(),
@@ -488,7 +498,7 @@ public class Ledger {
         Map<String, Integer> out = new TreeMap<>();
         Map<String, Set<String>> repos = new HashMap<>();
         for (Affected a : affected(product, null)) {
-            repos.computeIfAbsent(a.dep().cycle().name(), k -> new HashSet<>()).add(a.branch().repoUrl());
+            repos.computeIfAbsent(a.dep().cycle().name(), k -> new HashSet<>()).add(a.branch().repoKey());
         }
         repos.forEach((k, v) -> out.put(k, v.size()));
         return out;

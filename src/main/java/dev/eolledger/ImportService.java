@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.sql.Types;
 import java.time.Instant;
 import java.util.List;
 
@@ -23,6 +24,7 @@ import java.util.List;
  * snapshot only when a branch's inventory differs from that branch's latest snapshot. Nothing is ever fetched.
  */
 @Service
+@org.springframework.context.annotation.DependsOn("schemaUpgrade")
 public class ImportService {
 
     public record Result(int rows, int newSnapshots, String message) {
@@ -105,22 +107,38 @@ public class ImportService {
     public synchronized Result importSbom(String text, String fileName, SbomInventory.Meta meta, String source) {
         List<InventoryJson.Entry> entries;
         try {
-            entries = InventoryJson.parse(SbomInventory.toInventoryJson(text, fileName, meta));
+            entries = InventoryJson.parseSbom(SbomInventory.toInventoryJson(text, fileName, meta));
         } catch (ImportFailedException e) {
             recordRun(source, false, 0, 0, String.join("; ", e.errors()));
             throw e;
         }
-        return commit(entries, source);
+        InventoryJson.Row r = entries.get(0).row();
+        return commit(entries, source, r.repoUrl() != null && r.branch() != null ? null : partialKey(text, r, meta.appId()));
+    }
+
+    /**
+     * Identity of an SBOM import without both URL and branch: the file's bytes plus the normalized metadata the operator
+     * supplied (absent stays JSON null), domain-separated and JSON-encoded so no two inputs share a key. The file name is
+     * not part of it, and two imports that differ in either part never share a row.
+     */
+    static String partialKey(String text, InventoryJson.Row r, String appId) {
+        var parts = InventoryJson.JSON.createArrayNode().add("eol-ledger sbom partial identity v1")
+                .add(InventoryJson.sha256(text)).add(r.repoName()).add(r.repoUrl()).add(r.branch()).add(r.provider()).add(appId);
+        return InventoryJson.sha256(InventoryJson.write(parts));
     }
 
     private Result commit(List<InventoryJson.Entry> entries, String source) {
+        return commit(entries, source, null);
+    }
+
+    private Result commit(List<InventoryJson.Entry> entries, String source, String importKey) {
         int rows = entries.size();
         Instant now = clock.instant();
         int created;
         try {
             created = tx.execute(s -> {
                 int n = 0;
-                for (InventoryJson.Entry e : entries) n += store(e, now);
+                for (InventoryJson.Entry e : entries) n += store(e, now, importKey);
                 return n;
             });
         } catch (DataAccessException e) {
@@ -135,18 +153,23 @@ public class ImportService {
         return new Result(rows, created, msg);
     }
 
-    private int store(InventoryJson.Entry e, Instant now) {
+    /** importKey is null for a complete URL + branch identity (looked up exactly as before), else the SBOM-only partial identity. */
+    private int store(InventoryJson.Entry e, Instant now, String importKey) {
         InventoryJson.Row r = e.row();
         // shortcut: repo_url/branch lookup has no usable index on MySQL (too long); fine for thousands of branches, add a digest column lookup beyond that.
-        Long existing = db.sql("SELECT id FROM repo_branch WHERE repo_url = ? AND branch = ?").params(r.repoUrl(), r.branch()).query(Long.class).optional().orElse(null);
+        Long existing = importKey == null
+                ? db.sql("SELECT id FROM repo_branch WHERE repo_url = ? AND branch = ?").params(r.repoUrl(), r.branch()).query(Long.class).optional().orElse(null)
+                : db.sql("SELECT id FROM repo_branch WHERE import_key = ?").param(importKey).query(Long.class).optional().orElse(null);
         long branchId;
         if (existing != null) {
             branchId = existing;
-            db.sql("UPDATE repo_branch SET repo_name = ?, provider = ?, sbom_url = ? WHERE id = ?").params(r.repoName(), r.provider(), r.sbomUrl(), branchId).update();
+            db.sql("UPDATE repo_branch SET repo_name = ?, provider = ?, sbom_url = ? WHERE id = ?")
+                    .param(1, r.repoName(), Types.VARCHAR).param(2, r.provider(), Types.VARCHAR).param(3, r.sbomUrl()).param(4, branchId).update();
         } else {
             var branchKey = new GeneratedKeyHolder();
-            db.sql("INSERT INTO repo_branch (repo_url, branch, repo_name, provider, sbom_url) VALUES (?, ?, ?, ?, ?)")
-                    .params(r.repoUrl(), r.branch(), r.repoName(), r.provider(), r.sbomUrl()).update(branchKey, "id");
+            db.sql("INSERT INTO repo_branch (repo_url, branch, repo_name, provider, sbom_url, import_key) VALUES (?, ?, ?, ?, ?, ?)")
+                    .param(1, r.repoUrl(), Types.VARCHAR).param(2, r.branch(), Types.VARCHAR).param(3, r.repoName(), Types.VARCHAR)
+                    .param(4, r.provider(), Types.VARCHAR).param(5, r.sbomUrl()).param(6, importKey, Types.VARCHAR).update(branchKey, "id");
             branchId = branchKey.getKey().longValue();
         }
         String latest = db.sql("SELECT fingerprint FROM snapshot WHERE branch_id = ? ORDER BY observed_at DESC, id DESC LIMIT 1")

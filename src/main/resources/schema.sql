@@ -33,12 +33,15 @@ CREATE TABLE IF NOT EXISTS sync_status (
 
 CREATE TABLE IF NOT EXISTS repo_branch (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    repo_url VARCHAR(1000) NOT NULL,
-    branch VARCHAR(500) NOT NULL,
-    repo_name VARCHAR(300) NOT NULL,
-    provider VARCHAR(50) NOT NULL,
+    repo_url VARCHAR(1000),
+    branch VARCHAR(500),
+    repo_name VARCHAR(300),
+    provider VARCHAR(50),
     sbom_url VARCHAR(2000) NOT NULL,
-    UNIQUE (repo_url, branch)
+    -- SBOM imports without both URL and branch: SHA-256 of the file and the supplied metadata (see SchemaUpgrade for older schemas)
+    import_key VARCHAR(64),
+    UNIQUE (repo_url, branch),
+    CONSTRAINT uq_repo_branch_import_key UNIQUE (import_key)
 );
 
 CREATE TABLE IF NOT EXISTS snapshot (

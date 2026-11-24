@@ -108,7 +108,7 @@
             </td>
             <td data-column="evidence" class="small"><span th:text="${d.match().evidence()}">evidence</span>
                 <a th:href="${detail}" th:if="${d.cycle() != null}">Details</a></td>
-            <td data-column="source" class="col-source"><a th:if="${repoLink}" th:href="${repoLink}" th:text="${repoUrl}" rel="noopener noreferrer">repo</a><span th:unless="${repoLink}" th:text="${repoUrl}">repo</span></td>
+            <td data-column="source" class="col-source"><a th:if="${repoLink}" th:href="${repoLink}" th:text="${repoUrl}" rel="noopener noreferrer">repo</a><span th:unless="${repoLink}" th:text="${repoUrl ?: '—'}">repo</span></td>
             <td data-column="sbom" class="col-sbom"><a th:if="${sbomLink}" th:href="${sbomLink}" th:text="${sbomUrl}" rel="noopener noreferrer">sbom</a><span
                     th:if="${sbomUrl == T(dev.eolledger.ImportService).INLINE}">Inline upload</span><code
                     th:unless="${sbomLink != null or sbomUrl == T(dev.eolledger.ImportService).INLINE}" th:text="${sbomUrl}">classpath:samples/x.json</code></td>
