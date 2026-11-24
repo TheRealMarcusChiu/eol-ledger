@@ -166,10 +166,28 @@ Some queries still scan rather than use an index:
 
 A column's Values list (`GET /api/dashboard/values?column=<key>`) is loaded when its filter menu first opens.
 
+**Both lists are frozen per tab until a reload.** In one tab, EoL Dependencies and Code repos keep showing the data
+of their first visit:
+* Each successful `/api/dashboard` page and Values answer is kept in this tab's `sessionStorage` (key
+  `eol-ledger.json-cache.v1.<full request URL>`); each distinct view or column costs one request, later visits none.
+  An answer is kept and drawn only when every field the table reads has the API's type (missing or wrong fields, an
+  error status or a failed request are never kept).
+* Code repos is rendered by the server, so its page is still requested, but its rows are replaced by the tab's
+  snapshot of the first visit (key `eol-ledger.json-cache.v1.rows./repos#code-repos-table`): every row, also those
+  on later pages, or the empty-table message. The snapshot is plain data (cell text, links, the few row and cell
+  attributes the page sets), checked before use: an unknown attribute or element, an unsafe link or a missing cell
+  means the fresh rows are shown instead.
+
+A normal or hard reload of either page drops both, once, before anything is read. Nothing else refreshes them: a
+running sync or a change made elsewhere shows only after a reload. The one exception is a local change in this tab:
+submitting an import, SBOM import, sync or clear form drops both at the moment the form is submitted (not when the
+work finishes), so a page opened while a sync is still running can freeze partial data again until the next reload.
+Blocked or full storage just means every visit shows fresh data.
+
 **Catalogue sync runs in the background.** **Sync catalogue now** calls `POST /catalog/sync/start`, which returns
 `202`, or `409` when a sync or clear is already running. The page then polls `GET /catalog/sync/status`, which
 reports `running`, `phase`, products done/total, release cycles done/total, the current product and the terminal
-result. A reload resumes polling. Without scripts, the form posts to `/catalog/sync` and waits. Only one sync or clear
+result. A reload resumes polling. EoL Dependencies does not follow a running sync; reload it to see the new data. Without scripts, the form posts to `/catalog/sync` and waits. Only one sync or clear
 runs at a time. A second manual or scheduled sync is refused, and **Clear all data** is refused with a visible message
 while a sync runs. The network fetch holds no database lock.
 

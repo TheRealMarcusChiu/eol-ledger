@@ -671,6 +671,169 @@ function withParam(href, name, value) {
 }
 
 /**
+ * Per-tab cache of server-table JSON (dashboard pages and column value lists) in sessionStorage, keyed by the full
+ * absolute request URL (endpoint plus view or column), so moving between pages of one tab repeats no API call. HTML is
+ * still requested as usual. A reload (normal or hard) drops every owned key once per document before any read, and so
+ * does an explicit local import, clear or sync; nothing else (no timer, no remote change) refreshes a cached answer.
+ * Only validated successful answers are stored; blocked, full or corrupt storage is just a miss.
+ */
+var JSON_CACHE = 'eol-ledger.json-cache.v1.';
+var pendingJson = {};
+function clearJsonCache() {
+  try {
+    var s = window.sessionStorage;
+    for (var i = s.length - 1; i >= 0; i--) {
+      var k = s.key(i);
+      if (k && k.indexOf(JSON_CACHE) === 0) s.removeItem(k);
+    }
+  } catch (e) { /* blocked storage holds no cache either */ }
+}
+// Once per document, before any read: a normal or hard reload (both "reload") starts the tab's cache afresh.
+try {
+  var navEntry = window.performance.getEntriesByType('navigation')[0];
+  if (navEntry && navEntry.type === 'reload') clearJsonCache();
+} catch (e) { /* no Navigation Timing: keep the cache */ }
+// The one exception to "only a reload": a local POST (import, SBOM import, sync, clear) is about to change the data.
+document.addEventListener('submit', function (e) {
+  if (e.target && /^post$/i.test(e.target.getAttribute('method') || '')) clearJsonCache();
+}, true);
+function isObject(x) { return x !== null && typeof x === 'object' && !Array.isArray(x); }
+function objects(a) { return Array.isArray(a) && a.every(isObject); }
+function counts(o, keys) { return keys.every(function (k) { return Number.isInteger(o[k]) && o[k] >= 0; }); }
+function strings(o, keys) { return keys.every(function (k) { return typeof o[k] === 'string'; }); }
+var ROW_STRINGS = ['product', 'cycle', 'href', 'purl', 'ecosystem', 'dependency', 'version', 'eol', 'status', 'statusCss', 'context', 'cycleLabel', 'matching'];
+/** A DashboardQuery.Url: always text; link is null when the value is not a safe http(s) URL. */
+function validUrls(a) { return objects(a) && a.every(function (u) { return typeof u.text === 'string' && (u.link === null || typeof u.link === 'string'); }); }
+/** The /api/dashboard page (DashboardQuery.Page and Row) as fillRows and serverRow read it. */
+function validPage(p) {
+  return isObject(p) && counts(p, ['page', 'pages', 'total', 'matching']) && objects(p.rows) && p.rows.every(function (r) {
+    return strings(r, ROW_STRINGS) && counts(r, ['repos', 'branches']) && objects(r.evidence)
+      && r.evidence.every(function (l) { return strings(l, ['href', 'text']); }) && validUrls(r.sources) && validUrls(r.sboms);
+  });
+}
+/** The /api/dashboard/values list (DashboardQuery.Value) a filter menu's fill reads. */
+function validValues(v) { return objects(v) && v.every(function (e) { return strings(e, ['value', 'label']); }); }
+
+/** The JSON at url from this tab's cache, else one shared network request whose valid answer is then cached. */
+function cachedJson(url, valid) {
+  var key = JSON_CACHE + url;
+  try {
+    var hit = JSON.parse(window.sessionStorage.getItem(key));
+    if (hit !== null && valid(hit)) return Promise.resolve(hit);
+    if (hit !== null) window.sessionStorage.removeItem(key);
+  } catch (e) {
+    try { window.sessionStorage.removeItem(key); } catch (ignored) { /* blocked */ }
+  }
+  if (!pendingJson[url]) {
+    var p = pendingJson[url] = fetch(url, { headers: { Accept: 'application/json' } })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (data) {
+        if (!valid(data)) throw new Error('unexpected answer');
+        try { window.sessionStorage.setItem(key, JSON.stringify(data)); } catch (e) { /* full or blocked: just not cached */ }
+        return data;
+      });
+    var done = function () { delete pendingJson[url]; };
+    p.then(done, done);
+  }
+  return pendingJson[url];
+}
+
+/**
+ * The Code repos table is server-rendered, so its tab snapshot is its first visit's tbody as plain data (cell text,
+ * a/span links and the few attributes repos.html sets), under the same owned prefix: the same reload and local-POST
+ * rules clear it. Restored before any enhancement; anything else in the rows, or a bad stored value, means fresh rows.
+ */
+var ROW_ATTRS = ['data-href'], CELL_ATTRS = ['data-column', 'class', 'data-value', 'colspan'];
+function safeHref(h) {
+  if (typeof h !== 'string' || /[\s\\\u0000-\u001f]/.test(h)) return false;
+  if (/^\/(?!\/)/.test(h)) return true;
+  try {
+    var u = new URL(h);
+    return (u.protocol === 'https:' || u.protocol === 'http:') && !u.username && !u.password;
+  } catch (e) { return false; }
+}
+function onlyKeys(o, names) { return Object.keys(o).every(function (k) { return names.indexOf(k) >= 0; }); }
+function validAttrs(a, names) { return isObject(a) && onlyKeys(a, names) && Object.keys(a).every(function (k) { return typeof a[k] === 'string'; }); }
+function validPart(p) {
+  return typeof p === 'string' || (isObject(p) && onlyKeys(p, ['tag', 'text', 'href']) && typeof p.text === 'string'
+    && ((p.tag === 'span' && p.href === undefined) || (p.tag === 'a' && safeHref(p.href))));
+}
+/** Every row has one cell per header column and a safe data-href, or is the single empty-table cell. */
+function validRows(rows, width) {
+  return Array.isArray(rows) && rows.every(function (r) {
+    if (!isObject(r) || !onlyKeys(r, ['attrs', 'cells']) || !validAttrs(r.attrs, ROW_ATTRS) || !Array.isArray(r.cells)) return false;
+    var empty = r.cells.length === 1 && isObject(r.cells[0]) && isObject(r.cells[0].attrs) && r.cells[0].attrs['class'] === 'empty';
+    if (!empty && (r.cells.length !== width || !safeHref(r.attrs['data-href']))) return false;
+    return r.cells.every(function (c) {
+      return isObject(c) && onlyKeys(c, ['attrs', 'parts']) && validAttrs(c.attrs, CELL_ATTRS)
+        && (c.attrs.colspan === undefined || /^\d{1,2}$/.test(c.attrs.colspan)) && Array.isArray(c.parts) && c.parts.every(validPart);
+    });
+  });
+}
+function readAttrs(node, names) {
+  var out = {};
+  names.forEach(function (n) {
+    var v = n === 'class' ? node.className : node.getAttribute(n);
+    if (v) out[n] = v;
+  });
+  return out;
+}
+/** The tbody as data; null when a cell holds anything but text, a/span links or the no-script fallback. */
+function readRows(tbody) {
+  var rows = [];
+  for (var i = 0; i < tbody.rows.length; i++) {
+    var tr = tbody.rows[i], cells = [];
+    for (var j = 0; j < tr.cells.length; j++) {
+      var td = tr.cells[j], parts = [];
+      for (var k = 0; k < td.childNodes.length; k++) {
+        var n = td.childNodes[k], tag = n.nodeType === 1 ? n.tagName.toLowerCase() : null;
+        if (n.nodeType === 3) parts.push(n.textContent);
+        else if (tag === 'a' || tag === 'span') parts.push(tag === 'a' ? { tag: tag, text: n.textContent, href: n.getAttribute('href') } : { tag: tag, text: n.textContent });
+        else if (tag !== 'noscript' && n.nodeType !== 8) return null; // scripts run here, so the no-script link is never shown
+      }
+      cells.push({ attrs: readAttrs(td, CELL_ATTRS), parts: parts });
+    }
+    rows.push({ attrs: readAttrs(tr, ROW_ATTRS), cells: cells });
+  }
+  return rows;
+}
+function writeRows(tbody, rows) {
+  Array.prototype.slice.call(tbody.rows).forEach(function (tr) { tr.remove(); });
+  rows.forEach(function (r) {
+    var tr = document.createElement('tr');
+    Object.keys(r.attrs).forEach(function (k) { tr.setAttribute(k, r.attrs[k]); });
+    r.cells.forEach(function (c) {
+      var td = document.createElement('td');
+      Object.keys(c.attrs).forEach(function (k) { if (k === 'class') td.className = c.attrs[k]; else td.setAttribute(k, c.attrs[k]); });
+      c.parts.forEach(function (p) {
+        if (typeof p === 'string') return td.append(p); // text nodes: never parsed as markup
+        var e = document.createElement(p.tag);
+        e.textContent = p.text;
+        if (p.href) e.setAttribute('href', p.href);
+        if (p.href && p.href.charAt(0) !== '/') e.setAttribute('rel', 'noopener noreferrer');
+        td.appendChild(e);
+      });
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+/** Restores this tab's snapshot of the table's rows, or takes it on the first visit. */
+function tabSnapshot(table) {
+  var tbody = table.tBodies[0], head = table.tHead && table.tHead.rows[0];
+  if (!tbody || !head) return;
+  var key = JSON_CACHE + 'rows.' + new URL(window.location.href).pathname + '#' + table.id;
+  try {
+    var saved = JSON.parse(window.sessionStorage.getItem(key));
+    if (saved !== null && validRows(saved, head.cells.length)) return writeRows(tbody, saved);
+  } catch (e) { /* corrupt or blocked: fresh rows */ }
+  var rows = readRows(tbody);
+  try {
+    if (rows) window.sessionStorage.setItem(key, JSON.stringify(rows)); else window.sessionStorage.removeItem(key);
+  } catch (e) { /* full or blocked: just not kept */ }
+}
+
+/**
  * One dashboard row from /api/dashboard, shaped like the server-rendered one (same cells, data-value and links), with its
  * cells in the header's current order and visibility. order: data-column keys left to right; th: key -> header cell;
  * keys: the template's column order (each cell's original index).
@@ -844,8 +1007,7 @@ function initTable(table, opts) {
     var mine = ++seq;
     var text = encodeView({ filters: filters, sort: sort, page: page, size: size }, keys, defaultSort, distinct) || '{"v":1}';
     table.setAttribute('aria-busy', 'true');
-    return fetch(withParam(new URL(server, window.location.href).href, 'view', text), { headers: { Accept: 'application/json' } })
-      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    return cachedJson(withParam(new URL(server, window.location.href).href, 'view', text), validPage)
       .then(function (p) {
         if (mine !== seq) return;
         page = p.page;
@@ -876,18 +1038,6 @@ function initTable(table, opts) {
     });
     clipCells(table);
     linkRows(table);
-  }
-
-  // While a catalogue sync runs, refresh the shown page as products land (also after a reload during the sync).
-  function followSync() {
-    var last = '';
-    (function tick() {
-      fetch('/catalog/sync/status', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (s) {
-        var sig = s.productsDone + '/' + s.phase;
-        if (sig !== last) { last = sig; if (viewReady) fetchPage(); }
-        if (s.running) setTimeout(tick, 3000);
-      }).catch(function () { setTimeout(tick, 10000); });
-    })();
   }
 
   var cols = Array.prototype.map.call(head.cells, function (cell, i) {
@@ -1078,8 +1228,7 @@ function initTable(table, opts) {
     var u = new URL(server, window.location.href);
     u.pathname += '/values';
     u.searchParams.set('column', k);
-    fetch(u.href, { headers: { Accept: 'application/json' } })
-      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    cachedJson(u.href, validValues)
       .then(function (entries) {
         menus[k].fill(entries);
         var f = filters[k];
@@ -1298,7 +1447,7 @@ function initTable(table, opts) {
 
   if (param) window.addEventListener('popstate', function () { close(false); applyView(); });
   applyView();
-  if (server && table.getAttribute('data-sync-running') === 'true') followSync();
+  // A running sync never refreshes this page in place: the tab cache keeps its snapshot until a reload (README).
   table.setAttribute('data-table-ready', ''); // lifts the app.css first-page gate now the restored view is drawn
 }
 
@@ -1901,6 +2050,9 @@ function initSync(form) {
 
 // Wire-up: the dashboard keeps its column settings; every table on every page gets the same header sort and filters.
 if (document.querySelectorAll) {
+  // Before any enhancement reads or moves its cells: the tab's frozen Code repos rows.
+  var codeRepos = document.getElementById('code-repos-table');
+  if (codeRepos) tabSnapshot(codeRepos);
   document.querySelectorAll('form[data-sync-form]').forEach(initSync);
   var topbar = document.querySelector('.topbar');
   if (topbar && window.EolAppearance) initSettings(topbar, window.EolAppearance);

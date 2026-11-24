@@ -1090,10 +1090,10 @@ class FakeEl extends FakeNode {
   getBoundingClientRect() { return { top: 0, bottom: 20, left: 0, right: 100, width: 100 }; }
 }
 
-function viewDom(href, stored = {}) {
+function viewDom(href, stored = {}, extra = {}) {
   const win = new FakeEl('window');
   const storage = new Map(Object.entries(stored));
-  Object.assign(win, { innerHeight: 800, innerWidth: 1200, storage, writes: [], assigned: null,
+  Object.assign(win, extra, { innerHeight: 800, innerWidth: 1200, storage, writes: [], assigned: null,
     localStorage: { getItem: k => storage.get(k) ?? null, setItem: (k, v) => storage.set(k, v), removeItem: k => storage.delete(k) },
     Option: function (text, value) { const o = new FakeEl('option'); o.textContent = text; o.value = value; return o; } });
   win.location = { href, assign(u) { win.assigned = u; } };
@@ -1102,7 +1102,7 @@ function viewDom(href, stored = {}) {
   const docEvents = new FakeEl('document');
   const doc = { addEventListener: docEvents.addEventListener.bind(docEvents), activeElement: null, getElementById() { return null; },
     createElement: t => new FakeEl(t), createElementNS: (ns, t) => new FakeEl(t) };
-  return { win, ctx: load(win, doc) };
+  return { win, doc, docEvents, ctx: load(win, doc) };
 }
 
 /** 25 rows: pkg01..pkg25, version 1.N, count N, eol 2026-01-NN; row 25 has no EoL date. */
@@ -1736,4 +1736,322 @@ test('a table is marked ready only after its restored URL view (20/50/100 per pa
   e.table.tBodies[0].childNodes.length = 0;
   ctx.initTable(e.table);
   assert.strictEqual(e.table.hasAttribute('data-table-ready'), true);
+});
+
+// ---- per-tab JSON navigation cache of server tables, through the real initTable ----
+const SERVER_KEYS = ['purl', 'ecosystem', 'dependency', 'version', 'eol', 'status', 'repos', 'branches', 'context', 'cycle', 'evidence', 'source', 'sbom'];
+const ROW = { product: 'django', cycle: '3.2', repos: 1, branches: 1, href: '/products/django', purl: 'pkg:pypi/django', ecosystem: 'pypi',
+  dependency: 'django', version: '3.2.25', eol: '2024-04-01', status: 'Ended', statusCss: 'ended', context: '', cycleLabel: '3.2',
+  matching: 'purl', evidence: [], sources: [], sboms: [] };
+const PAGE = { page: 1, pages: 1, total: 1, matching: 1, rows: [ROW] };
+const okJson = body => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(JSON.parse(JSON.stringify(body))) });
+const flush = async () => { for (let i = 0; i < 8; i++) await new Promise(r => setImmediate(r)); };
+/** A tab's sessionStorage over a Map; documents of one tab share the Map. */
+const tabStorage = session => ({ get length() { return session.size; }, key: i => [...session.keys()][i] ?? null,
+  getItem: k => (session.has(k) ? session.get(k) : null), setItem: (k, v) => { session.set(k, String(v)); }, removeItem: k => { session.delete(k); } });
+
+/** One document load of the dashboard in a tab: `answer(url)` is the network; nav is the Navigation Timing type. */
+function serverDoc(session, { nav = 'navigate', href = 'https://x.test/', answer = () => okJson(PAGE), sessionStorage = tabStorage(session), local = {}, attrs = {} } = {}) {
+  const calls = [];
+  const timers = [];
+  const dom = viewDom(href, local, { sessionStorage, performance: { getEntriesByType: t => (t === 'navigation' ? [{ type: nav }] : []) } });
+  dom.ctx.fetch = (url, init) => { calls.push(String(url)); return answer(String(url), init); };
+  dom.ctx.setTimeout = fn => timers.push(fn);
+  const main = new FakeEl('main'), wrap = new FakeEl('div'), table = new FakeEl('table'), thead = new FakeEl('thead'), head = new FakeEl('tr'), tbody = new FakeEl('tbody');
+  wrap.className = 'table-wrap';
+  table.id = 'dashboard-table';
+  Object.entries({ 'data-server': '/api/dashboard', 'data-total': '1', ...attrs }).forEach(([k, v]) => table.setAttribute(k, v));
+  SERVER_KEYS.forEach(k => { const th = new FakeEl('th'); th.setAttribute('data-column', k); th.append(k); head.append(th); });
+  thead.append(head);
+  table.append(thead, tbody);
+  wrap.append(table);
+  main.append(wrap);
+  table.offsetWidth = 900;
+  dom.ctx.initTable(table);
+  const shown = () => tbody.rows.filter(tr => tr.hasAttribute('data-row') && !tr.hidden).map(tr => tr.getAttribute('data-row'));
+  return { ...dom, calls, timers, table, head, shown, main };
+}
+
+test('tab cache: a dashboard view costs one request, then later documents of the tab draw it with no API call', async () => {
+  const session = new Map();
+  const a = serverDoc(session);
+  await flush();
+  assert.strictEqual(a.calls.length, 1, 'an unseen view costs one request');
+  assert.deepStrictEqual(a.shown(), ['django 3.2']);
+  const b = serverDoc(session);
+  await flush();
+  assert.deepStrictEqual(b.calls, [], 'a later document of the same tab repeats no request');
+  assert.deepStrictEqual(b.shown(), ['django 3.2']);
+});
+
+test('tab cache: a normal or hard reload of either page drops every cached answer once, and only the cache', async () => {
+  const session = new Map([['other.app.key', 'kept']]);
+  const view = v => 'https://x.test/?view.dashboard-table=' + encodeURIComponent(JSON.stringify(v));
+  serverDoc(session);
+  serverDoc(session, { href: view({ v: 1, page: 1, size: 50 }) });
+  await flush();
+  assert.strictEqual([...session.keys()].filter(k => k.startsWith('eol-ledger.json-cache.v1.')).length, 2, 'distinct views are distinct entries');
+  // a reload of another page of the tab (no server table) still invalidates both dashboard entries
+  const other = viewDom('https://x.test/repos', { 'eol-ledger.page-size.v1.dashboard-table': '50' },
+    { sessionStorage: tabStorage(session), performance: { getEntriesByType: () => [{ type: 'reload' }] } });
+  assert.deepStrictEqual([...session.keys()], ['other.app.key'], 'owned keys gone, unrelated tab storage kept');
+  assert.strictEqual(other.win.storage.get('eol-ledger.page-size.v1.dashboard-table'), '50', 'local preferences untouched');
+  const again = serverDoc(session);
+  await flush();
+  assert.strictEqual(again.calls.length, 1, 'after a reload the view is fetched again, once');
+  assert.deepStrictEqual(again.shown(), ['django 3.2']);
+  // the reloaded document reads only after clearing: its own fresh answer is cached for the next navigation
+  const next = serverDoc(session);
+  await flush();
+  assert.deepStrictEqual(next.calls, []);
+});
+
+const VALUES = [{ value: 'pypi', label: 'pypi' }, { value: '', label: '' }];
+const answerAll = url => okJson(url.includes('/values') ? VALUES : PAGE);
+const openMenu = async (d, k) => { d.main.querySelector('[data-filter-open="' + k + '"]').emit('click'); await flush(); };
+const boxes = (d, k) => d.main.querySelectorAll('[data-filter-value="' + k + '"]').map(b => b.value);
+
+test('tab cache: a column value list is fetched once per column, then reused by later documents of the tab', async () => {
+  const session = new Map();
+  const a = serverDoc(session, { answer: answerAll });
+  await flush();
+  await openMenu(a, 'ecosystem');
+  assert.deepStrictEqual(a.calls.filter(u => u.includes('/values')), ['https://x.test/api/dashboard/values?column=ecosystem']);
+  assert.deepStrictEqual(boxes(a, 'ecosystem'), ['pypi', '']);
+  const b = serverDoc(session, { answer: answerAll });
+  await flush();
+  await openMenu(b, 'ecosystem');
+  assert.deepStrictEqual(b.calls, [], 'the page and the value list both come from the tab cache');
+  assert.deepStrictEqual(boxes(b, 'ecosystem'), ['pypi', '']);
+  await openMenu(b, 'status');
+  assert.deepStrictEqual(b.calls, ['https://x.test/api/dashboard/values?column=status'], 'another column is its own entry');
+});
+
+test('tab cache: a running catalogue sync never passively refetches or replaces the cached dashboard', async () => {
+  const session = new Map();
+  serverDoc(session);
+  await flush();
+  const status = { running: true, phase: 'products', productsDone: 3, productsTotal: 9 };
+  const d = serverDoc(session, { attrs: { 'data-sync-running': 'true' },
+    answer: url => okJson(url.includes('/catalog/sync/status') ? status : { ...PAGE, rows: [{ ...ROW, cycle: '4.2' }] }) });
+  await flush();
+  for (let i = 0; i < 3; i++) { d.timers.splice(0).forEach(fn => fn()); status.productsDone++; await flush(); }
+  assert.deepStrictEqual(d.calls, [], 'no status polling and no page refetch on the dashboard');
+  assert.deepStrictEqual(d.shown(), ['django 3.2'], 'the cached snapshot stays until a reload');
+});
+
+test('tab cache: submitting a local import, SBOM import, sync or clear form drops the cache; other submits do not', async () => {
+  const session = new Map([['other.app.key', 'kept']]);
+  serverDoc(session);
+  await flush();
+  const owned = () => [...session.keys()].filter(k => k.startsWith('eol-ledger.json-cache.v1.')).length;
+  const imports = viewDom('https://x.test/imports', {}, { sessionStorage: tabStorage(session) });
+  const get = new FakeEl('form');
+  get.setAttribute('method', 'get');
+  imports.docEvents.emit('submit', { target: get });
+  assert.strictEqual(owned(), 1, 'a GET form changes nothing on the server');
+  const post = new FakeEl('form');
+  post.setAttribute('method', 'post');
+  imports.docEvents.emit('submit', { target: post });
+  assert.deepStrictEqual([...session.keys()], ['other.app.key']);
+  const after = serverDoc(session);
+  await flush();
+  assert.strictEqual(after.calls.length, 1, 'the next dashboard visit fetches the changed data once');
+});
+
+test('tab cache: errors, rejections and malformed answers are never cached or drawn; corrupt or blocked storage is just a miss', async () => {
+  const owned = s => [...s.keys()].filter(k => k.startsWith('eol-ledger.json-cache.v1.'));
+  const bad = [() => Promise.resolve({ ok: false, status: 500, json: () => Promise.resolve(PAGE) }), () => Promise.reject(new Error('offline')),
+    () => okJson({ ...PAGE, rows: [{ ...ROW, evidence: null }] }), () => okJson({ ...PAGE, page: '1' }), () => okJson([PAGE]), () => okJson(null)];
+  for (const answer of bad) {
+    const session = new Map();
+    const d = serverDoc(session, { answer });
+    await flush();
+    assert.deepStrictEqual(owned(session), [], 'nothing cached for ' + answer);
+    assert.deepStrictEqual(d.shown(), []);
+    const retry = serverDoc(session);
+    await flush();
+    assert.strictEqual(retry.calls.length, 1, 'the next document asks the network again');
+    assert.deepStrictEqual(retry.shown(), ['django 3.2']);
+  }
+  // corrupt or wrong-shaped cached entries are removed and refetched once
+  for (const stored of ['{not json', '{"page":1}', 'null', '[]']) {
+    const session = new Map();
+    serverDoc(session);
+    await flush();
+    session.set(owned(session)[0], stored);
+    const d = serverDoc(session);
+    await flush();
+    assert.strictEqual(d.calls.length, 1, stored);
+    assert.deepStrictEqual(d.shown(), ['django 3.2']);
+    assert.ok(validJson(session.get(owned(session)[0])), 'replaced by the fresh answer');
+  }
+  // blocked storage (private mode, policy) never breaks the table: every document just uses the network
+  const throwing = { get length() { throw new Error('blocked'); }, key() { throw new Error('blocked'); }, getItem() { throw new Error('blocked'); },
+    setItem() { throw new Error('blocked'); }, removeItem() { throw new Error('blocked'); } };
+  for (let i = 0; i < 2; i++) {
+    const d = serverDoc(new Map(), { sessionStorage: throwing, nav: 'reload' });
+    await flush();
+    assert.strictEqual(d.calls.length, 1);
+    assert.deepStrictEqual(d.shown(), ['django 3.2']);
+  }
+});
+const validJson = t => { try { return JSON.parse(t).rows.length === 1; } catch (e) { return false; } };
+
+test('tab cache: an answer missing any field serverRow or a filter menu reads is rejected, from storage or the network', async () => {
+  const hollow = { ...PAGE, rows: [{ evidence: [{}], sources: [{}], sboms: [{}] }] };
+  const broken = [hollow, { ...PAGE, rows: [{ ...ROW, href: null }] }, { ...PAGE, rows: [{ ...ROW, repos: '1' }] },
+    { ...PAGE, rows: [{ ...ROW, statusCss: 7 }] }, { ...PAGE, rows: [{ ...ROW, evidence: [{ href: '/x' }] }] },
+    { ...PAGE, rows: [{ ...ROW, sources: [{ text: null, link: null }] }] }, { ...PAGE, rows: [{ ...ROW, sboms: [{ text: 'x', link: 5 }] }] }];
+  const key = 'eol-ledger.json-cache.v1.https://x.test/api/dashboard?view=%7B%22v%22%3A1%7D';
+  for (const bad of broken) {
+    // stored: evicted and fetched again, never drawn
+    const session = new Map([[key, JSON.stringify(bad)]]);
+    const d = serverDoc(session);
+    await flush();
+    assert.strictEqual(d.calls.length, 1, 'stored ' + JSON.stringify(bad.rows[0]));
+    assert.deepStrictEqual(d.shown(), ['django 3.2']);
+    // network: not cached and not drawn; the next document retries
+    const net = new Map();
+    const n = serverDoc(net, { answer: () => okJson(bad) });
+    await flush();
+    assert.deepStrictEqual([...net.keys()], [], 'network ' + JSON.stringify(bad.rows[0]));
+    assert.deepStrictEqual(n.shown(), []);
+    assert.strictEqual(serverDoc(net).calls.length, 1);
+  }
+  // a null link (a source that is not a safe URL) is a real API value and stays valid
+  const textOnly = { ...PAGE, rows: [{ ...ROW, sources: [{ text: 'Inline upload', link: null }], evidence: [{ href: '/repos/1/deps/2', text: 'Alpha / main: Details' }] }] };
+  const ok = new Map();
+  serverDoc(ok, { answer: () => okJson(textOnly) });
+  await flush();
+  assert.strictEqual([...ok.keys()].length, 1);
+  // value lists need both value and label as strings
+  const vals = new Map();
+  const v = serverDoc(vals, { answer: url => okJson(url.includes('/values') ? [{ value: 'pypi' }] : PAGE) });
+  await flush();
+  await openMenu(v, 'ecosystem');
+  assert.deepStrictEqual([...vals.keys()].filter(k => k.includes('/values')), [], 'a value without a label is not cached');
+  assert.deepStrictEqual(boxes(v, 'ecosystem'), []);
+});
+
+// ---- /repos: the server-rendered Code repos rows are frozen per tab like the dashboard JSON ----
+const REPO_HEAD = [['appid', 0, 'App ID'], ['name', 8, 'Repository name'], ['repo', 1, 'Code repo'], ['branch', 2, 'Branch'], ['version', 6, 'Version'],
+  ['provider', 3, 'Provider'], ['format', 7, 'SBOM Format'], ['packages', 4, 'Packages'], ['snapshot', 5, 'Latest snapshot']];
+const td = (column, ...parts) => { const c = new FakeEl('td'); if (column) c.setAttribute('data-column', column); parts.forEach(p => c.append(p)); return c; };
+const el = (tag, text, attrs = {}) => { const e = new FakeEl(tag); Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v)); e.append(text); return e; };
+/** One /repos row exactly as repos.html renders it. */
+function repoRow({ id, name, url = null, version = '—', branch = 'main' }) {
+  const tr = new FakeEl('tr');
+  tr.setAttribute('data-href', '/repos/' + id);
+  const noscript = new FakeEl('noscript');
+  noscript.append(el('a', 'Details', { href: '/repos/' + id }));
+  const seen = td('snapshot', '2026-11-20 13:00');
+  seen.className = 'date small';
+  seen.setAttribute('data-value', '2026-11-20 13:00');
+  const repo = td('repo', url ? el('a', url, { href: url, rel: 'noopener noreferrer' }) : el('span', '—'));
+  repo.className = 'col-source';
+  const packages = td('packages', '3');
+  packages.className = 'num';
+  tr.append(td('appid', '—'), td('name', name), repo, td('branch', el('span', branch), '\n    ', noscript), td('version', version), td('provider', 'gitlab'),
+    td('format', 'CycloneDX 1.6 JSON'), packages, seen);
+  return tr;
+}
+function emptyRepoRow() {
+  const tr = new FakeEl('tr'), c = td(null, 'No code repos yet. ', el('a', 'Upload a dependency-inventory JSON', { href: '/imports' }), '.');
+  c.setAttribute('colspan', '9');
+  c.className = 'empty';
+  tr.append(c);
+  return tr;
+}
+/** One document load of /repos in a tab, in the wire-up order: the tab snapshot, then initTable. */
+function reposDoc(session, repos, { nav = 'navigate', sessionStorage = tabStorage(session) } = {}) {
+  const dom = viewDom('https://x.test/repos', {}, { sessionStorage, performance: { getEntriesByType: t => (t === 'navigation' ? [{ type: nav }] : []) } });
+  const main = new FakeEl('main'), wrap = new FakeEl('div'), table = new FakeEl('table'), thead = new FakeEl('thead'), head = new FakeEl('tr'), tbody = new FakeEl('tbody');
+  wrap.className = 'table-wrap';
+  wrap.setAttribute('aria-label', 'Code repo branches');
+  table.id = 'code-repos-table';
+  REPO_HEAD.forEach(([, i, label]) => { const th = new FakeEl('th'); th.setAttribute('scope', 'col'); th.setAttribute('data-preference-index', String(i)); th.append(label); head.append(th); });
+  (repos.length ? repos.map(repoRow) : [emptyRepoRow()]).forEach(tr => tbody.append(tr));
+  thead.append(head);
+  table.append(thead, tbody);
+  wrap.append(table);
+  main.append(wrap);
+  table.offsetWidth = 900;
+  if (dom.ctx.tabSnapshot) dom.ctx.tabSnapshot(table); // absent before the feature: the page then behaves as it always did
+  dom.ctx.initTable(table);
+  const rows = () => tbody.rows.filter(tr => !tr.hasAttribute('data-empty')).map(tr => tr.hasAttribute('data-href') ? tr.getAttribute('data-href') + ' ' + tr.cells[1].textContent : tr.textContent);
+  return { ...dom, table, tbody, rows };
+}
+
+test('tab snapshot: /repos keeps the rows of its first visit in the tab, even after the data changed on the server', () => {
+  const session = new Map();
+  const first = reposDoc(session, [{ id: 1, name: 'Alpha', url: 'https://gitlab.com/acme/alpha' }]);
+  assert.deepStrictEqual(first.rows(), ['/repos/1 Alpha']);
+  // an import elsewhere (another tab, a scheduler) added a branch; navigating back in this tab shows the frozen rows
+  const again = reposDoc(session, [{ id: 1, name: 'Alpha', url: 'https://gitlab.com/acme/alpha', version: '1.1' }, { id: 2, name: 'Lua' }]);
+  assert.deepStrictEqual(again.rows(), ['/repos/1 Alpha']);
+  const tr = again.tbody.rows[0];
+  assert.strictEqual(tr.cells[4].textContent, '—', 'cell text of the first visit, not the changed version');
+  assert.deepStrictEqual(tr.cells.map(c => c.getAttribute('data-column')), REPO_HEAD.map(h => h[0]));
+  const link = tr.cells[2].querySelector('a');
+  assert.deepStrictEqual([link.getAttribute('href'), link.getAttribute('rel'), link.textContent], ['https://gitlab.com/acme/alpha', 'noopener noreferrer', 'https://gitlab.com/acme/alpha']);
+  assert.deepStrictEqual([tr.cells[8].className, tr.cells[8].getAttribute('data-value')], ['date small', '2026-11-20 13:00']);
+});
+
+test('tab snapshot: every row (also later pages) and an empty table are kept; a reload of / or /repos, or a local POST, drops both datasets', async () => {
+  const many = Array.from({ length: 25 }, (_, i) => ({ id: i + 1, name: 'R' + (i + 1) }));
+  const session = new Map();
+  reposDoc(session, many);
+  const back = reposDoc(session, []);
+  assert.strictEqual(back.rows().length, 25, 'rows hidden on page 2 are part of the snapshot');
+  serverDoc(session);
+  await flush();
+  assert.strictEqual([...session.keys()].length, 2, 'one dashboard answer and one /repos snapshot');
+  serverDoc(session, { nav: 'reload' }); // a reload of the dashboard
+  await flush();
+  assert.deepStrictEqual(reposDoc(session, [{ id: 9, name: 'Fresh' }]).rows(), ['/repos/9 Fresh'], '/repos shows fresh rows after a dashboard reload');
+  // an empty first visit stays empty, even after branches were imported elsewhere; a /repos reload then shows them
+  const empty = new Map();
+  assert.deepStrictEqual(reposDoc(empty, []).rows(), ['No code repos yet. Upload a dependency-inventory JSON.']);
+  assert.deepStrictEqual(reposDoc(empty, [{ id: 1, name: 'Alpha' }]).rows(), ['No code repos yet. Upload a dependency-inventory JSON.']);
+  assert.strictEqual(reposDoc(empty, [{ id: 1, name: 'Alpha' }]).tbody.querySelector('td').getAttribute('colspan'), '9');
+  serverDoc(empty);
+  await flush();
+  assert.deepStrictEqual(reposDoc(empty, [{ id: 1, name: 'Alpha' }], { nav: 'reload' }).rows(), ['/repos/1 Alpha']);
+  assert.strictEqual([...empty.keys()].filter(k => k.includes('/api/dashboard')).length, 0, 'the /repos reload dropped the dashboard answer too');
+  // a local POST drops the snapshot as well
+  const imports = viewDom('https://x.test/imports', {}, { sessionStorage: tabStorage(empty) });
+  const post = new FakeEl('form');
+  post.setAttribute('method', 'post');
+  imports.docEvents.emit('submit', { target: post });
+  assert.deepStrictEqual(reposDoc(empty, [{ id: 2, name: 'Beta' }]).rows(), ['/repos/2 Beta']);
+});
+
+test('tab snapshot: corrupt, unsafe or incomplete stored rows are never inserted; blocked storage shows the fresh rows', () => {
+  const key = 'eol-ledger.json-cache.v1.rows./repos#code-repos-table';
+  const cell = (column, parts = ['x']) => ({ attrs: { 'data-column': column }, parts });
+  const good = cells => [{ attrs: { 'data-href': '/repos/7' }, cells }];
+  const full = REPO_HEAD.map(h => cell(h[0]));
+  for (const stored of ['{not json', '{}', '[1]', JSON.stringify(good(full.slice(1))), // a missing cell
+    JSON.stringify([{ attrs: { 'data-href': 'javascript:alert(1)' }, cells: full }]),
+    JSON.stringify([{ attrs: { 'data-href': '//evil.test/x' }, cells: full }]),
+    JSON.stringify([{ attrs: { 'data-href': '/repos/7', onclick: 'x' }, cells: full }]),
+    JSON.stringify(good([cell('appid', [{ tag: 'script', text: 'alert(1)' }]), ...full.slice(1)])),
+    JSON.stringify(good([cell('appid', [{ tag: 'a', text: 'x', href: 'javascript:alert(1)' }]), ...full.slice(1)])),
+    JSON.stringify(good([cell('appid', [{ tag: 'a', text: 'x', href: 'https://u:p@x.test/' }]), ...full.slice(1)])),
+    JSON.stringify(good([{ attrs: { 'data-column': 'appid', style: 'x' }, parts: [] }, ...full.slice(1)])),
+    JSON.stringify(good([cell('appid', ['<b>x</b>']), ...full.slice(1)])) /* text, so it would be shown literally; still valid */]) {
+    const session = new Map([[key, stored]]);
+    const d = reposDoc(session, [{ id: 1, name: 'Alpha' }]);
+    if (stored.includes('<b>')) {
+      assert.strictEqual(d.tbody.rows[0].cells[0].textContent, '<b>x</b>', 'stored text is inserted as text, never as markup');
+      assert.strictEqual(d.tbody.rows[0].cells[0].querySelector('b'), null);
+      continue;
+    }
+    assert.deepStrictEqual(d.rows(), ['/repos/1 Alpha'], stored);
+    assert.ok(JSON.parse(session.get(key))[0].attrs['data-href'] === '/repos/1', 'replaced by the fresh rows');
+  }
+  const throwing = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); }, removeItem() { throw new Error('blocked'); },
+    get length() { throw new Error('blocked'); }, key() { throw new Error('blocked'); } };
+  assert.deepStrictEqual(reposDoc(new Map(), [{ id: 1, name: 'Alpha' }], { sessionStorage: throwing, nav: 'reload' }).rows(), ['/repos/1 Alpha']);
 });
