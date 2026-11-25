@@ -321,6 +321,42 @@ public class Ledger {
         return out;
     }
 
+    /** GET /api/repos: today's date in the configured zone and every branch (see README "Repository EoL API"). */
+    public record RepoReport(LocalDate asOf, List<RepoEol> repos) {
+    }
+
+    /** One branch with the facts of its latest snapshot only (null when that snapshot does not state them; never an older one's). */
+    public record RepoEol(long id, String repoName, String repoUrl, String provider, String branch, String sbomUrl, Long snapshotId,
+                          Instant observedAt, int depCount, String appId, String version, String format, List<RepoDep> outdatedDependencies) {
+    }
+
+    /** A latest-snapshot dependency whose matched release cycle has ended (Eol css "ended" as of today). */
+    public record RepoDep(long id, String name, String version, String purl, String ecosystem, String installedVersion,
+                          Matcher.Match match, Cycle cycle, Eol eol) {
+    }
+
+    /**
+     * Every branch, matched against the catalogue once with the same bulk latest-snapshot query as the dashboard. One
+     * read-only repeatable-read transaction, so an import, clear or sync committing meanwhile cannot mix snapshots.
+     */
+    @org.springframework.transaction.annotation.Transactional(readOnly = true, isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+    public RepoReport repoReport() {
+        Map<Long, List<RepoDep>> ended = new HashMap<>();
+        for (Affected a : latestDeps(catalog())) {
+            Dep d = a.dep();
+            if (!"ended".equals(d.eol().css())) continue;
+            ended.computeIfAbsent(a.branch().id(), k -> new ArrayList<>())
+                    .add(new RepoDep(d.id(), d.name(), d.version(), d.purl(), d.ecosystem(), d.installedVersion(), d.match(), d.cycle(), d.eol()));
+        }
+        List<RepoEol> repos = new ArrayList<>();
+        for (Branch b : branches()) {
+            Facts f = facts(b.snapshotId());
+            repos.add(new RepoEol(b.id(), b.repoName(), b.repoUrl(), b.provider(), b.branch(), b.sbomUrl(), b.snapshotId(), b.observedAt(),
+                    b.depCount(), f.appId(), f.version(), b.snapshotId() == null ? null : f.format(), ended.getOrDefault(b.id(), List.of())));
+        }
+        return new RepoReport(today(), repos);
+    }
+
     /** The JSON-upload provenance of a snapshot, or null for SBOM-fetched snapshots. */
     public Inline inline(long snapshotId) {
         String payload = payload(snapshotId);

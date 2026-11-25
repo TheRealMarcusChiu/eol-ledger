@@ -114,6 +114,13 @@ public class PagesController {
         return ResponseEntity.ok(dashboard.values(column, !unused));
     }
 
+    /** Every code repo branch with its current facts and its ended dependencies (see README "Repository EoL API"). */
+    @GetMapping("/api/repos")
+    @ResponseBody
+    Ledger.RepoReport repos() {
+        return ledger.repoReport();
+    }
+
     /** Old links (/products/{product}?cycle=...) moved permanently to /dependencies/{product}?version=... */
     @GetMapping("/products/{product}")
     RedirectView legacyProduct(@PathVariable String product, @RequestParam(required = false) String cycle) {

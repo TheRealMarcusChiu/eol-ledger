@@ -166,6 +166,36 @@ Some queries still scan rather than use an index:
 
 A column's Values list (`GET /api/dashboard/values?column=<key>`) is loaded when its filter menu first opens.
 
+**Repository EoL API.** `GET /api/repos` (no parameters) returns every registered code repo branch with the facts
+of its **current** inventory, its latest snapshot (by `observed_at`, then id), and the dependencies of that inventory
+whose release cycle has ended as of `asOf` (today in `eol.zone`). It is a read-only view with the same access as the
+pages and `/api/dashboard` (no login; see "Security and deployment"). Shape:
+
+```json
+{"asOf":"2026-11-20","repos":[{"id":7,"repoName":"Alpha","repoUrl":"https://x.test/alpha","provider":"other",
+  "branch":"main","sbomUrl":"inline:json-upload","snapshotId":12,"observedAt":"2026-11-20T13:00:00Z","depCount":6,
+  "appId":null,"version":null,"format":"Inventory JSON","outdatedDependencies":[{"id":40,"name":"django",
+  "version":"3.2.25","purl":"pkg:pypi/django@3.2.25","ecosystem":"pypi","installedVersion":"3.2.25",
+  "match":{"product":"django","cycle":"3.2","evidence":"…"},"cycle":{"product":"django","productLabel":"Django",
+  "productLink":"https://endoflife.date/django","name":"3.2","label":"3.2","releaseDate":null,"isEol":true,
+  "eolFrom":"2024-04-01","latest":null,"latestDate":null},"eol":{"css":"ended","text":"Ended 1 years ago"}}]}]}
+```
+
+* `id` is the branch's stable id (as in `/repos/{id}`); `snapshotId` is the snapshot the facts and dependencies come
+  from and changes with each new inventory. Branches are never merged: same URL on other branches, other URLs with the
+  same name and SBOM imports without a URL or branch are each their own entry.
+* Every branch is listed, also one without a snapshot (`snapshotId`, `observedAt`, `format` null, `depCount` 0) or
+  without ended dependencies (`outdatedDependencies` `[]`).
+* `appId`, `version` (the application version, not a dependency's) and `format` come from the latest snapshot only. A
+  value that snapshot does not state is `null`, never an older snapshot's value and never "—". The same holds for
+  `repoName`, `repoUrl`, `provider` and `branch` when an SBOM import left them unknown.
+* `outdatedDependencies` lists only dependencies whose matched cycle has ended: its EoL date is today or earlier, or it
+  is marked ended without a date. Cycles ending later, without an announced EoL, unmatched packages and cycles no
+  branch uses are not listed. `installedVersion` is the installed version (else the purl's), never the cycle's latest.
+* No history: older snapshots, inventory payloads and import logs are not part of the answer.
+* The whole answer is read in one read-only repeatable-read database transaction, so an import, clear or catalogue
+  sync committing at the same time cannot mix two states of the data in one answer.
+
 **Both lists are frozen per tab until a reload.** In one tab, EoL Dependencies and Code repos keep showing the data
 of their first visit:
 * Each successful `/api/dashboard` page and Values answer is kept in this tab's `sessionStorage` (key
